@@ -494,12 +494,24 @@ def parabolic_sar(
         ready to plot in two colours (the same convention as
         :func:`supertrend`).
 
+    Raises
+    ------
+    ValueError
+        If ``start`` is greater than ``max_af``. The acceleration factor
+        only ever grows from ``start`` toward ``max_af``; starting above the
+        ceiling would mean it jumps *down* the moment the first new extreme
+        point is recorded, breaking the "grows then holds" behaviour this
+        indicator is documented to have.
+
     Notes
     -----
     There is no "prior SAR" for the very first bar, so bars 0 and 1 are
     ``NaN``; the initial trend direction for bar 1 is bootstrapped by
     comparing bar 1's midpoint (``(high + low) / 2``) against bar 0's, since
-    this function takes no ``close`` to compare instead.
+    this function takes no ``close`` to compare instead. A bar with a missing
+    ``high`` or ``low`` (``NaN``) produces a ``NaN`` dot and leaves the AF,
+    extreme point and trend direction untouched, so the next valid bar
+    continues exactly as if the gap bar had never appeared.
 
     Like :func:`supertrend`, this is a trailing stop with no opinion about
     trend strength, and whipsaws in a range as the acceleration factor keeps
@@ -522,6 +534,8 @@ def parabolic_sar(
     af0 = validate_multiplier(start, "start")
     step = validate_multiplier(increment, "increment")
     af_max = validate_multiplier(max_af, "max_af")
+    if af0 > af_max:
+        raise ValueError(f"'start' must be <= 'max_af', got start={af0}, max_af={af_max}")
 
     require_aligned_index(high=high, low=low)
     high_values = as_array(high, "high")
@@ -531,18 +545,45 @@ def parabolic_sar(
     sar = np.full(size, np.nan, dtype="float64")
     direction = np.full(size, np.nan, dtype="float64")
 
-    if size >= 2:
-        trend_up = bool(high_values[1] + low_values[1] >= high_values[0] + low_values[0])
-        extreme = high_values[1] if trend_up else low_values[1]
-        af = af0
-        sar[1] = low_values[0] if trend_up else high_values[0]
-        direction[1] = 1.0 if trend_up else -1.0
+    def valid(i: int) -> bool:
+        return bool(np.isfinite(high_values[i]) and np.isfinite(low_values[i]))
 
-        for i in range(2, size):
-            prior_sar = sar[i - 1]
+    # Bootstrap from the first two *consecutive* valid bars — a gap before
+    # that point simply delays the first SAR value, same as any other
+    # warm-up. A bar missing high/low never touches state (see below), so
+    # this scan finds wherever the data actually starts being usable.
+    seed = -1
+    for i in range(1, size):
+        if valid(i - 1) and valid(i):
+            seed = i
+            break
+
+    if seed >= 0:
+        trend_up = bool(
+            high_values[seed] + low_values[seed] >= high_values[seed - 1] + low_values[seed - 1]
+        )
+        extreme = high_values[seed] if trend_up else low_values[seed]
+        af = af0
+        prior_sar = low_values[seed - 1] if trend_up else high_values[seed - 1]
+        sar[seed] = prior_sar
+        direction[seed] = 1.0 if trend_up else -1.0
+        # The last two *valid* bars' low/high, for the boundary clamp — kept
+        # as their own rolling pair rather than indexing i-1/i-2 directly, so
+        # a gap bar (whose high/low is NaN) is simply never a candidate.
+        prior_low = (low_values[seed - 1], low_values[seed])
+        prior_high = (high_values[seed - 1], high_values[seed])
+
+        for i in range(seed + 1, size):
+            if not valid(i):
+                # No high/low means nothing about today is knowable; freeze
+                # every piece of state so the next valid bar picks up exactly
+                # where the last valid one left off, rather than computing a
+                # silently wrong number from a comparison against NaN.
+                continue
+
             if trend_up:
                 candidate = prior_sar + af * (extreme - prior_sar)
-                candidate = min(candidate, low_values[i - 1], low_values[i - 2])
+                candidate = min(candidate, *prior_low)
                 if low_values[i] < candidate:
                     trend_up = False
                     candidate = extreme
@@ -553,7 +594,7 @@ def parabolic_sar(
                     af = min(af + step, af_max)
             else:
                 candidate = prior_sar - af * (prior_sar - extreme)
-                candidate = max(candidate, high_values[i - 1], high_values[i - 2])
+                candidate = max(candidate, *prior_high)
                 if high_values[i] > candidate:
                     trend_up = True
                     candidate = extreme
@@ -565,6 +606,9 @@ def parabolic_sar(
 
             sar[i] = candidate
             direction[i] = 1.0 if trend_up else -1.0
+            prior_sar = candidate
+            prior_low = (prior_low[1], low_values[i])
+            prior_high = (prior_high[1], high_values[i])
 
     long_line = np.where(direction > 0, sar, np.nan)
     short_line = np.where(direction < 0, sar, np.nan)

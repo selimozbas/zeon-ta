@@ -19,6 +19,7 @@ from ._core import (
     common_index,
     indicator,
     require_aligned_index,
+    require_non_negative,
     require_same_length,
     rolling_sum,
     validate_length,
@@ -59,6 +60,21 @@ def obv(close: ArrayLike, volume: ArrayLike) -> pd.Series:
         is arbitrary (it depends on where the series happens to start);
         only its *slope* and its divergence from price are meaningful.
 
+    Raises
+    ------
+    ValueError
+        If ``volume`` contains a negative value, which has no meaning for a
+        traded quantity.
+
+    Notes
+    -----
+    A bar with an unknown close or volume (``NaN``) contributes nothing to the
+    running total rather than corrupting every bar after it — a single bad
+    tick in the middle of an otherwise clean feed does not erase months of
+    accumulated OBV. Direction for the bar right after a gap is measured
+    against the last *known* close, not the missing one, so OBV picks back up
+    correctly once real data resumes.
+
     Examples
     --------
     >>> import zeonta
@@ -73,11 +89,23 @@ def obv(close: ArrayLike, volume: ArrayLike) -> pd.Series:
     close_values = as_array(close, "close")
     volume_values = as_array(volume, "volume")
     require_same_length(close=close_values, volume=volume_values)
+    require_non_negative(volume=volume_values)
 
-    # diff against the bar's own close makes bar 0's contribution exactly 0,
-    # matching "OBV starts at 0" without a special-cased first element.
-    direction = np.sign(np.diff(close_values, prepend=close_values[0]))
-    result = np.cumsum(direction * volume_values)
+    # Compare each bar against the last *known* close (forward-filled) rather
+    # than the immediately preceding raw one, so a gap doesn't corrupt the
+    # direction reading for the bar where real data resumes.
+    filled_close = pd.Series(close_values).ffill().to_numpy()
+    direction = np.sign(np.diff(filled_close, prepend=filled_close[0]))
+    signed_volume = direction * volume_values
+
+    # A bar with an unknown close or volume contributes nothing — held flat —
+    # instead of poisoning every bar after it via NaN propagating through
+    # cumsum. Bar 0 has no prior bar to compare against, so it is always flat.
+    gap = ~np.isfinite(close_values) | ~np.isfinite(volume_values) | ~np.isfinite(signed_volume)
+    signed_volume = np.where(gap, 0.0, signed_volume)
+    signed_volume[0] = 0.0
+
+    result = np.cumsum(signed_volume)
 
     return wrap_series(result, common_index(close, volume), "OBV")
 
@@ -119,6 +147,12 @@ def cmf(
         one extreme of its range on every bar in the window pushes it toward
         the corresponding boundary; ordinary mixed closes keep it well inside).
 
+    Raises
+    ------
+    ValueError
+        If ``volume`` contains a negative value, which has no meaning for a
+        traded quantity.
+
     Examples
     --------
     >>> import zeonta
@@ -137,6 +171,7 @@ def cmf(
     close_values = as_array(close, "close")
     volume_values = as_array(volume, "volume")
     require_same_length(high=high_values, low=low_values, close=close_values, volume=volume_values)
+    require_non_negative(volume=volume_values)
 
     span = high_values - low_values
     with np.errstate(divide="ignore", invalid="ignore"):
@@ -193,6 +228,12 @@ def mfi(
     pandas.Series
         Named ``MFI_{length}``, ranging 0-100.
 
+    Raises
+    ------
+    ValueError
+        If ``volume`` contains a negative value, which has no meaning for a
+        traded quantity.
+
     Examples
     --------
     >>> import zeonta
@@ -215,6 +256,7 @@ def mfi(
     size = require_same_length(
         high=high_values, low=low_values, close=close_values, volume=volume_values
     )
+    require_non_negative(volume=volume_values)
 
     typical = (high_values + low_values + close_values) / 3.0
     raw_flow = typical * volume_values

@@ -100,6 +100,21 @@ def require_aligned_index(**values: Any) -> None:
             )
 
 
+def require_non_negative(**arrays: np.ndarray) -> None:
+    """Reject arrays containing a negative value.
+
+    Volume cannot be negative; used by every indicator that consumes it
+    (:func:`~zeonta.relative_volume`, :func:`~zeonta.vwap`, :func:`~zeonta.obv`,
+    :func:`~zeonta.cmf`, :func:`~zeonta.mfi`) so a bad feed fails loudly at the
+    boundary instead of quietly producing a number with no real meaning.
+    ``NaN`` values are ignored here — that is a separate, valid "missing data"
+    state handled elsewhere, not a negativity violation.
+    """
+    for name, array in arrays.items():
+        if np.any(array < 0.0):
+            raise ValueError(f"{name!r} must not contain negative values")
+
+
 def require_same_length(**arrays: np.ndarray) -> int:
     """Assert all given arrays share one length and return it."""
     lengths = {name: array.size for name, array in arrays.items()}

@@ -166,3 +166,26 @@ def test_kama_rejects_fast_not_smaller_than_slow() -> None:
 def test_kama_on_a_flat_series_has_zero_efficiency_and_matches_the_flat_price() -> None:
     result = zeonta.kama([7.0] * 20, length=5)
     np.testing.assert_allclose(result.dropna().to_numpy(), 7.0)
+
+
+def test_kama_recovers_after_an_interior_gap() -> None:
+    """A single bad tick must not poison the rest of the series: KAMA should
+    hold its last value through the gap and resume updating once the
+    Efficiency Ratio window clears it again."""
+    values = [float(v) for v in range(1, 40)]
+    values[15] = float("nan")
+    result = zeonta.kama(values, length=5)
+
+    # The gap widens the local warm-up (every window touching bar 15 is
+    # NaN), but nothing after the window clears should stay NaN.
+    assert not result.iloc[21:].isna().any()
+    # The held value during the gap must be finite, not NaN or garbage.
+    assert np.isfinite(result.iloc[16])
+
+
+def test_kama_holds_its_value_exactly_through_a_gap_bar() -> None:
+    values = [10.0, 12.0, 11.0, 15.0, 14.0, float("nan"), 20.0, 18.0, 25.0]
+    result = zeonta.kama(values, length=1, fast=2, slow=30)
+    # Bar 5 is the gap itself: nothing is knowable there, so it holds bar 4's
+    # value rather than becoming NaN or silently updating on garbage input.
+    np.testing.assert_allclose(result.iloc[5], result.iloc[4])

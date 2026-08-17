@@ -18,6 +18,7 @@ from ._core import (
     common_index,
     indicator,
     require_aligned_index,
+    require_non_negative,
     require_same_length,
     rolling_sum,
     validate_length,
@@ -116,8 +117,7 @@ def vwap(
     close_values = as_array(close, "close")
     volume_values = as_array(volume, "volume")
     require_same_length(high=high_values, low=low_values, close=close_values, volume=volume_values)
-    if np.any(volume_values < 0.0):
-        raise ValueError("'volume' must not contain negative values")
+    require_non_negative(volume=volume_values)
 
     index = common_index(high, low, close, volume)
     typical = (high_values + low_values + close_values) / 3.0

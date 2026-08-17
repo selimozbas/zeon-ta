@@ -250,3 +250,40 @@ def test_psar_higher_start_af_flips_less_often(ohlcv: pd.DataFrame) -> None:
 def test_psar_rejects_non_positive_start() -> None:
     with pytest.raises(ValueError, match="'start' must be > 0"):
         zeonta.parabolic_sar([2.0] * 10, [1.0] * 10, start=0.0)
+
+
+def test_psar_rejects_start_greater_than_max_af() -> None:
+    with pytest.raises(ValueError, match="'start' must be <= 'max_af'"):
+        zeonta.parabolic_sar([2.0] * 10, [1.0] * 10, start=0.3, max_af=0.2)
+
+
+def test_psar_accepts_start_equal_to_max_af() -> None:
+    """The boundary itself is valid: AF simply never grows past its start."""
+    out = zeonta.parabolic_sar([2.0] * 20, [1.0] * 20, start=0.2, max_af=0.2)
+    assert out.notna().any().any()
+
+
+def test_psar_gap_bar_is_nan_and_state_freezes_across_it() -> None:
+    high = [2.0] * 20
+    low = [1.0] * 20
+    high[10] = float("nan")
+    out = zeonta.parabolic_sar(high, low)
+    line = out["PSAR_0.02_0.02_0.2"]
+    direction = out["PSARd_0.02_0.02_0.2"]
+    assert np.isnan(line.iloc[10])
+    assert np.isnan(direction.iloc[10])
+    # Every bar after the gap must still be computable — the algorithm picks
+    # back up rather than propagating NaN forever.
+    assert line.iloc[11:].notna().all()
+    assert direction.iloc[11:].notna().all()
+
+
+def test_psar_gap_bar_does_not_silently_produce_a_finite_value() -> None:
+    """Python's builtin min/max ignore NaN in comparisons, so a naive clamp
+    against a gap bar's low/high could silently keep a wrong finite number
+    instead of surfacing the missing data — this pins that it does not."""
+    high = np.array([2.0] * 30)
+    low = np.array([1.0] * 30)
+    low[15] = np.nan
+    out = zeonta.parabolic_sar(high, low)
+    assert np.isnan(out["PSAR_0.02_0.02_0.2"].iloc[15])

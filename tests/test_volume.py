@@ -34,6 +34,33 @@ def test_obv_rises_through_a_clean_uptrend() -> None:
     assert result.is_monotonic_increasing
 
 
+def test_obv_rejects_negative_volume() -> None:
+    with pytest.raises(ValueError, match="'volume' must not contain negative values"):
+        zeonta.obv([10.0, 11.0, 12.0], [100.0, -1.0, 100.0])
+
+
+def test_obv_an_interior_gap_does_not_poison_the_running_total() -> None:
+    """A single unknown bar must contribute nothing and then get out of the
+    way, not turn every later bar into NaN via cumsum."""
+    close = [10.0, 11.0, np.nan, 13.0, 14.0]
+    volume = [100.0, 50.0, 80.0, 60.0, 70.0]
+    result = zeonta.obv(close, volume)
+    assert not result.isna().any()
+    # bar 2 is the gap: contributes 0, so OBV holds at bar 1's value.
+    np.testing.assert_allclose(result.iloc[2], result.iloc[1])
+    # bar 3 compares today's real close (13) against the last *known* real
+    # close (11, since bar 2 was unknown) rather than the missing one.
+    np.testing.assert_allclose(result.iloc[3], result.iloc[1] + volume[3])
+
+
+def test_obv_a_gap_in_volume_alone_also_holds_flat() -> None:
+    close = [10.0, 11.0, 12.0, 13.0]
+    volume = [100.0, 50.0, np.nan, 60.0]
+    result = zeonta.obv(close, volume)
+    assert not result.isna().any()
+    np.testing.assert_allclose(result.iloc[2], result.iloc[1])
+
+
 def test_cmf_matches_the_hand_computed_ratio() -> None:
     # Both bars close at the high -> multiplier = 1 on each -> CMF = 1.
     result = zeonta.cmf([11, 12], [9, 10], [11, 12], [100, 100], length=2)
@@ -98,3 +125,10 @@ def test_length_must_be_positive(func_name: str) -> None:
     func = getattr(zeonta, func_name)
     with pytest.raises(ValueError, match="must be >="):
         func([2.0] * 10, [1.0] * 10, [1.5] * 10, [100.0] * 10, length=0)
+
+
+@pytest.mark.parametrize("func_name", ["cmf", "mfi"])
+def test_rejects_negative_volume(func_name: str) -> None:
+    func = getattr(zeonta, func_name)
+    with pytest.raises(ValueError, match="'volume' must not contain negative values"):
+        func([2.0] * 10, [1.0] * 10, [1.5] * 10, [-100.0] * 10)

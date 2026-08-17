@@ -16,6 +16,7 @@ from ._core import (
     common_index,
     indicator,
     require_aligned_index,
+    require_non_negative,
     require_same_length,
     rolling_linreg,
     rolling_mean,
@@ -428,6 +429,12 @@ def relative_volume(volume: ArrayLike, length: int = 20) -> pd.DataFrame:
     pandas.DataFrame
         Columns ``VOLMA_{length}`` and ``RVOL_{length}``.
 
+    Raises
+    ------
+    ValueError
+        If ``volume`` contains a negative value, which has no meaning for a
+        traded quantity.
+
     Examples
     --------
     >>> import zeonta
@@ -441,6 +448,7 @@ def relative_volume(volume: ArrayLike, length: int = 20) -> pd.DataFrame:
     """
     length = validate_length(length)
     values = as_array(volume, "volume")
+    require_non_negative(volume=values)
     average = rolling_mean(values, length)
 
     with np.errstate(divide="ignore", invalid="ignore"):

@@ -287,6 +287,12 @@ def kama(close: ArrayLike, length: int = 10, fast: int = 2, slow: int = 30) -> p
     turns KAMA into an ordinary constant-alpha recursion — a useful sanity
     check on the formula.
 
+    A ``NaN`` inside ``close`` widens the warm-up locally (any window
+    touching it has an undefined Efficiency Ratio) but does not stop the
+    series recovering afterward: KAMA holds its last computed value across
+    the gap and resumes updating as soon as the window clears it, the same
+    convention :func:`ema` and Wilder-smoothed indicators use.
+
     Examples
     --------
     >>> import zeonta
@@ -324,9 +330,21 @@ def kama(close: ArrayLike, length: int = 10, fast: int = 2, slow: int = 30) -> p
     smoothing = (efficiency * (fast_sc - slow_sc) + slow_sc) ** 2
 
     result = np.full(size, np.nan, dtype="float64")
-    if size > length:
-        result[length] = values[length]
-        for i in range(length + 1, size):
-            result[i] = result[i - 1] + smoothing[i] * (values[i] - result[i - 1])
+    previous = np.nan
+    for i in range(length, size):
+        value = values[i]
+        smoothing_constant = smoothing[i]
+        valid = np.isfinite(value) and np.isfinite(smoothing_constant)
+        if not np.isfinite(previous):
+            # Not seeded yet: only a fully valid bar can start the recursion.
+            if valid:
+                previous = value
+                result[i] = previous
+            continue
+        if valid:
+            previous = previous + smoothing_constant * (value - previous)
+        # else: hold `previous` across the gap rather than letting a single
+        # NaN propagate forever, matching ema_values/wilder_values elsewhere.
+        result[i] = previous
 
     return wrap_series(result, common_index(close), f"KAMA_{length}_{fast}_{slow}")

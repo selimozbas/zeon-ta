@@ -37,6 +37,32 @@ renamed `source` to reflect that it now links to either kind of reference.
   `reference` (a full external URL) was added; registration requires exactly
   one of the two, enforced by `IndicatorSpec.__post_init__`.
 
+### Fixed
+
+- `parabolic_sar` now rejects `start > max_af`. Accepting it meant the
+  acceleration factor started above its own ceiling and immediately dropped
+  *down* to `max_af` on the first new extreme point — the opposite of the
+  documented "grows then holds" behaviour.
+- Negative volume is now rejected by `relative_volume`, `obv`, `cmf` and
+  `mfi`, matching the check `vwap` already had. Volume cannot be negative;
+  previously a bad feed produced a numerically valid but meaningless result
+  (e.g. negative volume nudging OBV the wrong way) instead of failing loudly.
+- **NaN-gap handling made consistent across the three recursive/cumulative
+  indicators added in this release:**
+  - `obv`: a single unknown close or volume no longer poisons every bar after
+    it via `cumsum`. A gap bar now contributes nothing (held flat), and the
+    bar where data resumes compares against the last *known* close rather
+    than the missing one.
+  - `kama`: a `NaN` inside `close` widens the local warm-up but the series
+    now recovers afterward — KAMA holds its last value across the gap and
+    resumes updating once the Efficiency Ratio window clears it, matching
+    the convention `ema`/Wilder-smoothed indicators already use.
+  - `parabolic_sar`: a bar with a missing `high`/`low` now produces a clean
+    `NaN` for that bar and leaves AF, the extreme point and trend direction
+    untouched, so the next valid bar continues correctly. Previously,
+    Python's built-in `min()`/`max()` silently ignore `NaN` in comparisons,
+    which could produce a wrong-but-finite SAR instead of surfacing the gap.
+
 ## [0.1.1] - 2026-08-17
 
 ### Fixed

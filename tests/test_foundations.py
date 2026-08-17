@@ -145,3 +145,8 @@ def test_relative_volume_matches_the_hand_computed_ratio() -> None:
 def test_relative_volume_is_undefined_when_nothing_traded() -> None:
     out = zeonta.relative_volume([0.0] * 25, length=20)
     assert out["RVOL_20"].isna().all()
+
+
+def test_relative_volume_rejects_negative_volume() -> None:
+    with pytest.raises(ValueError, match="'volume' must not contain negative values"):
+        zeonta.relative_volume([100.0, -1.0, 100.0], length=2)

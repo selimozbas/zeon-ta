@@ -20,6 +20,7 @@ from ._core import (
     common_index,
     first_full_window,
     indicator,
+    require_aligned_index,
     require_same_length,
     rolling_max,
     rolling_min,
@@ -96,6 +97,7 @@ def supertrend(
     length = validate_length(length)
     factor = validate_multiplier(multiplier)
 
+    require_aligned_index(high=high, low=low, close=close)
     high_values = as_array(high, "high")
     low_values = as_array(low, "low")
     close_values = as_array(close, "close")
@@ -207,6 +209,7 @@ def adx(
     https://ta.cognicode.org/learn/adx-dmi
     """
     length = validate_length(length)
+    require_aligned_index(high=high, low=low, close=close)
     high_values = as_array(high, "high")
     low_values = as_array(low, "low")
     close_values = as_array(close, "close")
@@ -289,7 +292,10 @@ def ichimoku(
         bar** — ``displacement`` rows of ``ISA``/``ISB`` that have no price to sit
         next to yet. It is returned separately rather than silently discarded,
         because that forward cloud is precisely what traders read for future
-        support and resistance.
+        support and resistance. When the input carries a ``DatetimeIndex`` with
+        a regular frequency, this frame's index continues as real future dates
+        (so it concatenates directly onto a date-indexed chart); otherwise it
+        falls back to a plain integer continuation of the input's length.
 
     Examples
     --------
@@ -308,6 +314,7 @@ def ichimoku(
     senkou = validate_length(senkou, "senkou")
     displacement = validate_length(displacement, "displacement")
 
+    require_aligned_index(high=high, low=low, close=close)
     high_values = as_array(high, "high")
     low_values = as_array(low, "low")
     close_values = as_array(close, "close")
@@ -350,15 +357,32 @@ def ichimoku(
         order=list(names),
     )
 
-    forward_index = (
-        pd.RangeIndex(size, size + span_a_forward.shape[0])
-        if index is None
-        else pd.RangeIndex(len(index), len(index) + span_a_forward.shape[0])
-    )
     forward_frame = pd.DataFrame(
-        {names[2]: span_a_forward, names[3]: span_b_forward}, index=forward_index
+        {names[2]: span_a_forward, names[3]: span_b_forward},
+        index=_forward_index(index, size, span_a_forward.shape[0]),
     )
     return visible_frame, forward_frame
+
+
+def _forward_index(index: pd.Index | None, size: int, count: int) -> pd.Index:
+    """Continue *index* for ``count`` more steps, for the part of the cloud that
+    projects beyond the last input bar.
+
+    ``size`` is the number of input bars, independent of whether an index was
+    given at all — a plain RangeIndex fallback must still start at ``size``,
+    not at 0.
+
+    A ``DatetimeIndex`` with a regular frequency continues as real future
+    dates, so the forward cloud can be concatenated onto a date-indexed chart
+    directly. Anything else (no index, or a frequency that cannot be inferred
+    from as few as two bars) falls back to a plain integer continuation.
+    """
+    if isinstance(index, pd.DatetimeIndex) and size >= 2:
+        freq = index.freq or pd.infer_freq(index)
+        if freq is not None:
+            start = index[-1] + pd.tseries.frequencies.to_offset(freq)
+            return pd.date_range(start=start, periods=count, freq=freq)
+    return pd.RangeIndex(size, size + count)
 
 
 @indicator(
@@ -401,6 +425,7 @@ def donchian(high: ArrayLike, low: ArrayLike, length: int = 20) -> pd.DataFrame:
     https://ta.cognicode.org/learn/donchian-channels
     """
     length = validate_length(length)
+    require_aligned_index(high=high, low=low)
     high_values = as_array(high, "high")
     low_values = as_array(low, "low")
     require_same_length(high=high_values, low=low_values)

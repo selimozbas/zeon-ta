@@ -76,6 +76,15 @@ def test_vwap_rejects_unknown_anchor(ohlcv: pd.DataFrame) -> None:
         zeonta.vwap(ohlcv["high"], ohlcv["low"], ohlcv["close"], ohlcv["volume"], anchor="weekly")
 
 
+def test_vwap_rejects_negative_volume(ohlcv: pd.DataFrame) -> None:
+    """Negative volume is nonsensical and would otherwise surface only as a
+    silent NaN once a window's net volume happened to cross zero."""
+    volume = ohlcv["volume"].copy()
+    volume.iloc[10] = -1.0
+    with pytest.raises(ValueError, match="'volume' must not contain negative values"):
+        zeonta.vwap(ohlcv["high"], ohlcv["low"], ohlcv["close"], volume)
+
+
 def test_fib_levels_sit_between_the_swing_extremes() -> None:
     out = zeonta.fib_retracement([1, 2, 3, 4, 5], [0, 1, 2, 3, 4], lookback=5)
     last = out.iloc[-1]

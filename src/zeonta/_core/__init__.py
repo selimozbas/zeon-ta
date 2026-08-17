@@ -16,6 +16,7 @@ from .types import ArrayLike, Number
 from .validation import (
     as_array,
     common_index,
+    require_aligned_index,
     require_same_length,
     validate_length,
     validate_multiplier,
@@ -37,6 +38,7 @@ __all__ = [
     "indicator",
     "iter_specs",
     "lesson_url",
+    "require_aligned_index",
     "require_same_length",
     "rolling_linreg",
     "rolling_max",

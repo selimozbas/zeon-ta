@@ -11,6 +11,7 @@ from zeonta._core import (
     common_index,
     ema_values,
     first_full_window,
+    require_aligned_index,
     rolling_linreg,
     rolling_max,
     rolling_mean,
@@ -77,6 +78,46 @@ class TestValidation:
     def test_wrap_series_rejects_a_mismatched_index(self) -> None:
         with pytest.raises(ValueError, match="does not match"):
             wrap_series(np.zeros(3), pd.RangeIndex(5), "X")
+
+
+class TestRequireAlignedIndex:
+    def test_passes_when_a_single_series_is_given(self) -> None:
+        require_aligned_index(close=pd.Series([1.0, 2.0]))  # must not raise
+
+    def test_passes_when_no_series_is_given(self) -> None:
+        require_aligned_index(close=[1.0, 2.0], high=np.array([1.0, 2.0]))
+
+    def test_passes_when_series_indices_match(self) -> None:
+        index = pd.RangeIndex(3)
+        require_aligned_index(
+            close=pd.Series([1.0, 2.0, 3.0], index=index),
+            high=pd.Series([1.0, 2.0, 3.0], index=index),
+        )
+
+    def test_passes_when_only_one_argument_is_a_series(self) -> None:
+        """A plain array carries no index, so it cannot disagree with anything."""
+        require_aligned_index(close=pd.Series([1.0, 2.0]), high=[9.0, 9.0])
+
+    def test_rejects_series_with_same_length_but_different_index(self) -> None:
+        with pytest.raises(ValueError, match="different indices"):
+            require_aligned_index(
+                close=pd.Series([1.0, 2.0], index=[0, 1]),
+                high=pd.Series([1.0, 2.0], index=[10, 11]),
+            )
+
+    def test_rejects_indices_that_differ_only_in_order(self) -> None:
+        with pytest.raises(ValueError, match="different indices"):
+            require_aligned_index(
+                close=pd.Series([1.0, 2.0], index=[0, 1]),
+                high=pd.Series([1.0, 2.0], index=[1, 0]),
+            )
+
+    def test_error_names_both_offending_arguments(self) -> None:
+        with pytest.raises(ValueError, match="'high' and 'close'"):
+            require_aligned_index(
+                close=pd.Series([1.0], index=[0]),
+                high=pd.Series([1.0], index=[9]),
+            )
 
 
 class TestRolling:

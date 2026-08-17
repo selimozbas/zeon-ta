@@ -6,8 +6,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-08-17
+
 ### Fixed
 
+- **Silent index misalignment across multi-input indicators.** Every indicator
+  taking more than one series (`high`/`low`/`close`/`volume`/`oscillator`) now
+  calls `require_aligned_index`, which raises `ValueError` when two or more
+  `pd.Series`/`pd.DataFrame` arguments have equal length but different
+  indices. Previously such inputs were combined purely by position — same
+  length, wrong pairing — with no signal that the result was meaningless.
+  Plain arrays and lists carry no index and are unaffected.
 - `trend_channel`: the channel bands now measure scatter about the fitted
   regression line (residual standard deviation), not about the window mean.
   The TA 101 lesson describes it this way too, but the initial implementation
@@ -19,6 +28,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   three inputs. The TA 101 lesson's wording, `Avg(HighestHigh, LowestLow,
   SMA)`, reads as the latter; the source site is a third-party reference, not
   authoritative, so this follows the canonical TTM Squeeze definition instead.
+- `vwap` now rejects negative `volume` with a clear `ValueError` instead of
+  producing a silent `NaN` once a window's net volume happened to cross zero.
+- `ichimoku`'s forward-projected cloud now continues as real future dates when
+  the input carries a `DatetimeIndex` with a regular frequency, instead of an
+  arbitrary integer offset — it concatenates directly onto a date-indexed
+  chart. Falls back to an integer `RangeIndex` when no such frequency exists.
+- `zeonta.__version__` is now read from installed package metadata instead of
+  being a second hardcoded literal that could drift out of sync with the
+  `version` in `pyproject.toml` (as it briefly did during this release).
 
 ## [0.1.0] - 2026-08-17
 
@@ -54,5 +72,6 @@ modules — as 25 registered indicator functions.
   `kc_multiplier` makes squeezes *more* frequent. The TA 101 quiz for that
   lesson asserts the opposite; the formula wins.
 
-[Unreleased]: https://github.com/selimozbas/zeon-ta/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/selimozbas/zeon-ta/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/selimozbas/zeon-ta/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/selimozbas/zeon-ta/releases/tag/v0.1.0

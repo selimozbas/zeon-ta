@@ -15,6 +15,7 @@ from ._core import (
     common_index,
     ema_values,
     indicator,
+    require_aligned_index,
     require_same_length,
     rolling_linreg,
     rolling_max,
@@ -65,6 +66,17 @@ def true_range(high: ArrayLike, low: ArrayLike, close: ArrayLike) -> pd.Series:
     pandas.Series
         Named ``TRUERANGE``. Never ``NaN`` for finite inputs.
 
+    Notes
+    -----
+    This assumes ordinary OHLC data (``low <= high`` on every bar). No such
+    check is performed: real feeds occasionally carry a bad tick, and rejecting
+    the whole call for one bad bar would be more disruptive than useful. A
+    violated bar simply produces a locally distorted (though not necessarily
+    negative) reading rather than raising — clean the input first if your data
+    source is not trustworthy. Every other volatility and trend indicator built
+    on true range (:func:`atr`, :func:`keltner`, :func:`squeeze`,
+    :func:`~zeonta.supertrend`, :func:`~zeonta.adx`) inherits this assumption.
+
     Examples
     --------
     >>> import zeonta
@@ -75,6 +87,7 @@ def true_range(high: ArrayLike, low: ArrayLike, close: ArrayLike) -> pd.Series:
     ----------
     https://ta.cognicode.org/learn/atr
     """
+    require_aligned_index(high=high, low=low, close=close)
     high_values = as_array(high, "high")
     low_values = as_array(low, "low")
     close_values = as_array(close, "close")
@@ -118,6 +131,7 @@ def atr(high: ArrayLike, low: ArrayLike, close: ArrayLike, length: int = 14) -> 
     https://ta.cognicode.org/learn/atr
     """
     length = validate_length(length)
+    require_aligned_index(high=high, low=low, close=close)
     high_values = as_array(high, "high")
     low_values = as_array(low, "low")
     close_values = as_array(close, "close")
@@ -257,6 +271,7 @@ def keltner(
     atr_length = validate_length(atr_length, "atr_length")
     factor = validate_multiplier(multiplier)
 
+    require_aligned_index(high=high, low=low, close=close)
     high_values = as_array(high, "high")
     low_values = as_array(low, "low")
     close_values = as_array(close, "close")
@@ -334,6 +349,7 @@ def squeeze(
     bb_factor = validate_multiplier(bb_std, "bb_std")
     kc_factor = validate_multiplier(kc_multiplier, "kc_multiplier")
 
+    require_aligned_index(high=high, low=low, close=close)
     high_values = as_array(high, "high")
     low_values = as_array(low, "low")
     close_values = as_array(close, "close")

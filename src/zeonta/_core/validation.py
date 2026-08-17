@@ -24,6 +24,7 @@ from .types import ArrayLike, Number
 __all__ = [
     "as_array",
     "common_index",
+    "require_aligned_index",
     "require_same_length",
     "validate_length",
     "validate_multiplier",
@@ -70,6 +71,33 @@ def common_index(*values: Any) -> pd.Index | None:
         if isinstance(value, (pd.Series, pd.DataFrame)):
             return value.index
     return None
+
+
+def require_aligned_index(**values: Any) -> None:
+    """Reject multiple ``pd.Series``/``pd.DataFrame`` inputs whose indices disagree.
+
+    Two same-length Series pulled from different date ranges (or otherwise
+    unaligned) would otherwise be combined purely by position — same length,
+    wrong pairing — with nothing to signal that the result is meaningless.
+    Plain arrays and lists carry no index, so they are exempt; only pandas
+    objects are compared, and only when more than one is present.
+    """
+    indices = {
+        name: value.index
+        for name, value in values.items()
+        if isinstance(value, (pd.Series, pd.DataFrame))
+    }
+    if len(indices) < 2:
+        return
+    names = list(indices)
+    reference_name, reference = names[0], indices[names[0]]
+    for name in names[1:]:
+        if not indices[name].equals(reference):
+            raise ValueError(
+                f"{name!r} and {reference_name!r} have different indices; "
+                "inputs must share the same index (e.g. select columns from one "
+                "DataFrame, or call .reindex()/.align() first)"
+            )
 
 
 def require_same_length(**arrays: np.ndarray) -> int:

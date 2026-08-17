@@ -131,8 +131,29 @@ def test_ichimoku_forward_cloud_continues_past_the_last_bar(ohlcv: pd.DataFrame)
     """The projected cloud must be returned, not silently dropped."""
     _, forward = zeonta.ichimoku(ohlcv["high"], ohlcv["low"], ohlcv["close"])
     assert list(forward.columns) == ["ISA_9_26", "ISB_52"]
-    assert forward.index[0] == len(ohlcv)
+    assert len(forward) == 26
     assert forward.notna().all().all()
+
+
+def test_ichimoku_forward_cloud_continues_real_dates_on_a_datetime_index(
+    ohlcv: pd.DataFrame,
+) -> None:
+    """A regularly spaced DatetimeIndex should project as real future dates,
+    not an arbitrary integer offset, so it concatenates onto a date chart."""
+    _, forward = zeonta.ichimoku(ohlcv["high"], ohlcv["low"], ohlcv["close"])
+    assert isinstance(forward.index, pd.DatetimeIndex)
+    assert forward.index[0] == ohlcv.index[-1] + pd.Timedelta(days=1)
+    assert (forward.index.to_series().diff().dropna() == pd.Timedelta(days=1)).all()
+
+
+def test_ichimoku_forward_cloud_falls_back_to_integers_without_a_datetime_index() -> None:
+    """No index (or a non-DatetimeIndex) must not crash; it degrades to a
+    plain integer continuation of the input's length."""
+    prices = [float(i) for i in range(1, 120)]
+    _, forward = zeonta.ichimoku(prices, [p - 1 for p in prices], prices)
+    assert isinstance(forward.index, pd.RangeIndex)
+    assert forward.index[0] == len(prices)
+    assert len(forward) == 26
 
 
 def test_ichimoku_chikou_is_shifted_backward(ohlcv: pd.DataFrame) -> None:

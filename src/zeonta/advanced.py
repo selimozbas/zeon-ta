@@ -17,6 +17,7 @@ from ._core import (
     as_array,
     common_index,
     indicator,
+    require_aligned_index,
     require_same_length,
     rolling_sum,
     validate_length,
@@ -85,7 +86,10 @@ def vwap(
     ValueError
         If ``anchor="session"`` but the inputs carry no ``DatetimeIndex`` to
         derive session boundaries from. Pass a ``pd.Series`` with a
-        ``DatetimeIndex``, or switch to ``anchor="rolling"``.
+        ``DatetimeIndex``, or switch to ``anchor="rolling"``. Also raised if
+        ``volume`` contains negative values, which have no meaning for a
+        volume-weighted average and would otherwise surface only as a silent
+        ``NaN`` once a window's net volume happened to cross zero.
 
     Examples
     --------
@@ -106,11 +110,14 @@ def vwap(
     length = validate_length(length)
     factor = validate_multiplier(std, "std")
 
+    require_aligned_index(high=high, low=low, close=close, volume=volume)
     high_values = as_array(high, "high")
     low_values = as_array(low, "low")
     close_values = as_array(close, "close")
     volume_values = as_array(volume, "volume")
     require_same_length(high=high_values, low=low_values, close=close_values, volume=volume_values)
+    if np.any(volume_values < 0.0):
+        raise ValueError("'volume' must not contain negative values")
 
     index = common_index(high, low, close, volume)
     typical = (high_values + low_values + close_values) / 3.0
@@ -206,6 +213,7 @@ def fib_retracement(
     if not all_ratios:
         raise ValueError("'ratios' must not be empty")
 
+    require_aligned_index(high=high, low=low)
     high_values = as_array(high, "high")
     low_values = as_array(low, "low")
     size = require_same_length(high=high_values, low=low_values)
@@ -297,6 +305,7 @@ def pivot_points(
     if kind not in ("classic", "fibonacci"):
         raise ValueError(f"'kind' must be 'classic' or 'fibonacci', got {kind!r}")
 
+    require_aligned_index(high=high, low=low, close=close)
     high_values = as_array(high, "high")
     low_values = as_array(low, "low")
     close_values = as_array(close, "close")
@@ -402,6 +411,7 @@ def divergence(
     right = validate_length(right, "right")
     osc_length = validate_length(osc_length, "osc_length")
 
+    require_aligned_index(high=high, low=low, close=close)
     high_values = as_array(high, "high")
     low_values = as_array(low, "low")
     close_values = as_array(close, "close")
@@ -410,6 +420,7 @@ def divergence(
     if oscillator is None:
         osc_values = rsi(close_values, length=osc_length).to_numpy()
     else:
+        require_aligned_index(close=close, oscillator=oscillator)
         osc_values = as_array(oscillator, "oscillator")
         require_same_length(close=close_values, oscillator=osc_values)
 

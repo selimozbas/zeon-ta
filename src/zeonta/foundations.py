@@ -15,6 +15,7 @@ from ._core import (
     as_array,
     common_index,
     indicator,
+    require_aligned_index,
     require_same_length,
     rolling_linreg,
     rolling_mean,
@@ -111,6 +112,7 @@ def candles(
     threshold = validate_multiplier(doji_threshold, "doji_threshold")
     ratio = validate_multiplier(hammer_ratio, "hammer_ratio")
 
+    require_aligned_index(open=open, high=high, low=low, close=close)
     open_values = as_array(open, "open")
     high_values = as_array(high, "high")
     low_values = as_array(low, "low")
@@ -220,6 +222,7 @@ def support_resistance(
     left = validate_length(left, "left")
     right = validate_length(right, "right")
 
+    require_aligned_index(high=high, low=low)
     high_values = as_array(high, "high")
     low_values = as_array(low, "low")
     size = require_same_length(high=high_values, low=low_values)
@@ -303,6 +306,7 @@ def sr_levels(
     max_levels = validate_length(max_levels, "max_levels")
     tolerance = validate_multiplier(tolerance, "tolerance")
 
+    require_aligned_index(high=high, low=low)
     high_values = as_array(high, "high")
     low_values = as_array(low, "low")
     require_same_length(high=high_values, low=low_values)

@@ -62,9 +62,9 @@ zeonta.ichimoku(df['high'], df['low'], df['close'])[1].head(2)
 ```
 
 ```text
-      ISA_9_26    ISB_52
-300  91.869125  92.79215
-301  91.869125  92.79215
+             ISA_9_26    ISB_52
+2024-10-28  91.869125  92.79215
+2024-10-29  91.869125  92.79215
 ```
 
 **Accessor form:** `df.zta.ichimoku(...)`

@@ -21,6 +21,9 @@ each function's docstring links to the lesson it implements.
 
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _installed_version
+
 import pandas as pd
 
 from . import accessor as _accessor  # noqa: F401  (registers the .zta accessor)
@@ -39,7 +42,13 @@ from .oscillators import cci, macd, rsi, stoch
 from .trend import adx, donchian, ichimoku, supertrend
 from .volatility import atr, bbands, keltner, squeeze, true_range
 
-__version__ = "0.1.0"
+try:
+    # Single source of truth: read back the version hatchling wrote into the
+    # installed package's metadata, rather than duplicating pyproject.toml's
+    # `version` as a second literal that can silently drift out of sync.
+    __version__ = _installed_version("zeon-ta")
+except PackageNotFoundError:  # pragma: no cover - only when run from source, unbuilt
+    __version__ = "0.0.0+unknown"
 
 __all__ = [
     "FIB_EXTENSIONS",

@@ -105,6 +105,22 @@ def test_mismatched_lengths_are_rejected(spec: IndicatorSpec, ohlcv: pd.DataFram
         spec.func(*series)
 
 
+def test_misaligned_series_indices_are_rejected(spec: IndicatorSpec, ohlcv: pd.DataFrame) -> None:
+    """Same-length Series from different date ranges must not be combined positionally.
+
+    Two Series can have identical length while covering entirely different
+    periods; without an explicit check they would silently line up bar N with
+    bar N regardless of what date each one actually is.
+    """
+    if len(spec.inputs) < 2:
+        pytest.skip("single-input indicator has nothing to misalign")
+    series = [ohlcv[field] for field in spec.inputs]
+    shifted_index = pd.RangeIndex(1000, 1000 + len(ohlcv))
+    series[-1] = series[-1].set_axis(shifted_index)
+    with pytest.raises(ValueError, match="different indices"):
+        spec.func(*series)
+
+
 def test_list_indicators_matches_registry() -> None:
     table = zeonta.list_indicators()
     assert list(table["name"]) == [spec.name for spec in iter_specs()]

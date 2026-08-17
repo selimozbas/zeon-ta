@@ -14,6 +14,7 @@ from ._core import (
     common_index,
     ema_values,
     indicator,
+    require_aligned_index,
     require_same_length,
     rolling_max,
     rolling_mean,
@@ -144,6 +145,7 @@ def stoch(
     smooth_k = validate_length(smooth_k, "smooth_k")
     smooth_d = validate_length(smooth_d, "smooth_d")
 
+    require_aligned_index(high=high, low=low, close=close)
     high_values = as_array(high, "high")
     low_values = as_array(low, "low")
     close_values = as_array(close, "close")
@@ -280,6 +282,7 @@ def cci(
     if constant <= 0:
         raise ValueError(f"'constant' must be > 0, got {constant}")
 
+    require_aligned_index(high=high, low=low, close=close)
     high_values = as_array(high, "high")
     low_values = as_array(low, "low")
     close_values = as_array(close, "close")

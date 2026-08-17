@@ -326,7 +326,7 @@ files drift.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+GPL-3.0-or-later — see [LICENSE](LICENSE).
 """,
     "tr": """# zeon-ta
 
@@ -418,7 +418,7 @@ başarısız olur.
 
 ## Lisans
 
-MIT — bkz. [LICENSE](LICENSE).
+GPL-3.0-or-later — bkz. [LICENSE](LICENSE).
 """,
 }
 

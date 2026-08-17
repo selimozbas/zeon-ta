@@ -153,4 +153,4 @@ başarısız olur.
 
 ## Lisans
 
-MIT — bkz. [LICENSE](LICENSE).
+GPL-3.0-or-later — bkz. [LICENSE](LICENSE).

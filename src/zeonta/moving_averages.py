@@ -23,11 +23,12 @@ from ._core import (
     rolling_sum,
     rolling_wma,
     validate_length,
+    wilder_values,
     wrap_frame,
     wrap_series,
 )
 
-__all__ = ["dema", "ema", "ema_ribbon", "hma", "kama", "ma_cross", "sma", "tema", "wma"]
+__all__ = ["dema", "ema", "ema_ribbon", "hma", "kama", "ma_cross", "sma", "smma", "tema", "wma"]
 
 
 @indicator(
@@ -107,6 +108,61 @@ def wma(close: ArrayLike, length: int = 20) -> pd.Series:
     length = validate_length(length)
     values = as_array(close, "close")
     return wrap_series(rolling_wma(values, length), common_index(close), f"WMA_{length}")
+
+
+@indicator(
+    category="moving_averages",
+    summary="Wilder's exponential smoothing, exposed as its own moving average.",
+    reference="https://www.tradingview.com/support/solutions/43000591343-smoothed-moving-average/",
+    outputs=("SMMA",),
+)
+def smma(close: ArrayLike, length: int = 9) -> pd.Series:
+    """Smoothed Moving Average (SMMA), also called Wilder's Moving Average or RMA.
+
+    ``SMMA[t] = SMMA[t-1] + (Close[t] - SMMA[t-1]) / n``, seeded by the plain
+    SMA of the first ``n`` bars — the exact recursion J. Welles Wilder used
+    throughout *New Concepts in Technical Trading Systems* (1978) for
+    :func:`~zeonta.rsi`, :func:`~zeonta.atr` and :func:`~zeonta.adx`, exposed
+    here as a standalone line rather than buried inside those. Algebraically
+    identical to :func:`ema` with ``alpha = 1/n`` instead of ``2/(n+1)``, so
+    it reacts more slowly than an EMA of the same length and never fully
+    forgets old prices — every bar since warm-up still carries a sliver of
+    weight, unlike :func:`wma`'s hard cutoff at the edge of its window.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Smoothing period. Must be >= 1.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``SMMA_{length}``. The first ``length - 1`` bars are ``NaN``.
+
+    Notes
+    -----
+    Neither StockCharts nor Wikipedia document SMMA as its own named
+    indicator (it appears only embedded inside RSI/ATR/ADX); the default
+    length here follows TradingView's own dedicated Smoothed Moving Average
+    page, which states 9. The recursion itself was independently confirmed
+    against MetaTrader's MQL5 documentation, which states the identical seed
+    and step.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> zeonta.smma([1, 2, 3, 4, 5], length=3).tolist()
+    [nan, nan, 2.0, 2.666666666666667, 3.4444444444444446]
+
+    References
+    ----------
+    https://www.tradingview.com/support/solutions/43000591343-smoothed-moving-average/
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+    return wrap_series(wilder_values(values, length), common_index(close), f"SMMA_{length}")
 
 
 @indicator(

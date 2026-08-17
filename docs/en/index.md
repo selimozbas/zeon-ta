@@ -24,6 +24,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`kama`](indicators/kama.md) | Kaufman's Adaptive Moving Average (KAMA) |
 | [`ma_cross`](indicators/ma_cross.md) | Moving Average Crossovers |
 | [`sma`](indicators/sma.md) | Simple Moving Average (SMA) |
+| [`smma`](indicators/smma.md) | Smoothed Moving Average (SMMA) |
 | [`tema`](indicators/tema.md) | Triple Exponential Moving Average (TEMA) |
 | [`wma`](indicators/wma.md) | Weighted Moving Average (WMA) |
 

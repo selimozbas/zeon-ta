@@ -8,6 +8,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Moving averages** — `smma` (Smoothed Moving Average, a.k.a. Wilder's
+  Moving Average / RMA): the exact recursion already used inside `rsi`,
+  `atr` and `adx`, exposed as its own standalone line. Neither StockCharts
+  nor Wikipedia document it as a named indicator on its own; the default
+  length (9) follows TradingView's dedicated Smoothed Moving Average page
+  rather than Wilder's own 14 (used for RSI/ATR/ADX), since no single
+  source states a canonical standalone default. The recursion was
+  independently confirmed against MetaTrader's MQL5 documentation.
 - Five new registry-wide contract tests in `tests/test_contracts.py`, applied
   automatically to every indicator: a single missing OHLCV bar must raise no
   warnings and must not stay `NaN` forever once enough clean bars follow it

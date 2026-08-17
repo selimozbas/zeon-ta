@@ -39,7 +39,7 @@ from .advanced import (
     vwap,
 )
 from .foundations import candles, relative_volume, sr_levels, support_resistance, trend_channel
-from .moving_averages import dema, ema, ema_ribbon, hma, kama, ma_cross, sma, tema, wma
+from .moving_averages import dema, ema, ema_ribbon, hma, kama, ma_cross, sma, smma, tema, wma
 from .oscillators import (
     awesome_oscillator,
     cci,
@@ -114,6 +114,7 @@ __all__ = [
     "roc",
     "rsi",
     "sma",
+    "smma",
     "squeeze",
     "sr_levels",
     "stoch",

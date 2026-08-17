@@ -1698,6 +1698,68 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.wma(df["close"], length=20).tail(3),
         ],
     },
+    "smma": {
+        "title_en": "Smoothed Moving Average (SMMA)",
+        "title_tr": "Düzeltilmiş Hareketli Ortalama (SMMA)",
+        "formula_en": (
+            "SMMA[t] = SMMA[t-1] + (Close[t] - SMMA[t-1]) / n, seeded by the plain SMA of the "
+            "first n bars"
+        ),
+        "formula_tr": (
+            "SMMA[t] = SMMA[t-1] + (Kapanış[t] - SMMA[t-1]) / n, ilk n barın düz SMA'sıyla tohumlanır"
+        ),
+        "about_en": (
+            "The exact recursion J. Welles Wilder used throughout *New Concepts in Technical "
+            "Trading Systems* (1978) for `rsi`, `atr` and `adx`, exposed here as its own line "
+            "instead of staying buried inside those three. Algebraically identical to `ema` with "
+            "`alpha = 1/n` instead of `2/(n+1)` — the same shape of formula, just a gentler "
+            "smoothing constant, which is why Wilder's tools all feel a step calmer than a plain "
+            "EMA-based equivalent at the same length."
+        ),
+        "about_tr": (
+            "J. Welles Wilder'ın *New Concepts in Technical Trading Systems* (1978) kitabında "
+            "`rsi`, `atr` ve `adx` boyunca kullandığı tam recursion, burada bu üçünün içinde gömülü "
+            "kalmak yerine kendi başına bir çizgi olarak sunuluyor. `ema`'ya cebirsel olarak "
+            "özdeştir, sadece `alpha = 2/(n+1)` yerine `alpha = 1/n` kullanır — aynı formül şekli, "
+            "yalnızca daha yumuşak bir düzeltme sabiti; Wilder'ın araçlarının aynı uzunluktaki düz "
+            "bir EMA eşdeğerinden bir tık daha sakin hissettirmesinin nedeni budur."
+        ),
+        "reading_en": (
+            "Read it like any other moving average — trend direction, dynamic support/resistance "
+            "— but expect it to lag noticeably more than an EMA of the same stated length, since "
+            "`alpha=1/n` is always smaller than EMA's `2/(n+1)` for any n > 1. It also never fully "
+            "forgets old prices the way `wma`'s hard window edge does; every bar since warm-up "
+            "still carries a shrinking sliver of weight."
+        ),
+        "reading_tr": (
+            "Diğer hareketli ortalamalar gibi okuyun — trend yönü, dinamik destek/direnç — ama "
+            "aynı belirtilen uzunluktaki bir EMA'dan belirgin biçimde daha fazla gecikmesini "
+            "bekleyin, çünkü `alpha=1/n` her zaman EMA'nın `2/(n+1)` değerinden küçüktür (n>1 "
+            "için). Ayrıca `wma`'nın pencere kenarındaki sert kesintisinin aksine eski fiyatları "
+            "hiçbir zaman tam olarak unutmaz; ısınmadan sonraki her bar küçülen bir ağırlık payı "
+            "taşımaya devam eder."
+        ),
+        "pitfalls_en": (
+            "Neither StockCharts nor Wikipedia document SMMA as its own named indicator — it "
+            "appears only embedded inside RSI/ATR/ADX on those sites. The default length here "
+            "(9) follows TradingView's own dedicated Smoothed Moving Average page rather than "
+            "Wilder's own convention of 14 used for RSI/ATR/ADX, since no single source states a "
+            "canonical default for SMMA as a standalone indicator; the recursion itself was "
+            "independently confirmed against MetaTrader's MQL5 documentation."
+        ),
+        "pitfalls_tr": (
+            "Ne StockCharts ne de Wikipedia SMMA'yı kendi başına adlandırılmış bir indikatör "
+            "olarak belgeler — bu sitelerde yalnızca RSI/ATR/ADX'in içine gömülü olarak görünür. "
+            "Buradaki varsayılan uzunluk (9), Wilder'ın RSI/ATR/ADX için kullandığı 14 kuralı "
+            "yerine TradingView'in kendi özel Smoothed Moving Average sayfasını izler, çünkü tek "
+            "başına bir indikatör olarak SMMA için kanonik bir varsayılan belirten tek bir kaynak "
+            "yoktur; recursion'un kendisi MetaTrader'ın MQL5 dokümantasyonuna karşı bağımsız "
+            "olarak doğrulanmıştır."
+        ),
+        "example": [
+            lambda df: zeonta.smma(df["close"], length=9).tail(3),
+        ],
+    },
     "dema": {
         "title_en": "Double Exponential Moving Average (DEMA)",
         "title_tr": "Çift Üssel Hareketli Ortalama (DEMA)",

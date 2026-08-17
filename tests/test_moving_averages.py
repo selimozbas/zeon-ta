@@ -56,6 +56,49 @@ def test_wma_weighs_recent_bars_more_than_sma_does() -> None:
     assert wma_value > sma_value
 
 
+def test_smma_seed_is_the_sma_then_wilder_recursion() -> None:
+    # Seed at bar 2 = mean(1,2,3) = 2.0. alpha = 1/3.
+    # bar 3: 2.0 + (4-2.0)/3 = 2.6666...; bar 4: 2.6666... + (5-2.6666...)/3 = 3.4444...
+    result = zeonta.smma([1, 2, 3, 4, 5], length=3)
+    assert result.name == "SMMA_3"
+    assert np.isnan(result.iloc[0]) and np.isnan(result.iloc[1])
+    np.testing.assert_allclose(result.iloc[2:], [2.0, 8 / 3, 31 / 9])
+
+
+def test_smma_of_one_is_the_input() -> None:
+    values = [3.0, 1.0, 4.0, 1.0, 5.0]
+    np.testing.assert_allclose(zeonta.smma(values, length=1).to_numpy(), values)
+
+
+def test_smma_warmup_is_exactly_length_minus_one() -> None:
+    result = zeonta.smma(list(range(20)), length=7)
+    assert int(result.isna().sum()) == 6
+
+
+def test_smma_is_exact_on_a_flat_series() -> None:
+    np.testing.assert_allclose(zeonta.smma([7.0] * 20, length=5).dropna().to_numpy(), 7.0)
+
+
+def test_smma_matches_wilder_values_directly() -> None:
+    """SMMA is Wilder's smoothing exposed as its own indicator — it must
+    agree exactly with the recursion already used inside rsi()/atr()/adx()."""
+    from zeonta._core.smoothing import wilder_values
+
+    values = np.array([10.0, 11.0, 10.5, 12.0, 11.5, 13.0, 12.5, 14.0])
+    np.testing.assert_allclose(
+        zeonta.smma(values, length=4).to_numpy(), wilder_values(values, 4), equal_nan=True
+    )
+
+
+def test_smma_reacts_slower_than_ema_of_the_same_length() -> None:
+    """alpha=1/n (SMMA) is smaller than alpha=2/(n+1) (EMA) for any n > 1,
+    so a late jump moves SMMA less than it moves EMA at the same length."""
+    prices = [10.0] * 19 + [20.0]
+    smma_value = zeonta.smma(prices, length=10).iloc[-1]
+    ema_value = zeonta.ema(prices, length=10).iloc[-1]
+    assert smma_value < ema_value
+
+
 def test_ema_seed_is_the_sma_then_recursion() -> None:
     # k = 2/(3+1) = 0.5. Seed at bar 2 = mean(1,2,3) = 2.
     # bar 3 = 0.5*4 + 0.5*2 = 3.0 ; bar 4 = 0.5*5 + 0.5*3 = 4.0

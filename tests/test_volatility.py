@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -20,6 +22,22 @@ def test_true_range_captures_a_gap_that_high_minus_low_misses() -> None:
     """A gap up leaves a narrow bar whose true range is still large."""
     result = zeonta.true_range([10, 20], [9, 19], [9.5, 19.5])
     assert result.iloc[1] == pytest.approx(20 - 9.5)
+
+
+def test_true_range_a_fully_missing_bar_is_nan_without_warning() -> None:
+    """A bar with both high and low missing makes every one of the three
+    measures NaN; `np.nanmax` over an all-NaN slice is correct but noisy —
+    the value must still be NaN, and no RuntimeWarning should reach the
+    caller's logs for what is an entirely expected case."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", category=RuntimeWarning)
+        result = zeonta.true_range(
+            [10.0, 12.0, np.nan, 13.0],
+            [8.0, 11.0, np.nan, 12.0],
+            [9.0, 11.5, np.nan, 12.5],
+        )
+    assert np.isnan(result.iloc[2])
+    assert not result.iloc[[0, 1, 3]].isna().any()
 
 
 def test_atr_seed_is_the_average_of_the_first_true_ranges() -> None:

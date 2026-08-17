@@ -334,6 +334,29 @@ def test_aroon_rejects_non_positive_length() -> None:
         zeonta.aroon([1.0, 2.0, 3.0], [0.0, 1.0, 2.0], length=0)
 
 
+def test_aroon_is_nan_while_a_gap_bar_sits_inside_the_window() -> None:
+    """argmax/argmin have no real concept of NaN: a NaN in the window
+    compares False against every other value, so it is silently treated as
+    the running extreme instead of being excluded — producing a
+    finite-looking but meaningless "days since" figure. Every window that
+    has not fully aged the gap out must be NaN instead."""
+    high = [1.0, 2.0, 5.0, np.nan, 1.0, 3.0, 2.0]
+    low = [0.0, 1.0, 4.0, np.nan, 0.0, 2.0, 1.0]
+    out = zeonta.aroon(high, low, length=4)
+    # window = length + 1 = 5 bars; the gap at index 3 is inside every
+    # window through index 7, all of which are out of range for this
+    # 7-bar input, so the whole tail after warm-up must stay NaN.
+    assert out.iloc[4:].isna().all().all()
+
+
+def test_aroon_recovers_once_the_gap_bar_ages_out_of_the_window() -> None:
+    high = [1.0, 2.0, 5.0, np.nan, 1.0, 3.0, 2.0, 4.0, 3.0]
+    low = [0.0, 1.0, 4.0, np.nan, 0.0, 2.0, 1.0, 3.0, 2.0]
+    out = zeonta.aroon(high, low, length=4)
+    # window at index 8 covers indices 4..8, clear of the index-3 gap.
+    assert out.iloc[8].notna().all()
+
+
 def test_chandelier_exit_long_is_highest_high_minus_multiplier_times_atr(
     ohlcv: pd.DataFrame,
 ) -> None:

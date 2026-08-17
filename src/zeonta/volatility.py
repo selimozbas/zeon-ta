@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 import pandas as pd
 
@@ -35,8 +37,13 @@ def _true_range_values(high: np.ndarray, low: np.ndarray, close: np.ndarray) -> 
     high_low = high - low
     high_close = np.abs(high - previous_close)
     low_close = np.abs(low - previous_close)
-    result = np.nanmax(np.vstack([high_low, high_close, low_close]), axis=0)
-    # nanmax over an all-NaN column would warn; bar 0 is the only such case.
+    # A bar whose high and low are both missing has all three measures NaN,
+    # which makes nanmax warn "All-NaN slice encountered" even though NaN is
+    # exactly the right answer there (not just bar 0, which is why this is
+    # suppressed rather than special-cased for one index).
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message="All-NaN slice encountered")
+        result = np.nanmax(np.vstack([high_low, high_close, low_close]), axis=0)
     result[0] = high_low[0]
     return result
 

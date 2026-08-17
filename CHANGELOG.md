@@ -94,6 +94,16 @@ that cite one and `None` for the rest.
   every bar after it, contradicting both `adl`'s own "Never NaN" docstring
   promise and the gap-handling convention `obv` already followed. A gap bar's
   contribution is now `0`, same as `obv`.
+- `aroon` no longer produces a finite-looking but meaningless result when a
+  `NaN` sits inside its look-back window. `argmax`/`argmin` have no real
+  concept of `NaN` (comparisons against it are always `False`), so a window
+  containing a gap was silently treated as if the gap were the extreme value
+  instead of being excluded. Every window that has not fully aged the gap out
+  is now `NaN`, as it should be.
+- `true_range` no longer emits a `RuntimeWarning: All-NaN slice encountered`
+  for a bar whose `high` and `low` are both missing. The resulting value was
+  already correctly `NaN`; only the warning (which polluted callers' logs)
+  is suppressed, and only for this specific, expected case.
 - **NaN-gap handling made consistent across the three recursive/cumulative
   indicators added in this release:**
   - `obv`: a single unknown close or volume no longer poisons every bar after

@@ -681,8 +681,16 @@ def aroon(high: ArrayLike, low: ArrayLike, length: int = 25) -> pd.DataFrame:
         recent_low = sliding_window_view(low_values, window)[:, ::-1]
         days_since_high = np.argmax(recent_high, axis=1)
         days_since_low = np.argmin(recent_low, axis=1)
-        up[window - 1 :] = (length - days_since_high) / length * 100.0
-        down[window - 1 :] = (length - days_since_low) / length * 100.0
+        window_up = (length - days_since_high) / length * 100.0
+        window_down = (length - days_since_low) / length * 100.0
+        # argmax/argmin have no real notion of NaN: a NaN in the window
+        # compares False against everything, so it is silently treated as
+        # the running max/min instead of being excluded, producing a
+        # finite-looking "days since" that is not actually meaningful.
+        # A window that has not fully cleared a missing high/low is NaN.
+        incomplete = np.isnan(recent_high).any(axis=1) | np.isnan(recent_low).any(axis=1)
+        up[window - 1 :] = np.where(incomplete, np.nan, window_up)
+        down[window - 1 :] = np.where(incomplete, np.nan, window_down)
 
     order = [f"AROONU_{length}", f"AROOND_{length}", f"AROONOSC_{length}"]
     return wrap_frame(

@@ -67,18 +67,28 @@ src = ["src", "tests"]
 extend-exclude = ["docs", "README.md", "README.tr.md"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "RUF"]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "RUF", "D"]
 ignore = [
     "N803",    # finance conventions: K, D, TR as argument names
     "N806",    # ...and as local variable names
     "RUF001",  # Turkish prose legitimately contains non-ASCII look-alikes
     "RUF002",
     "RUF003",
+    "D105",    # magic methods (__getattr__, __dir__, ...) are self-explanatory
+    "D107",    # __init__ documented by its class docstring instead (PEP 257 permits either)
+    "D401",    # every indicator's docstring opens with the indicator's own name
+               # ("Simple Moving Average.", "True Range...") to match how it's referred
+               # to everywhere else (README, docs, tests) - imperative mood would fight
+               # that established, deliberate convention rather than improve it
 ]
 
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["E501"]
-"tools/docs_content.py" = ["E501"]  # long prose strings read better unwrapped
+"tests/*" = ["E501", "D"]                    # test names are the documentation
+"tools/docs_content.py" = ["E501", "D"]      # long prose strings; internal build content
+"tools/gen_docs.py" = ["D"]                  # internal build script, not public API
 
 [tool.mypy]
 python_version = "3.12"

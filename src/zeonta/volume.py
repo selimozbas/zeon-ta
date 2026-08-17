@@ -1,5 +1,7 @@
-"""Volume-based indicators: On-Balance Volume, Accumulation/Distribution Line,
-Chaikin Money Flow, Money Flow Index.
+"""Volume-based indicators.
+
+On-Balance Volume, Accumulation/Distribution Line, Chaikin Money Flow, Money
+Flow Index, and the Chaikin Oscillator.
 
 Each function's own ``References`` section cites the external source its
 formula was verified against. These sit apart from :func:`zeonta.relative_volume`
@@ -32,8 +34,10 @@ __all__ = ["adl", "chaikin_oscillator", "cmf", "mfi", "obv"]
 
 
 def _money_flow_multiplier(high: np.ndarray, low: np.ndarray, close: np.ndarray) -> np.ndarray:
-    """``((Close-Low)-(High-Close))/(High-Low)``, ``+1`` at the high, ``-1`` at
-    the low; a zero-range bar carries no information and is treated as ``0``.
+    """Money Flow Multiplier: ``((Close-Low)-(High-Close))/(High-Low)``.
+
+    ``+1`` at the high, ``-1`` at the low; a zero-range bar carries no
+    information and is treated as ``0``.
     """
     span = high - low
     with np.errstate(divide="ignore", invalid="ignore"):
@@ -44,11 +48,11 @@ def _money_flow_multiplier(high: np.ndarray, low: np.ndarray, close: np.ndarray)
 def _adl_values(
     high: np.ndarray, low: np.ndarray, close: np.ndarray, volume: np.ndarray
 ) -> np.ndarray:
-    """Cumulative Money Flow Volume — the shared core of :func:`adl` and
-    :func:`chaikin_oscillator`. A bar with an unknown high, low, close or
-    volume contributes nothing to the running total rather than corrupting
-    every bar after it via ``NaN`` propagating through ``cumsum``, the same
-    convention :func:`obv` uses.
+    """Cumulative Money Flow Volume — the shared core of :func:`adl` and :func:`chaikin_oscillator`.
+
+    A bar with an unknown high, low, close or volume contributes nothing to
+    the running total rather than corrupting every bar after it via ``NaN``
+    propagating through ``cumsum``, the same convention :func:`obv` uses.
     """
     money_flow_volume = _money_flow_multiplier(high, low, close) * volume
     money_flow_volume = np.where(np.isfinite(money_flow_volume), money_flow_volume, 0.0)

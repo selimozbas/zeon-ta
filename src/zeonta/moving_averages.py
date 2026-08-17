@@ -1,5 +1,4 @@
-"""Moving averages: SMA, EMA, WMA, DEMA, TEMA, HMA, crossovers, the EMA
-ribbon, and KAMA.
+"""Moving averages: SMA, EMA, SMMA, WMA, DEMA, TEMA, HMA, crossovers, the EMA ribbon, and KAMA.
 
 KAMA, HMA, DEMA and TEMA additionally cite the external source their formula
 was verified against; see each one's own ``References`` section.

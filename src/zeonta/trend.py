@@ -366,9 +366,9 @@ def ichimoku(
 
 
 def _forward_index(index: pd.Index | None, size: int, count: int) -> pd.Index:
-    """Continue *index* for ``count`` more steps, for the part of the cloud that
-    projects beyond the last input bar.
+    """Continue *index* for ``count`` more steps.
 
+    Used for the part of the cloud that projects beyond the last input bar.
     ``size`` is the number of input bars, independent of whether an index was
     given at all — a plain RangeIndex fallback must still start at ``size``,
     not at 0.

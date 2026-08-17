@@ -68,9 +68,11 @@ def multi_line_output(df: pd.DataFrame) -> None:
 
 
 def discovery() -> None:
-    """list_indicators() enumerates every registered indicator with its inputs,
-    parameters, output columns, and — for the minority that cite one — the
-    external source its formula was verified against."""
+    """List every registered indicator with its inputs, parameters and outputs.
+
+    Also shows, for the minority that cite one, the external source its
+    formula was verified against.
+    """
     print("\n--- Discovery ---")
 
     table = zeonta.list_indicators()
@@ -82,6 +84,7 @@ def discovery() -> None:
 
 
 def main() -> None:
+    """Run every section in turn against the same loaded fixture."""
     df = load_ohlcv()
     print(f"Loaded {len(df)} bars from {DATA.name}, {df.index[0].date()} to {df.index[-1].date()}")
 

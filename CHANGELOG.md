@@ -8,6 +8,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Ruff's `D` (pydocstyle) rule set is now enforced (`numpy` docstring
+  convention), so a public function/class/module missing a docstring, or one
+  with a formatting slip (no blank line before an elaboration, closing
+  quotes not on their own line, etc.), now fails `ruff check .` — this is
+  the project's PEP 257 conformance made automatic rather than manually
+  maintained. `D401` (imperative-mood summaries) is deliberately disabled:
+  every indicator's docstring opens with the indicator's own name ("Simple
+  Moving Average.", "True Range...") to match how it's referred to
+  everywhere else (README, docs, tests), and imperative mood would fight
+  that established convention rather than improve it. `D105`/`D107` are
+  disabled for self-explanatory magic methods and `__init__`s already
+  documented by their class's own docstring, both allowed under PEP 257's
+  own wording. `tests/*` and the internal `tools/gen_docs.py` and
+  `tools/docs_content.py` build scripts are exempt (not part of the public
+  API); `_core` needed no exemption — its own public names already carried
+  docstrings.
 - **Moving averages** — `smma` (Smoothed Moving Average, a.k.a. Wilder's
   Moving Average / RMA): the exact recursion already used inside `rsi`,
   `atr` and `adx`, exposed as its own standalone line. Neither StockCharts

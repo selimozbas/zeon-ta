@@ -1,5 +1,7 @@
-"""Momentum oscillators: RSI, Stochastic, MACD, CCI, Momentum, ROC, Williams
-%R, Stochastic RSI, and the Awesome Oscillator.
+"""Momentum oscillators.
+
+RSI, Stochastic, MACD, CCI, Momentum, ROC, Williams %R, Stochastic RSI, and
+the Awesome Oscillator.
 
 Momentum, ROC, Williams %R, Stochastic RSI and the Awesome Oscillator
 additionally cite the external source their formula was verified against;

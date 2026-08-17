@@ -11,7 +11,7 @@
 ## Formula
 
 ```text
-Raw = (2 x WMA(Close, round(n/2))) - WMA(Close, n); HMA = WMA(Raw, round(sqrt(n))) — both intermediate lengths rounded to the nearest whole number, 0.5 rounding up
+Raw = (2 x WMA(Close, Integer(n/2))) - WMA(Close, n); HMA = WMA(Raw, Integer(sqrt(n))) — both intermediate lengths truncated toward zero, per Alan Hull's own formula, not rounded to the nearest whole number
 ```
 
 ## Parameters
@@ -59,7 +59,7 @@ Read it like any other moving average, but expect it to hug price far more close
 
 ## Pitfalls
 
-The same extrapolation that cuts lag also means HMA can overshoot past the actual turning point on a sharp reversal, briefly pointing the wrong way before correcting — unlike `sma`/`wma`, which merely lag, never overshoot. It is also the most compute-heavy moving average in this library (three WMA passes per bar).
+The same extrapolation that cuts lag also means HMA can overshoot past the actual turning point on a sharp reversal, briefly pointing the wrong way before correcting — unlike `sma`/`wma`, which merely lag, never overshoot. It is also the most compute-heavy moving average in this library (three WMA passes per bar). Some secondary write-ups describe the two intermediate lengths as rounded rather than truncated; this implementation follows Alan Hull's own formula (truncation), confirmed both against his own site and empirically against a live TradingView reading.
 
 ## Reference
 

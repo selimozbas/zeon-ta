@@ -486,16 +486,21 @@ def kama(close: ArrayLike, length: int = 10, fast: int = 2, slow: int = 30) -> p
 def hma(close: ArrayLike, length: int = 20) -> pd.Series:
     """Hull Moving Average.
 
-    ``Raw = 2 * WMA(Close, round(n/2)) - WMA(Close, n)``, then
-    ``HMA = WMA(Raw, round(sqrt(n)))``. The half-length WMA reacts fast; the
+    ``Raw = 2 * WMA(Close, Integer(n/2)) - WMA(Close, n)``, then
+    ``HMA = WMA(Raw, Integer(sqrt(n)))``. The half-length WMA reacts fast; the
     full-length WMA gives the "usual" reading; doubling the fast one and
     subtracting the slow one extrapolates *ahead* of the fast WMA. Smoothing
     that extrapolation with one more (short) WMA turns a jumpy overshoot into
     a genuinely quick, still-smooth line — Hull's answer to the fact that
     :func:`wma` alone reduces lag only modestly.
 
-    Both intermediate lengths are rounded to the nearest whole number
-    (``0.5`` rounds up), matching the source's own worked example.
+    Both intermediate lengths are *truncated* toward zero (``Integer()`` in
+    Alan Hull's own formula), not rounded to the nearest whole number — for
+    an odd ``length`` this differs from what some secondary write-ups
+    describe. Confirmed against alanhull.com's own formula, a second
+    independent write-up, and empirically against TradingView's own
+    Hull Moving Average reading for a live symbol; see
+    ``tests/test_tradingview_parity.py``.
 
     Parameters
     ----------
@@ -513,17 +518,20 @@ def hma(close: ArrayLike, length: int = 20) -> pd.Series:
     --------
     >>> import zeonta
     >>> round(float(zeonta.hma(list(range(1, 31)), length=9).iloc[-1]), 4)
-    29.3333
+    30.0
 
     References
     ----------
-    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-overlays/hull-moving-average-hma
+    https://alanhull.com/the-hull-moving-average/
     """
     length = validate_length(length)
     values = as_array(close, "close")
 
-    half_length = int(length / 2.0 + 0.5)
-    sqrt_length = int(length**0.5 + 0.5)
+    # length=1 is a degenerate edge case Hull's own formula never
+    # contemplates (his examples all use large n); floor(1/2)=0 would break
+    # the WMA below, so it is clamped to 1, preserving "HMA(1) == input".
+    half_length = max(1, int(length / 2.0))
+    sqrt_length = int(length**0.5)
 
     raw = 2.0 * rolling_wma(values, half_length) - rolling_wma(values, length)
     return wrap_series(rolling_wma(raw, sqrt_length), common_index(close), f"HMA_{length}")

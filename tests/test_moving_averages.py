@@ -278,20 +278,31 @@ def test_tema_has_less_lag_than_dema_on_a_curve() -> None:
     assert abs(tema_lag) < abs(dema_lag)
 
 
-def test_hma_matches_the_source_rounding_example() -> None:
-    """The source's own worked example: n=11 -> half-length rounds up to 6
-    (11/2=5.5), sqrt-length rounds down to 3 (sqrt(11)=3.317)."""
+def test_hma_matches_alan_hulls_own_truncation_rule() -> None:
+    """Alan Hull's own formula (alanhull.com) and an independent write-up
+    both specify ``Integer()`` (truncate toward zero), not round-to-nearest,
+    for both intermediate lengths: n=11 -> half-length truncates to 5
+    (11/2=5.5), sqrt-length truncates to 3 (sqrt(11)=3.317)."""
     values = list(np.linspace(1, 50, 40))
     result = zeonta.hma(values, length=11)
 
     values_array = np.array(values)
     raw = (
-        2.0 * zeonta.wma(values_array, length=6).to_numpy()
+        2.0 * zeonta.wma(values_array, length=5).to_numpy()
         - zeonta.wma(values_array, length=11).to_numpy()
     )
     expected = zeonta.wma(raw, length=3)
 
     np.testing.assert_allclose(result.to_numpy(), expected.to_numpy(), equal_nan=True)
+
+
+def test_hma_converges_exactly_on_a_pure_ramp() -> None:
+    """Like DEMA/TEMA, a WMA-cascade indicator cancels lag exactly on a
+    perfectly linear series — this only holds with the correct (truncating)
+    rounding rule; the previous round-to-nearest implementation missed the
+    ramp's true value by a visible margin."""
+    ramp = list(range(1, 31))
+    np.testing.assert_allclose(zeonta.hma(ramp, length=9).iloc[-1], 30.0)
 
 
 def test_hma_of_one_is_the_input() -> None:

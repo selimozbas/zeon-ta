@@ -15,6 +15,29 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   market (every OHLCV value identical) must not raise or warn; volume-taking
   indicators must accept zero volume and reject negative volume. Any future
   indicator gets this coverage for free just by being registered.
+- `tests/test_tradingview_parity.py`: a committed 300-bar SPY daily dataset
+  (`tests/data/tv_spy_daily.csv`, fetched from Yahoo Finance's public chart
+  API right after that day's regular-session close) checked against values
+  read directly off TradingView's own "Technicals" page for the same symbol
+  and moment — 15 core indicators (SMA, EMA, RSI, MACD, CCI, ADX, Awesome
+  Oscillator, Momentum, Stochastic RSI, Williams %R, Bull Bear Power,
+  Ultimate Oscillator, Stochastic) matched TradingView to the penny on first
+  check, catching a real bug in `hma` in the process (see Fixed, below).
+
+### Fixed
+
+- `hma` used the wrong rounding rule for its two intermediate WMA lengths.
+  Alan Hull's own formula (confirmed on alanhull.com and a second
+  independent write-up) truncates `n/2` and `sqrt(n)` toward zero; this
+  library was rounding both to the nearest whole number instead, which
+  agrees with Hull's formula only when those values happen to land on a
+  whole number. For `length=9` this made a real, non-trivial difference —
+  775.70 (rounded) vs. Hull's true 776.37, confirmed both against his
+  formula and empirically against a live TradingView reading of the same
+  data. Fixed to truncate, matching Hull's own definition; on a pure linear
+  ramp the corrected HMA now converges to the exact ramp value, the same
+  clean cancellation `dema`/`tema` already have — a good sign the fix is
+  right, not just TradingView-compatible by coincidence.
 
 ## [0.2.0] - 2026-08-17
 

@@ -11,7 +11,7 @@ Tek başına `wma`, `sma`'ya kıyasla gecikmeyi yalnızca ölçülü biçimde az
 ## Formül
 
 ```text
-Ham = (2 x WMA(Kapanış, round(n/2))) - WMA(Kapanış, n); HMA = WMA(Ham, round(sqrt(n))) — her iki ara uzunluk da en yakın tam sayıya yuvarlanır, 0,5 yukarı yuvarlanır
+Ham = (2 x WMA(Kapanış, Integer(n/2))) - WMA(Kapanış, n); HMA = WMA(Ham, Integer(sqrt(n))) — Alan Hull'un kendi formülüne göre her iki ara uzunluk da sıfıra doğru kesilir (truncate), en yakın tam sayıya yuvarlanmaz
 ```
 
 ## Parametreler
@@ -59,7 +59,7 @@ Diğer hareketli ortalamalar gibi okuyun, ama aynı uzunlukta `sma`, `ema` ya da
 
 ## Dikkat edilmesi gerekenler
 
-Gecikmeyi azaltan aynı ekstrapolasyon, HMA'nın keskin bir dönüşte gerçek dönüş noktasının ötesine geçebileceği, düzelmeden önce kısa süreliğine yanlış yönü gösterebileceği anlamına da gelir — sadece geride kalan ve asla aşırı tepki vermeyen `sma`/`wma`'nın aksine. Ayrıca bu kütüphanedeki en hesaplama yoğun hareketli ortalamadır (bar başına üç WMA geçişi).
+Gecikmeyi azaltan aynı ekstrapolasyon, HMA'nın keskin bir dönüşte gerçek dönüş noktasının ötesine geçebileceği, düzelmeden önce kısa süreliğine yanlış yönü gösterebileceği anlamına da gelir — sadece geride kalan ve asla aşırı tepki vermeyen `sma`/`wma`'nın aksine. Ayrıca bu kütüphanedeki en hesaplama yoğun hareketli ortalamadır (bar başına üç WMA geçişi). Bazı ikincil kaynaklar iki ara uzunluğu kesme yerine yuvarlama olarak tarif eder; bu uygulama Alan Hull'un kendi formülünü (kesme) izler — hem kendi sitesine karşı hem de canlı bir TradingView okumasına karşı ampirik olarak doğrulanmıştır.
 
 ## Kaynak
 

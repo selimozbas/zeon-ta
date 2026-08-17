@@ -1787,13 +1787,14 @@ CONTENT: dict[str, Doc] = {
         "title_en": "Hull Moving Average (HMA)",
         "title_tr": "Hull Hareketli Ortalaması (HMA)",
         "formula_en": (
-            "Raw = (2 x WMA(Close, round(n/2))) - WMA(Close, n); HMA = WMA(Raw, round(sqrt(n))) "
-            "— both intermediate lengths rounded to the nearest whole number, 0.5 rounding up"
+            "Raw = (2 x WMA(Close, Integer(n/2))) - WMA(Close, n); HMA = WMA(Raw, "
+            "Integer(sqrt(n))) — both intermediate lengths truncated toward zero, per Alan "
+            "Hull's own formula, not rounded to the nearest whole number"
         ),
         "formula_tr": (
-            "Ham = (2 x WMA(Kapanış, round(n/2))) - WMA(Kapanış, n); HMA = WMA(Ham, "
-            "round(sqrt(n))) — her iki ara uzunluk da en yakın tam sayıya yuvarlanır, 0,5 yukarı "
-            "yuvarlanır"
+            "Ham = (2 x WMA(Kapanış, Integer(n/2))) - WMA(Kapanış, n); HMA = WMA(Ham, "
+            "Integer(sqrt(n))) — Alan Hull'un kendi formülüne göre her iki ara uzunluk da sıfıra "
+            "doğru kesilir (truncate), en yakın tam sayıya yuvarlanmaz"
         ),
         "about_en": (
             "`wma` alone reduces lag only modestly next to `sma`. Hull's insight: take a fast "
@@ -1824,14 +1825,20 @@ CONTENT: dict[str, Doc] = {
             "The same extrapolation that cuts lag also means HMA can overshoot past the actual "
             "turning point on a sharp reversal, briefly pointing the wrong way before correcting — "
             "unlike `sma`/`wma`, which merely lag, never overshoot. It is also the most compute-"
-            "heavy moving average in this library (three WMA passes per bar)."
+            "heavy moving average in this library (three WMA passes per bar). Some secondary "
+            "write-ups describe the two intermediate lengths as rounded rather than truncated; "
+            "this implementation follows Alan Hull's own formula (truncation), confirmed both "
+            "against his own site and empirically against a live TradingView reading."
         ),
         "pitfalls_tr": (
             "Gecikmeyi azaltan aynı ekstrapolasyon, HMA'nın keskin bir dönüşte gerçek dönüş "
             "noktasının ötesine geçebileceği, düzelmeden önce kısa süreliğine yanlış yönü "
             "gösterebileceği anlamına da gelir — sadece geride kalan ve asla aşırı tepki vermeyen "
             "`sma`/`wma`'nın aksine. Ayrıca bu kütüphanedeki en hesaplama yoğun hareketli "
-            "ortalamadır (bar başına üç WMA geçişi)."
+            "ortalamadır (bar başına üç WMA geçişi). Bazı ikincil kaynaklar iki ara uzunluğu "
+            "kesme yerine yuvarlama olarak tarif eder; bu uygulama Alan Hull'un kendi formülünü "
+            "(kesme) izler — hem kendi sitesine karşı hem de canlı bir TradingView okumasına "
+            "karşı ampirik olarak doğrulanmıştır."
         ),
         "example": [
             lambda df: zeonta.hma(df["close"], length=20).tail(3),

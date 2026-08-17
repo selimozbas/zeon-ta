@@ -6,6 +6,8 @@ is why they get their own generic test rather than being spot-checked per module
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -13,6 +15,11 @@ import pytest
 import zeonta
 from helpers import as_frames, call_spec
 from zeonta._core import IndicatorSpec, iter_specs
+
+#: Early enough in the 300-bar fixture that even the slowest default window
+#: in the registry (``ma_cross``'s 200-bar SMA) has room to fully clear the
+#: gap and still leave finite bars in the tail to check.
+GAP_INDEX = 30
 
 
 def test_registry_covers_every_standard_indicator() -> None:
@@ -163,6 +170,87 @@ def test_misaligned_series_indices_are_rejected(spec: IndicatorSpec, ohlcv: pd.D
     series[-1] = series[-1].set_axis(shifted_index)
     with pytest.raises(ValueError, match="different indices"):
         spec.func(*series)
+
+
+def _inject_gap(frame: pd.DataFrame, spec: IndicatorSpec, index: int) -> pd.DataFrame:
+    """*frame* with every one of *spec*'s required input columns set to ``NaN``
+    at *index* — a single fully missing OHLCV bar, the realistic worst case
+    a bad data feed produces."""
+    gapped = frame.copy()
+    for field in spec.inputs:
+        gapped.iloc[index, gapped.columns.get_loc(field)] = np.nan
+    return gapped
+
+
+def test_a_missing_bar_raises_no_warnings(spec: IndicatorSpec, ohlcv: pd.DataFrame) -> None:
+    """A single missing OHLCV bar is ordinary, real-world bad data, not a
+    reason to pollute a caller's logs with a ``RuntimeWarning`` — the same
+    class of bug ``true_range()`` had (an all-``NaN`` slice warning from
+    ``np.nanmax`` on a fully missing bar) before it was fixed."""
+    if spec.name == "vwap":
+        pytest.skip("session VWAP needs a DatetimeIndex; not exercised with a plain gap here")
+    gapped = _inject_gap(ohlcv, spec, GAP_INDEX)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", category=RuntimeWarning)
+        call_spec(spec, gapped)
+
+
+def test_a_missing_bar_does_not_poison_every_later_bar(
+    spec: IndicatorSpec, ohlcv: pd.DataFrame
+) -> None:
+    """A single missing bar must have a *bounded* effect: once enough clean
+    bars have accumulated after it, every output column must recover and
+    produce a finite value again somewhere in the remaining 199 bars — not
+    stay ``NaN`` forever. This is the exact shape of two bugs already found
+    this way: ``adl()``'s running total went permanently ``NaN`` because
+    ``np.cumsum`` propagated one gap's ``NaN`` through every later bar, and
+    ``aroon()`` did the mirror-image wrong thing (a finite-looking but
+    meaningless value instead of ``NaN``) because ``argmax``/``argmin`` treat
+    a ``NaN`` in the window as if it were the extreme rather than excluding
+    it. Both are fixed; this test is what would have caught them.
+    """
+    if spec.name == "vwap":
+        pytest.skip("session VWAP needs a DatetimeIndex; not exercised with a plain gap here")
+    gapped = _inject_gap(ohlcv, spec, GAP_INDEX)
+    result = call_spec(spec, gapped)
+    for name, series in as_frames(result).items():
+        tail = series.iloc[GAP_INDEX + 1 :]
+        assert tail.notna().any(), f"{spec.name}.{name}: NaN forever after the gap"
+
+
+def test_constant_input_does_not_raise_or_warn(spec: IndicatorSpec, ohlcv: pd.DataFrame) -> None:
+    """A perfectly flat market (every OHLCV value identical) is a degenerate
+    but legal input. Formulas shaped like a ratio or a deviation must handle
+    the resulting zero range/zero variance via an explicit branch, not an
+    uncaught exception or a division-by-zero warning."""
+    if spec.name == "vwap":
+        pytest.skip("session VWAP needs a DatetimeIndex; not exercised with flat input here")
+    flat = pd.DataFrame(
+        {column: (1000.0 if column == "volume" else 100.0) for column in ohlcv.columns},
+        index=ohlcv.index,
+    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", category=RuntimeWarning)
+        call_spec(spec, flat)
+
+
+def test_zero_volume_does_not_raise(spec: IndicatorSpec, ohlcv: pd.DataFrame) -> None:
+    if "volume" not in spec.inputs:
+        pytest.skip("no volume input")
+    if spec.name == "vwap":
+        pytest.skip("session VWAP needs a DatetimeIndex; not exercised with zero volume here")
+    zeroed = ohlcv.copy()
+    zeroed["volume"] = 0.0
+    call_spec(spec, zeroed)
+
+
+def test_negative_volume_is_rejected(spec: IndicatorSpec, ohlcv: pd.DataFrame) -> None:
+    if "volume" not in spec.inputs:
+        pytest.skip("no volume input")
+    negative = ohlcv.copy()
+    negative.iloc[10, negative.columns.get_loc("volume")] = -1.0
+    with pytest.raises(ValueError, match="'volume' must not contain negative values"):
+        call_spec(spec, negative)
 
 
 def test_list_indicators_matches_registry() -> None:

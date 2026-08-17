@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Five new registry-wide contract tests in `tests/test_contracts.py`, applied
+  automatically to every indicator: a single missing OHLCV bar must raise no
+  warnings and must not stay `NaN` forever once enough clean bars follow it
+  (the exact shape of the `adl()` and `aroon()` bugs just fixed); a flat
+  market (every OHLCV value identical) must not raise or warn; volume-taking
+  indicators must accept zero volume and reject negative volume. Any future
+  indicator gets this coverage for free just by being registered.
+
 ## [0.2.0] - 2026-08-17
 
 ### Added

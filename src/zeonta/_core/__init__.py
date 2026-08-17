@@ -10,6 +10,7 @@ from .rolling import (
     rolling_min,
     rolling_std,
     rolling_sum,
+    rolling_wma,
 )
 from .smoothing import ema_values, first_full_window, wilder_values
 from .types import ArrayLike, Number
@@ -48,6 +49,7 @@ __all__ = [
     "rolling_min",
     "rolling_std",
     "rolling_sum",
+    "rolling_wma",
     "validate_length",
     "validate_multiplier",
     "wilder_values",

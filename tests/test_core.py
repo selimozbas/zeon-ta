@@ -17,6 +17,7 @@ from zeonta._core import (
     rolling_mean,
     rolling_mean_abs_dev,
     rolling_std,
+    rolling_wma,
     validate_length,
     validate_multiplier,
     wilder_values,
@@ -149,6 +150,22 @@ class TestRolling:
         values = np.array([1.0, 2.0, 6.0])
         expected = np.abs(values - values.mean()).mean()
         np.testing.assert_allclose(rolling_mean_abs_dev(values, 3)[-1], expected)
+
+    def test_wma_weights_the_most_recent_bar_the_heaviest(self) -> None:
+        values = np.array([1.0, 2.0, 3.0])
+        expected = (1 * 1.0 + 2 * 2.0 + 3 * 3.0) / (1 + 2 + 3)
+        np.testing.assert_allclose(rolling_wma(values, 3)[-1], expected)
+
+    def test_wma_of_a_constant_series_is_that_constant(self) -> None:
+        np.testing.assert_allclose(rolling_wma(np.full(10, 4.0), 5)[-1], 4.0)
+
+    def test_wma_matches_a_direct_dot_product(self) -> None:
+        rng = np.random.default_rng(5)
+        values = rng.normal(0, 1, 20)
+        length = 6
+        weights = np.arange(1, length + 1, dtype="float64")
+        expected = values[-length:] @ weights / weights.sum()
+        np.testing.assert_allclose(rolling_wma(values, length)[-1], expected)
 
     def test_linreg_recovers_a_known_line(self) -> None:
         values = 3.0 + 2.0 * np.arange(20.0)

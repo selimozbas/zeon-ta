@@ -1640,4 +1640,56 @@ CONTENT: dict[str, Doc] = {
             ),
         ],
     },
+    "wma": {
+        "title_en": "Weighted Moving Average (WMA)",
+        "title_tr": "Ağırlıklı Hareketli Ortalama (WMA)",
+        "formula_en": (
+            "WMA = (P1 x n + P2 x (n-1) + ... + Pn x 1) / (n + (n-1) + ... + 1), where P1 is the "
+            "most recent close and Pn is the oldest close in the window"
+        ),
+        "formula_tr": (
+            "WMA = (P1 x n + P2 x (n-1) + ... + Pn x 1) / (n + (n-1) + ... + 1), burada P1 en son "
+            "kapanış, Pn ise pencerede en eski kapanıştır"
+        ),
+        "about_en": (
+            "Sits directly between `sma` and `ema` in how it treats the window: every bar still "
+            "gets a fixed, predictable weight (unlike EMA's decay that technically never reaches "
+            "zero), but that weight now favours recent bars in a straight line instead of treating "
+            "the whole window equally like SMA does."
+        ),
+        "about_tr": (
+            "Pencereyi ele alış biçimiyle `sma` ve `ema` arasında tam ortada durur: her bar yine "
+            "sabit, öngörülebilir bir ağırlık alır (EMA'nın teknik olarak hiç sıfıra ulaşmayan "
+            "azalmasının aksine), ama bu ağırlık artık SMA'nın tüm pencereyi eşit saymasının "
+            "aksine, düz bir çizgi halinde son barları kayırır."
+        ),
+        "reading_en": (
+            "Read it exactly like `sma` — trend direction, support, crossovers — but expect it to "
+            "turn sooner after a reversal since the most recent bars carry more weight. It is also "
+            "the building block several other moving averages (like the Hull Moving Average) chain "
+            "together to cut lag further."
+        ),
+        "reading_tr": (
+            "Tam olarak `sma` gibi okuyun — trend yönü, destek, kesişimler — ama son barlar daha "
+            "fazla ağırlık taşıdığı için bir dönüşten sonra daha erken yön değiştirmesini bekleyin. "
+            "Ayrıca başka birçok hareketli ortalamanın (Hull Hareketli Ortalaması gibi) gecikmeyi "
+            "daha da azaltmak için zincirlediği temel yapı taşıdır."
+        ),
+        "pitfalls_en": (
+            "The linear taper is a much gentler lag reduction than EMA's exponential one — at the "
+            "same length, WMA sits closer to SMA than to EMA in how much it lags. It also inherits "
+            "every fixed-length moving average's core limitation: no length is right for both a "
+            "trending and a choppy market, unlike the adaptive :func:`~zeonta.kama`."
+        ),
+        "pitfalls_tr": (
+            "Doğrusal azalma, EMA'nın üssel azalmasına kıyasla çok daha yumuşak bir gecikme "
+            "azaltmasıdır — aynı uzunlukta WMA, gecikme açısından EMA'dan çok SMA'ya daha "
+            "yakındır. Ayrıca sabit uzunluklu her hareketli ortalamanın temel sınırlamasını "
+            "devralır: uyarlanabilir :func:`~zeonta.kama`'nın aksine, hiçbir uzunluk hem trend "
+            "yapan hem de dalgalanan bir piyasa için doğru değildir."
+        ),
+        "example": [
+            lambda df: zeonta.wma(df["close"], length=20).tail(3),
+        ],
+    },
 }

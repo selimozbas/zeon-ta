@@ -54,7 +54,7 @@ def test_registry_covers_every_standard_indicator() -> None:
 
 def test_indicators_with_a_reference() -> None:
     """The minority of indicators that cite an external source, and only those."""
-    expected = {"obv", "cmf", "mfi", "roc", "momentum", "kama", "parabolic_sar"}
+    expected = {"obv", "cmf", "mfi", "roc", "momentum", "kama", "parabolic_sar", "wma"}
     with_reference = {spec.name for spec in iter_specs() if spec.reference is not None}
     assert with_reference == expected
     for spec in iter_specs():

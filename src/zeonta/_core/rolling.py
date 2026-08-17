@@ -23,6 +23,7 @@ __all__ = [
     "rolling_min",
     "rolling_std",
     "rolling_sum",
+    "rolling_wma",
 ]
 
 
@@ -76,6 +77,21 @@ def rolling_std(values: np.ndarray, length: int, ddof: int = 0) -> np.ndarray:
     if length - ddof <= 0:
         raise ValueError(f"'length' must be greater than ddof={ddof}, got {length}")
     out[length - 1 :] = _windows(values, length).std(axis=1, ddof=ddof)
+    return out
+
+
+def rolling_wma(values: np.ndarray, length: int) -> np.ndarray:
+    """Linearly weighted moving average.
+
+    The most recent bar in each window gets weight ``length``, the oldest
+    gets weight ``1``, decreasing by one in between:
+    ``WMA = sum(i * value[t-length+i], i=1..length) / sum(i, i=1..length)``.
+    """
+    out = _blank(values)
+    if values.shape[0] < length:
+        return out
+    weights = np.arange(1, length + 1, dtype="float64")
+    out[length - 1 :] = _windows(values, length) @ weights / weights.sum()
     return out
 
 

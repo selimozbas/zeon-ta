@@ -27,8 +27,13 @@ was verified against (`IndicatorSpec.reference`, a new field alongside
 - **Trend systems** — `parabolic_sar`, a trailing stop-and-reverse system
   whose acceleration factor grows with every new extreme point, following the
   same one-pass recursive-state pattern as `supertrend` and `adx`.
+- **Moving averages** — `wma` (Weighted Moving Average), giving linearly
+  increasing weight to more recent closes; sits between `sma` (equal weight)
+  and `ema` (exponential decay) in how fast it turns. Backed by a new
+  `rolling_wma` core primitive, reusable by any future moving average built
+  as a WMA chain.
 
-Registered indicators: 25 -> 32. `list_indicators()`'s `lesson` column is
+Registered indicators: 25 -> 33. `list_indicators()`'s `lesson` column is
 renamed `source`, now holding the external reference URL for the indicators
 that cite one and `None` for the rest.
 

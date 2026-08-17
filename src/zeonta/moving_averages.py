@@ -1,4 +1,4 @@
-"""Moving averages: SMA, EMA, crossovers, the EMA ribbon, and KAMA.
+"""Moving averages: SMA, EMA, WMA, crossovers, the EMA ribbon, and KAMA.
 
 KAMA additionally cites the external source its formula was verified
 against; see its own ``References`` section.
@@ -20,12 +20,13 @@ from ._core import (
     indicator,
     rolling_mean,
     rolling_sum,
+    rolling_wma,
     validate_length,
     wrap_frame,
     wrap_series,
 )
 
-__all__ = ["ema", "ema_ribbon", "kama", "ma_cross", "sma"]
+__all__ = ["ema", "ema_ribbon", "kama", "ma_cross", "sma", "wma"]
 
 
 @indicator(
@@ -61,6 +62,50 @@ def sma(close: ArrayLike, length: int = 20) -> pd.Series:
     length = validate_length(length)
     values = as_array(close, "close")
     return wrap_series(rolling_mean(values, length), common_index(close), f"SMA_{length}")
+
+
+@indicator(
+    category="moving_averages",
+    summary="Moving average giving linearly increasing weight to more recent closes.",
+    reference="https://www.fidelity.com/learning-center/trading-investing/technical-analysis/technical-indicator-guide/wma",
+    outputs=("WMA",),
+)
+def wma(close: ArrayLike, length: int = 20) -> pd.Series:
+    """Weighted Moving Average.
+
+    ``WMA(n) = sum(i * Close[t-n+i], i=1..n) / sum(i, i=1..n)`` — the most
+    recent close in the window gets weight ``n``, the oldest gets weight
+    ``1``, decreasing by one in between. Compared to :func:`sma`, where every
+    bar in the window counts equally, WMA leans toward whatever just happened
+    — closer to :func:`ema` in spirit, but with weights that taper off in a
+    straight line instead of an exponential curve, and that reach exactly
+    zero at the edge of the window rather than fading forever.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Look-back window in bars. Must be >= 1.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``WMA_{length}``. The first ``length - 1`` bars are ``NaN``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> zeonta.wma([1, 2, 3, 4, 5], length=3).tolist()
+    [nan, nan, 2.3333333333333335, 3.3333333333333335, 4.333333333333333]
+
+    References
+    ----------
+    https://www.fidelity.com/learning-center/trading-investing/technical-analysis/technical-indicator-guide/wma
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+    return wrap_series(rolling_wma(values, length), common_index(close), f"WMA_{length}")
 
 
 @indicator(

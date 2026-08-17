@@ -22,6 +22,7 @@
 | [`kama`](indicators/kama.md) | Kaufman Uyarlanabilir Hareketli Ortalama (KAMA) |
 | [`ma_cross`](indicators/ma_cross.md) | Hareketli Ortalama Kesişimleri |
 | [`sma`](indicators/sma.md) | Basit Hareketli Ortalama (SMA) |
+| [`wma`](indicators/wma.md) | Ağırlıklı Hareketli Ortalama (WMA) |
 
 ## Osilatörler
 

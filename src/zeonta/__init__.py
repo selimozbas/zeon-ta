@@ -39,7 +39,7 @@ from .advanced import (
     vwap,
 )
 from .foundations import candles, relative_volume, sr_levels, support_resistance, trend_channel
-from .moving_averages import ema, ema_ribbon, kama, ma_cross, sma
+from .moving_averages import ema, ema_ribbon, kama, ma_cross, sma, wma
 from .oscillators import cci, macd, momentum, roc, rsi, stoch
 from .trend import adx, donchian, ichimoku, parabolic_sar, supertrend
 from .volatility import atr, bbands, keltner, squeeze, true_range
@@ -93,6 +93,7 @@ __all__ = [
     "trend_channel",
     "true_range",
     "vwap",
+    "wma",
 ]
 
 

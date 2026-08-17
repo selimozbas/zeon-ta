@@ -96,6 +96,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | `kama` | Kaufman's Adaptive Moving Average (KAMA) | [docs](docs/en/indicators/kama.md) |
 | `ma_cross` | Moving Average Crossovers | [docs](docs/en/indicators/ma_cross.md) |
 | `sma` | Simple Moving Average (SMA) | [docs](docs/en/indicators/sma.md) |
+| `wma` | Weighted Moving Average (WMA) | [docs](docs/en/indicators/wma.md) |
 
 ### Oscillators
 

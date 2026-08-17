@@ -26,6 +26,36 @@ def test_sma_warmup_is_exactly_length_minus_one() -> None:
     assert int(result.isna().sum()) == 6
 
 
+def test_wma_matches_the_hand_computed_weighted_average() -> None:
+    # window [1,2,3]: weights 1,2,3 -> (1*1+2*2+3*3)/6 = 14/6
+    result = zeonta.wma([1, 2, 3, 4, 5], length=3)
+    assert result.name == "WMA_3"
+    assert np.isnan(result.iloc[0]) and np.isnan(result.iloc[1])
+    np.testing.assert_allclose(result.iloc[2:], [14 / 6, 20 / 6, 26 / 6])
+
+
+def test_wma_of_one_is_the_input() -> None:
+    values = [3.0, 1.0, 4.0, 1.0, 5.0]
+    np.testing.assert_allclose(zeonta.wma(values, length=1).to_numpy(), values)
+
+
+def test_wma_warmup_is_exactly_length_minus_one() -> None:
+    result = zeonta.wma(list(range(20)), length=7)
+    assert int(result.isna().sum()) == 6
+
+
+def test_wma_is_exact_on_a_flat_series() -> None:
+    np.testing.assert_allclose(zeonta.wma([7.0] * 20, length=5).dropna().to_numpy(), 7.0)
+
+
+def test_wma_weighs_recent_bars_more_than_sma_does() -> None:
+    """A late jump should move WMA further than SMA at the same length."""
+    prices = [10.0] * 9 + [20.0]
+    wma_value = zeonta.wma(prices, length=10).iloc[-1]
+    sma_value = zeonta.sma(prices, length=10).iloc[-1]
+    assert wma_value > sma_value
+
+
 def test_ema_seed_is_the_sma_then_recursion() -> None:
     # k = 2/(3+1) = 0.5. Seed at bar 2 = mean(1,2,3) = 2.
     # bar 3 = 0.5*4 + 0.5*2 = 3.0 ; bar 4 = 0.5*5 + 0.5*3 = 4.0

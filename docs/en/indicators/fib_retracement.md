@@ -69,7 +69,3 @@ The 0.382-0.618 zone is where most tradeable pullbacks end; 0.786 is the last le
 ## Pitfalls
 
 Fibonacci levels work because enough traders draw the same lines, not because of anything physical. Two people picking different swings get different levels and both can be "right". Since the swing here is recomputed each bar, the levels repaint as new extremes print.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/fibonacci](https://ta.cognicode.org/learn/fibonacci)

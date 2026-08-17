@@ -60,7 +60,3 @@ Above 70 is conventionally "overbought" and below 30 "oversold", but the more du
 ## Pitfalls
 
 "Overbought" does not mean "about to fall". In a strong trend RSI can sit above 70 for weeks, and shorting every such reading is one of the most reliable ways to lose money with this indicator. Treat 70/30 as a description of momentum, not an instruction.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/rsi](https://ta.cognicode.org/learn/rsi)

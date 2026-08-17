@@ -115,9 +115,10 @@ def test_keltner_is_smoother_than_bollinger_through_a_shock(ohlcv: pd.DataFrame)
 def test_squeeze_momentum_midline_is_a_nested_average(ohlcv: pd.DataFrame) -> None:
     """TTM weights the high-low midpoint and the SMA equally, at 1/2 each.
 
-    The TA 101 lesson writes the midline as ``Avg(HighestHigh, LowestLow, SMA)``,
-    which reads as an equal three-way mean (1/3 each). The published TTM Squeeze
-    uses ``avg(avg(hh, ll), sma)``; this pins the weighting we implement.
+    Some casual descriptions write the midline as ``Avg(HighestHigh, LowestLow,
+    SMA)``, which reads as an equal three-way mean (1/3 each). The published
+    TTM Squeeze uses ``avg(avg(hh, ll), sma)``; this pins the weighting we
+    implement.
     """
     high, low, close = ohlcv["high"], ohlcv["low"], ohlcv["close"]
     length = 20
@@ -159,10 +160,11 @@ def test_squeeze_turns_on_when_price_goes_quiet() -> None:
 def test_squeeze_widening_the_keltner_makes_squeezes_more_frequent(ohlcv: pd.DataFrame) -> None:
     """A wider Keltner Channel is easier for the Bollinger Bands to fit inside.
 
-    The TA 101 quiz for this lesson claims the opposite, but its own formula
-    (``squeeze ON when BB Upper < KC Upper and BB Lower > KC Lower``) says a
-    larger ``kc_multiplier`` pushes the Keltner bands further out, so enclosure
-    becomes easier, not harder. The implementation follows the formula.
+    Some casual descriptions of this indicator claim the opposite, but the
+    formula itself (``squeeze ON when BB Upper < KC Upper and BB Lower > KC
+    Lower``) says a larger ``kc_multiplier`` pushes the Keltner bands further
+    out, so enclosure becomes easier, not harder. The implementation follows
+    the formula.
     """
     tight = zeonta.squeeze(ohlcv["high"], ohlcv["low"], ohlcv["close"], kc_multiplier=1.5)
     wide = zeonta.squeeze(ohlcv["high"], ohlcv["low"], ohlcv["close"], kc_multiplier=3.0)

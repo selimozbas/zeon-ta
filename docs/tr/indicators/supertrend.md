@@ -64,7 +64,3 @@ date
 ## Dikkat edilmesi gerekenler
 
 SuperTrend'in trend gücü hakkında bir görüşü yoktur — güçlü bir harekette de cılız bir harekette de aynı şekilde döner. Yatay bantta tekrar tekrar döner ve bunu mekanik bir dur-ve-ters-dön sistemi olarak işleme sokmak arka arkaya küçük zararlar üretir. [adx](adx.md) gibi bir güç filtresiyle birlikte kullanın.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/supertrend](https://ta.cognicode.org/learn/supertrend)

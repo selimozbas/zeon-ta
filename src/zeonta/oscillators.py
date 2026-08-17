@@ -1,8 +1,7 @@
 """Momentum oscillators: RSI, Stochastic, MACD, CCI, Momentum and ROC.
 
-RSI, Stochastic, MACD and CCI follow the TA 101 *Oscillators* module.
-Momentum and ROC are outside that curriculum; see each function's own
-``References`` section for its source.
+Momentum and ROC additionally cite the external source their formula was
+verified against; see each function's own ``References`` section.
 """
 
 from __future__ import annotations
@@ -71,10 +70,6 @@ def rsi(close: ArrayLike, length: int = 14) -> pd.Series:
     >>> import zeonta
     >>> float(zeonta.rsi(list(range(1, 40)), length=14).iloc[-1])
     100.0
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/rsi
     """
     length = validate_length(length)
     values = as_array(close, "close")
@@ -146,10 +141,6 @@ def stoch(
     ... )
     >>> round(float(out.iloc[-1, 0]), 2)
     66.67
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/stochastic
     """
     length = validate_length(length)
     smooth_k = validate_length(smooth_k, "smooth_k")
@@ -217,10 +208,6 @@ def macd(
     >>> import zeonta
     >>> list(zeonta.macd(list(range(100))).columns)
     ['MACD_12_26_9', 'MACDs_12_26_9', 'MACDh_12_26_9']
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/macd
     """
     fast = validate_length(fast, "fast")
     slow = validate_length(slow, "slow")
@@ -283,10 +270,6 @@ def cci(
     >>> import zeonta
     >>> float(zeonta.cci([2] * 25, [1] * 25, [1.5] * 25).iloc[-1])
     0.0
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/cci
     """
     length = validate_length(length)
     if constant <= 0:

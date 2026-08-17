@@ -64,7 +64,3 @@ The `cross` column is `1.0` on the bar the fast average crosses above the slow o
 ## Pitfalls
 
 Because both inputs lag, the crossover lags twice over: by the time a golden cross prints, a large part of the move is usually behind you. In a range the pair crosses back and forth repeatedly, and trading each one mechanically bleeds money.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/ma-crossovers](https://ta.cognicode.org/learn/ma-crossovers)

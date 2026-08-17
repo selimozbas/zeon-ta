@@ -4,8 +4,8 @@ One entry per registered indicator. Everything mechanical — parameter tables,
 output column names, example output — is derived by ``gen_docs.py`` from the
 registry and from actually evaluating each example, so only genuine prose lives here.
 
-``formula_en`` / ``formula_tr`` are the formula statements from the TA 101 lesson
-the indicator implements.
+``formula_en`` / ``formula_tr`` are the formula statements for the indicator
+implemented.
 """
 
 from __future__ import annotations
@@ -834,22 +834,24 @@ CONTENT: dict[str, Doc] = {
         "pitfalls_en": (
             "The squeeze says a move is likely, never which way — trading it without the momentum "
             "read is a coin flip. Note also that widening `kc_multiplier` pushes the Keltner bands "
-            "further out and therefore makes squeezes **more** frequent, not less; this library "
-            "follows the formula rather than the TA 101 quiz answer, which states the opposite. "
+            "further out and therefore makes squeezes **more** frequent, not less — some casual "
+            "descriptions of this indicator claim the opposite, but that claim doesn't follow from "
+            "the formula itself, which this library follows. "
             "The momentum midline uses the published TTM *nested* average — "
             "`avg(avg(hh, ll), sma)`, weighting the range midpoint and the SMA at one half each — "
-            "rather than the equal three-way mean the lesson's wording suggests, so values here "
-            "will differ from an implementation that follows that wording literally."
+            "rather than an equal three-way mean, which some casual descriptions suggest instead; "
+            "values here will differ from an implementation that follows that reading literally."
         ),
         "pitfalls_tr": (
             "Sıkışma bir hareketin muhtemel olduğunu söyler, hangi yöne olacağını asla söylemez — "
             "momentum okuması olmadan işlem yapmak yazı tura atmaktır. Ayrıca `kc_multiplier`'ı "
             "büyütmek Keltner bantlarını dışarı iter ve dolayısıyla sıkışmaları **daha** sık hâle "
-            "getirir, daha seyrek değil; bu kütüphane, tersini söyleyen TA 101 sınav cevabını değil "
-            "formülü esas alır. Momentum orta çizgisi, dersin ifadesinin çağrıştırdığı eşit üçlü "
-            "ortalamayı değil, yayımlanmış TTM tanımındaki *iç içe* ortalamayı kullanır — "
+            "getirir, daha seyrek değil — bu göstergeye dair bazı gündelik anlatımlar tam tersini "
+            "iddia eder, ama bu iddia formülün kendisinden çıkmaz; bu kütüphane formülü esas alır. "
+            "Momentum orta çizgisi, bazı gündelik anlatımların çağrıştırdığı eşit üçlü ortalamayı "
+            "değil, yayımlanmış TTM tanımındaki *iç içe* ortalamayı kullanır — "
             "`avg(avg(hh, ll), sma)`, yani aralık orta noktası ve SMA yarımşar ağırlıkla. Bu "
-            "nedenle değerler, ifadeyi birebir izleyen bir uygulamadan farklı çıkar."
+            "nedenle değerler, o okumayı birebir izleyen bir uygulamadan farklı çıkar."
         ),
         "example": [
             lambda df: zeonta.squeeze(df["high"], df["low"], df["close"]).tail(3),

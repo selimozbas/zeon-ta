@@ -64,7 +64,3 @@ VWAP'ın üstündeki fiyat, alıcıların seans ortalamasına kıyasla fazla öd
 ## Dikkat edilmesi gerekenler
 
 Hiç sıfırlanmayan bir VWAP tamamen farklı bir istatistiktir ve kıyas ölçütü anlamını yitirir — sıfırlama işin özüdür. Seans çıpası, seans sınırlarını bulmak için bir `DatetimeIndex` gerektirir; olmadığında bu fonksiyon sessizce yanlış bir şey hesaplamak yerine hata yükseltir.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/vwap](https://ta.cognicode.org/learn/vwap)

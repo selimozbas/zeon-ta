@@ -1,8 +1,7 @@
 """Moving averages: SMA, EMA, crossovers, the EMA ribbon, and KAMA.
 
-SMA, EMA, the crossover signals and the ribbon follow the TA 101 *Moving
-Averages* module. KAMA is outside that curriculum; see its own ``References``
-section for its source.
+KAMA additionally cites the external source its formula was verified
+against; see its own ``References`` section.
 """
 
 from __future__ import annotations
@@ -58,10 +57,6 @@ def sma(close: ArrayLike, length: int = 20) -> pd.Series:
     >>> import zeonta
     >>> zeonta.sma([1, 2, 3, 4, 5], length=3).tolist()
     [nan, nan, 2.0, 3.0, 4.0]
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/sma
     """
     length = validate_length(length)
     values = as_array(close, "close")
@@ -98,10 +93,6 @@ def ema(close: ArrayLike, length: int = 20) -> pd.Series:
     >>> import zeonta
     >>> float(zeonta.ema([1, 2, 3, 4, 5], length=3).iloc[-1])
     4.0
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/ema
     """
     length = validate_length(length)
     values = as_array(close, "close")
@@ -150,10 +141,6 @@ def ma_cross(
     >>> out = zeonta.ma_cross(list(range(1, 30)), fast=3, slow=5)
     >>> sorted(out.columns)
     ['MAfast_3', 'MAslow_5', 'cross_3_5']
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/ma-crossovers
     """
     fast = validate_length(fast, "fast")
     slow = validate_length(slow, "slow")
@@ -221,10 +208,6 @@ def ema_ribbon(
     >>> import zeonta
     >>> list(zeonta.ema_ribbon(list(range(50)), lengths=(5, 10)).columns)
     ['EMA_5', 'EMA_10']
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/ema-ribbon
     """
     if len(lengths) < 2:
         raise ValueError(f"'lengths' must contain at least two lengths, got {list(lengths)}")

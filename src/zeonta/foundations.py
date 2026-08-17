@@ -1,7 +1,7 @@
 """Chart-reading fundamentals: candle anatomy, pivots, trend channels and volume.
 
-Formulas follow the TA 101 *Foundations* module. These are the building blocks
-the rest of the library — and most discretionary chart reading — sits on.
+These are the building blocks the rest of the library — and most discretionary
+chart reading — sits on.
 """
 
 from __future__ import annotations
@@ -105,10 +105,6 @@ def candles(
     >>> out = zeonta.candles([10, 9], [11, 11], [9, 8], [10.05, 10.5])
     >>> float(out['CDLDOJI'].iloc[0])
     1.0
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/candlesticks
     """
     threshold = validate_multiplier(doji_threshold, "doji_threshold")
     ratio = validate_multiplier(hammer_ratio, "hammer_ratio")
@@ -215,10 +211,6 @@ def support_resistance(
     >>> out = zeonta.support_resistance(highs, [h - 1 for h in highs], left=2, right=2)
     >>> float(out['PIVOTHIGH_2_2'].iloc[2])
     5.0
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/support-resistance
     """
     left = validate_length(left, "left")
     right = validate_length(right, "right")
@@ -381,10 +373,6 @@ def trend_channel(
     >>> out = zeonta.trend_channel([float(i) for i in range(50)], length=10)
     >>> round(float(out['LRCSLOPE_10'].iloc[-1]), 6)
     1.0
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/trend-basics
     """
     length = validate_length(length, minimum=2)
     factor = validate_multiplier(multiplier)
@@ -441,10 +429,6 @@ def relative_volume(volume: ArrayLike, length: int = 20) -> pd.DataFrame:
     >>> out = zeonta.relative_volume([100] * 19 + [200], length=20)
     >>> round(float(out['RVOL_20'].iloc[-1]), 4)
     1.9048
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/volume-basics
     """
     length = validate_length(length)
     values = as_array(volume, "volume")

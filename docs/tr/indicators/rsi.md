@@ -60,7 +60,3 @@ Name: RSI_14, dtype: float64
 ## Dikkat edilmesi gerekenler
 
 "Aşırı alım", "düşmek üzere" demek değildir. Güçlü bir trendde RSI haftalarca 70'in üstünde kalabilir ve her böyle okumada açığa satmak, bu göstergeyle para kaybetmenin en güvenilir yollarından biridir. 70/30'u bir talimat değil, momentumun tarifi olarak görün.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/rsi](https://ta.cognicode.org/learn/rsi)

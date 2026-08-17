@@ -76,7 +76,3 @@ Price above the cloud is bullish, below it bearish, inside it undecided. A thick
 ## Pitfalls
 
 The forward cloud is not a forecast: it is today's midpoints drawn 26 bars to the right, and it will not change when it gets there. Also, the default 9/26/52 settings come from a six-day Japanese trading week; they carry no special meaning on a five-day or 24/7 market.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/ichimoku](https://ta.cognicode.org/learn/ichimoku)

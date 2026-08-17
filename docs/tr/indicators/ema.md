@@ -60,7 +60,3 @@ Tam olarak bir SMA gibi okuyun, ancak daha erken döneceğini bekleyin. Hızlı 
 ## Dikkat edilmesi gerekenler
 
 Daha hızlı tepki, daha çok yanlış dönüş demektir — EMA, bir SMA'nın yumuşatıp geçeceği tek barlık sıçramaya tepki verir. Ayrıca farklı platformlar özyinelemeyi farklı tohumlarla başlatır; bu kütüphane ilk n kapanışın SMA'i ile başlatır, dolayısıyla ilk birkaç değer yalnızca ilk kapanıştan başlatan bir grafikle uyuşmayabilir.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/ema](https://ta.cognicode.org/learn/ema)

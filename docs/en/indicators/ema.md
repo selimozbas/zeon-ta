@@ -60,7 +60,3 @@ Read it exactly like an SMA, but expect it to turn sooner. The gap between a fas
 ## Pitfalls
 
 Faster response also means more false turns — the EMA reacts to a one-bar spike that an SMA would smooth away. Note also that different platforms seed the recursion differently; this library seeds with the SMA of the first n closes, so the first handful of values may not match a chart that seeds from the first close alone.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/ema](https://ta.cognicode.org/learn/ema)

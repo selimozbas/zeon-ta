@@ -63,7 +63,3 @@ date
 ## Dikkat edilmesi gerekenler
 
 Stokastik yatay bantlar için tasarlanmıştır ve trendde doyuma ulaşır: güçlü bir yükselişin tamamı boyunca 100'e yapışır ve bir dizi erken satış sinyali üretir. Uç değerlere göre işlem yapmadan önce ADX gibi bir trend ölçüsüyle filtreleyin.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/stochastic](https://ta.cognicode.org/learn/stochastic)

@@ -58,7 +58,3 @@ Her değer, o tek barın önceki kapanışa göre oluşan boşluk dâhil tam gen
 ## Dikkat edilmesi gerekenler
 
 İlk barın önceki kapanışı yoktur, bu yüzden `NaN` yerine `En Yüksek - En Düşük` değerine düşer. Bu tek değer, yapısı gereği bir miktar olduğundan küçük çıkar.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/atr](https://ta.cognicode.org/learn/atr)

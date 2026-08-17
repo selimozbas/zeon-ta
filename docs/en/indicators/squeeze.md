@@ -64,8 +64,4 @@ date
 
 ## Pitfalls
 
-The squeeze says a move is likely, never which way — trading it without the momentum read is a coin flip. Note also that widening `kc_multiplier` pushes the Keltner bands further out and therefore makes squeezes **more** frequent, not less; this library follows the formula rather than the TA 101 quiz answer, which states the opposite. The momentum midline uses the published TTM *nested* average — `avg(avg(hh, ll), sma)`, weighting the range midpoint and the SMA at one half each — rather than the equal three-way mean the lesson's wording suggests, so values here will differ from an implementation that follows that wording literally.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/squeeze](https://ta.cognicode.org/learn/squeeze)
+The squeeze says a move is likely, never which way — trading it without the momentum read is a coin flip. Note also that widening `kc_multiplier` pushes the Keltner bands further out and therefore makes squeezes **more** frequent, not less — some casual descriptions of this indicator claim the opposite, but that claim doesn't follow from the formula itself, which this library follows. The momentum midline uses the published TTM *nested* average — `avg(avg(hh, ll), sma)`, weighting the range midpoint and the SMA at one half each — rather than an equal three-way mean, which some casual descriptions suggest instead; values here will differ from an implementation that follows that reading literally.

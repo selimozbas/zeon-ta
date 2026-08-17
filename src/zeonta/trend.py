@@ -1,8 +1,7 @@
 """Trend systems: SuperTrend, ADX/DMI, Ichimoku, Donchian and Parabolic SAR.
 
-SuperTrend, ADX, Ichimoku and Donchian follow the TA 101 *Trend Systems*
-module. Parabolic SAR is outside that curriculum; see its own ``References``
-section for its source.
+Parabolic SAR additionally cites the external source its formula was
+verified against; see its own ``References`` section.
 
 SuperTrend, ADX and Parabolic SAR are the only genuinely sequential indicators
 in the library: their bands ratchet in one direction and depend on the
@@ -92,10 +91,6 @@ def supertrend(
     >>> out = zeonta.supertrend([2] * 30, [1] * 30, [1.5] * 30)
     >>> float(out['SUPERTd_10_3.0'].iloc[-1])
     1.0
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/supertrend
     """
     length = validate_length(length)
     factor = validate_multiplier(multiplier)
@@ -206,10 +201,6 @@ def adx(
     >>> out = zeonta.adx(prices, [p - 1 for p in prices], prices)
     >>> bool(out['ADX_14'].iloc[-1] > 90)
     True
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/adx-dmi
     """
     length = validate_length(length)
     require_aligned_index(high=high, low=low, close=close)
@@ -307,10 +298,6 @@ def ichimoku(
     >>> visible, forward = zeonta.ichimoku(prices, [p - 1 for p in prices], prices)
     >>> len(forward)
     26
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/ichimoku
     """
     tenkan = validate_length(tenkan, "tenkan")
     kijun = validate_length(kijun, "kijun")
@@ -422,10 +409,6 @@ def donchian(high: ArrayLike, low: ArrayLike, length: int = 20) -> pd.DataFrame:
     >>> import zeonta
     >>> zeonta.donchian([3, 4, 5], [1, 2, 3], length=2).iloc[-1].tolist()
     [2.0, 3.5, 5.0]
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/donchian-channels
     """
     length = validate_length(length)
     require_aligned_index(high=high, low=low)

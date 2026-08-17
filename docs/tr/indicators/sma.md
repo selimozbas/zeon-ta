@@ -72,7 +72,3 @@ Yükselen bir SMA'nın üzerindeki fiyat ders kitabı yükseliş trendidir; dü�
 ## Dikkat edilmesi gerekenler
 
 SMA yaklaşık uzunluğunun yarısı kadar gecikir, yani bir dönüşü gerçekleştikten çok sonra teyit eder; geleceğin tahmini değil, geçmişin tarifidir. Yatay piyasada fiyat onu sürekli keser ve tamamı gürültü olan sinyaller üretir.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/sma](https://ta.cognicode.org/learn/sma)

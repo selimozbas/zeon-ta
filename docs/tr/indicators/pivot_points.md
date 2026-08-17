@@ -65,7 +65,3 @@ Merkezî pivot günün referansıdır: üzerinde işlem görmek boğa seansı, a
 ## Dikkat edilmesi gerekenler
 
 Pivotlar analiz değil aritmetiktir — önceki barın aralığının ötesinde bir bilgi taşımazlar ve esas olarak ortak bir referans ızgarası olarak işe yararlar. Gerçek bir seans sınırı olmayan enstrümanlarda çok daha az anlamlıdırlar.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/pivot-points](https://ta.cognicode.org/learn/pivot-points)

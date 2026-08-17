@@ -76,7 +76,3 @@ Bulutun üstündeki fiyat boğa, altındaki ayı, içindeki ise kararsız yönde
 ## Dikkat edilmesi gerekenler
 
 İleri bulut bir tahmin değildir: bugünün orta noktalarının 26 bar sağa çizilmiş hâlidir ve oraya varıldığında değişmeyecektir. Ayrıca varsayılan 9/26/52 ayarları altı günlük Japon işlem haftasından gelir; beş günlük ya da 7/24 açık bir piyasada özel bir anlam taşımaz.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/ichimoku](https://ta.cognicode.org/learn/ichimoku)

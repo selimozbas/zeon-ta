@@ -62,7 +62,3 @@ date
 ## Dikkat edilmesi gerekenler
 
 Düşüş trendinde yükselen bir ADX yine de yükselen bir ADX'tir — asla "boğa" demez. Zaten yumuşatılmış bir seriyi tekrar yumuşattığı için değer üretmeye başlamadan önce kabaca `2 x length` bara ihtiyaç duyar ve yapısı gereği geç döner.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/adx-dmi](https://ta.cognicode.org/learn/adx-dmi)

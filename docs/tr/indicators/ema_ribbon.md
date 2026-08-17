@@ -64,7 +64,3 @@ Genişçe açılmış ve doğru sıralanmış (yükseliş trendinde en kısası 
 ## Dikkat edilmesi gerekenler
 
 Şerit, altı bağımsız görüş değil, altı gecikmeli göstergedir — hepsi aynı kapanışlardan gelir, dolayısıyla "uzlaşmaları" göründüğünden çok daha zayıf bir kanıttır. Sinyal üreticisinden çok bir görselleştirme yardımcısıdır.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/ema-ribbon](https://ta.cognicode.org/learn/ema-ribbon)

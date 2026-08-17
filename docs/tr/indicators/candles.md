@@ -68,7 +68,3 @@ Uzun gövde, seansın tamamına bir tarafın hâkim olduğunu; uzun fitil ise bi
 ## Dikkat edilmesi gerekenler
 
 Formasyon bir ya da iki barın tarifidir, sinyal değildir. Yatay bir bandın ortasındaki çekiç hiçbir şey ifade etmez; aynı çekiç daha önce iki kez test edilmiş bir seviyede ise anlam kazanır. Formasyonu daima konumla birlikte okuyun.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/candlesticks](https://ta.cognicode.org/learn/candlesticks)

@@ -64,7 +64,3 @@ The histogram is the part most people actually trade: it crosses zero exactly wh
 ## Pitfalls
 
 MACD is unbounded and its values scale with price, so a reading of 3 means something entirely different on a $20 stock and a $2,000 one — never compare raw MACD across symbols. And as a doubly smoothed trend tool it whipsaws badly in a range.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/macd](https://ta.cognicode.org/learn/macd)

@@ -200,11 +200,14 @@ def render(spec: IndicatorSpec, lang: str, examples: list[tuple[str, str]]) -> s
         f"## {labels['pitfalls']}",
         "",
         doc[f"pitfalls_{lang}"],
-        "",
-        f"## {labels['reference']}",
-        "",
-        f"{labels['source']}: [{spec.url}]({spec.url})",
     ]
+    if spec.url is not None:
+        lines += [
+            "",
+            f"## {labels['reference']}",
+            "",
+            f"{labels['source']}: [{spec.url}]({spec.url})",
+        ]
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -213,14 +216,11 @@ def render_index(lang: str) -> str:
     other = "tr" if lang == "en" else "en"
     heading = "Indicator Reference" if lang == "en" else "İndikatör Referansı"
     intro = (
-        "Every indicator in `zeon-ta`, grouped by module. Most formulas come from "
-        "[TA 101](https://ta.cognicode.org); a few common indicators outside that "
-        "curriculum are included too, each linking to its own external source."
+        "Every indicator in `zeon-ta`, grouped by module. A few indicators additionally "
+        "link to the external source their formula was verified against."
         if lang == "en"
-        else "`zeon-ta` içindeki tüm indikatörler, modüllere göre gruplanmıştır. Formüllerin "
-        "çoğu [TA 101](https://ta.cognicode.org) kaynağından alınmıştır; bu müfredatın "
-        "dışındaki birkaç yaygın indikatör de eklenmiştir, her biri kendi dış kaynağına "
-        "bağlantı verir."
+        else "`zeon-ta` içindeki tüm indikatörler, modüllere göre gruplanmıştır. Birkaç "
+        "indikatör, formülünün doğrulandığı dış kaynağa ek olarak bağlantı verir."
     )
     header = "| Indicator | Summary |" if lang == "en" else "| İndikatör | Özet |"
     lines = [f"# {heading}", "", f"[{labels['other_lang']}](../{other}/index.md)", "", intro, ""]
@@ -239,9 +239,9 @@ def render_index(lang: str) -> str:
 README_INTRO = {
     "en": """# zeon-ta
 
-[![PyPI](https://img.shields.io/pypi/v/zeon-ta)](https://pypi.org/project/zeon-ta/)
-[![Python](https://img.shields.io/pypi/pyversions/zeon-ta)](https://pypi.org/project/zeon-ta/)
-[![License](https://img.shields.io/pypi/l/zeon-ta)](LICENSE)
+[![CI](https://github.com/selimozbas/zeon-ta/actions/workflows/ci.yml/badge.svg)](https://github.com/selimozbas/zeon-ta/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
+[![License](https://img.shields.io/github/license/selimozbas/zeon-ta)](LICENSE)
 
 **Türkçe: [README.tr.md](README.tr.md)**
 
@@ -249,10 +249,9 @@ Technical analysis indicators for Python that are actually maintained — no C
 extension to compile, no abandoned API. NumPy and pandas are the only
 dependencies.
 
-Most formulas are implemented from the [TA 101](https://ta.cognicode.org)
-curriculum; a few common indicators outside that curriculum (OBV, CMF, MFI,
-ROC, Momentum, KAMA, Parabolic SAR) are included too. Every function's
-docstring links back to its specific source, TA 101 or otherwise.
+Formulas follow standard, widely published technical-analysis definitions. A
+few indicators additionally cite the specific external source their formula
+was verified against in their own docstring.
 
 ## Why another TA library
 
@@ -268,8 +267,18 @@ docstring links back to its specific source, TA 101 or otherwise.
 
 ## Install
 
+Not on PyPI yet — install straight from GitHub:
+
 ```bash
-pip install zeon-ta
+pip install git+https://github.com/selimozbas/zeon-ta.git
+```
+
+Or clone and install locally:
+
+```bash
+git clone https://github.com/selimozbas/zeon-ta.git
+cd zeon-ta
+pip install .
 ```
 
 Requires Python 3.12+.
@@ -330,19 +339,18 @@ GPL-3.0-or-later — see [LICENSE](LICENSE).
 """,
     "tr": """# zeon-ta
 
-[![PyPI](https://img.shields.io/pypi/v/zeon-ta)](https://pypi.org/project/zeon-ta/)
-[![Python](https://img.shields.io/pypi/pyversions/zeon-ta)](https://pypi.org/project/zeon-ta/)
-[![Lisans](https://img.shields.io/pypi/l/zeon-ta)](LICENSE)
+[![CI](https://github.com/selimozbas/zeon-ta/actions/workflows/ci.yml/badge.svg)](https://github.com/selimozbas/zeon-ta/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
+[![Lisans](https://img.shields.io/github/license/selimozbas/zeon-ta)](LICENSE)
 
 **English: [README.md](README.md)**
 
 Python için gerçekten bakımı yapılan teknik analiz indikatörleri — derlenecek C
 eklentisi yok, terk edilmiş API yok. Tek bağımlılık NumPy ve pandas.
 
-Formüllerin çoğu [TA 101](https://ta.cognicode.org) müfredatından
-uygulanmıştır; bu müfredatın dışındaki birkaç yaygın indikatör de eklenmiştir
-(OBV, CMF, MFI, ROC, Momentum, KAMA, Parabolic SAR). Her fonksiyonun docstring'i
-kendi kaynağına — TA 101 veya başka bir kaynağa — geri bağlantı verir.
+Formüller, standart ve yaygın olarak yayımlanmış teknik analiz tanımlarını
+izler. Birkaç indikatör, formülünün doğrulandığı dış kaynağa kendi
+docstring'inde ek olarak bağlantı verir.
 
 ## Neden bir TA kütüphanesi daha
 
@@ -360,8 +368,18 @@ kendi kaynağına — TA 101 veya başka bir kaynağa — geri bağlantı verir.
 
 ## Kurulum
 
+Henüz PyPI'de değil — doğrudan GitHub'dan kurun:
+
 ```bash
-pip install zeon-ta
+pip install git+https://github.com/selimozbas/zeon-ta.git
+```
+
+Ya da klonlayıp yerel olarak kurun:
+
+```bash
+git clone https://github.com/selimozbas/zeon-ta.git
+cd zeon-ta
+pip install .
 ```
 
 Python 3.12+ gerektirir.

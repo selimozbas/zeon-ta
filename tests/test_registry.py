@@ -37,7 +37,7 @@ def isolated_registry() -> Iterator[None]:
 
 
 class TestRegistration:
-    def test_indicator_must_have_exactly_one_of_lesson_or_reference(self) -> None:
+    def test_lesson_and_reference_are_mutually_exclusive(self) -> None:
         """The ``indicator`` decorator always passes a valid combination; this
         pins the ``IndicatorSpec`` invariant it relies on directly."""
         from zeonta._core.registry import IndicatorSpec
@@ -45,7 +45,7 @@ class TestRegistration:
         def dummy(close: pd.Series) -> pd.Series:  # pragma: no cover - never called
             return close
 
-        with pytest.raises(ValueError, match="exactly one of 'lesson' or 'reference'"):
+        with pytest.raises(ValueError, match="mutually exclusive"):
             IndicatorSpec(
                 name="dummy",
                 category="x",
@@ -58,19 +58,27 @@ class TestRegistration:
                 returns_frame=False,
                 func=dummy,
             )
-        with pytest.raises(ValueError, match="exactly one of 'lesson' or 'reference'"):
-            IndicatorSpec(
-                name="dummy",
-                category="x",
-                summary="s",
-                lesson=None,
-                reference=None,
-                inputs=("close",),
-                params={},
-                outputs=("O",),
-                returns_frame=False,
-                func=dummy,
-            )
+
+    def test_neither_lesson_nor_reference_is_allowed(self) -> None:
+        """An indicator citing no source at all (internal category only) is valid."""
+        from zeonta._core.registry import IndicatorSpec
+
+        def dummy(close: pd.Series) -> pd.Series:  # pragma: no cover - never called
+            return close
+
+        spec = IndicatorSpec(
+            name="dummy",
+            category="x",
+            summary="s",
+            lesson=None,
+            reference=None,
+            inputs=("close",),
+            params={},
+            outputs=("O",),
+            returns_frame=False,
+            func=dummy,
+        )
+        assert spec.url is None
 
     def test_a_parameter_without_a_default_is_rejected(self) -> None:
         with pytest.raises(TypeError, match="must either be an OHLCV input"):

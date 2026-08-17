@@ -58,7 +58,3 @@ Each value is that single bar's full extent including any gap from the previous 
 ## Pitfalls
 
 The first bar has no previous close, so it falls back to `High - Low` rather than being `NaN`. That single value is slightly understated by construction.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/atr](https://ta.cognicode.org/learn/atr)

@@ -68,7 +68,3 @@ A long body means one side dominated the whole session; a long wick means a leve
 ## Pitfalls
 
 A pattern is a description of one or two bars, not a signal. A hammer in the middle of a range means nothing; the same hammer at a level that has already been tested twice is what traders act on. Always read patterns together with location.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/candlesticks](https://ta.cognicode.org/learn/candlesticks)

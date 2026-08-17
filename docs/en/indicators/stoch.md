@@ -63,7 +63,3 @@ Above 80 means closes are clustering at the top of the range, below 20 at the bo
 ## Pitfalls
 
 The stochastic is built for ranges, and in a trend it saturates: it pins near 100 for the whole of a strong advance, generating a stream of premature sell signals. Filter it with a trend measure such as ADX before acting on extremes.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/stochastic](https://ta.cognicode.org/learn/stochastic)

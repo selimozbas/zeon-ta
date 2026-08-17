@@ -64,7 +64,3 @@ A close outside the channel is a genuine breakout candidate, since the channel w
 ## Pitfalls
 
 Implementations differ more than you would expect: some use SMA rather than EMA for the centre line, and older versions use a simple high-low range instead of ATR. Check the definition before comparing this output against a chart.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/keltner-channels](https://ta.cognicode.org/learn/keltner-channels)

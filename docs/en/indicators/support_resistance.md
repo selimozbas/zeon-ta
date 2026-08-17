@@ -75,7 +75,3 @@ zeonta.sr_levels(df['high'], df['low'], left=5, right=5, max_levels=3)
 ## Pitfalls
 
 A pivot cannot be known until `right` more bars have printed, so the `PIVOTHIGH` / `PIVOTLOW` columns contain look-ahead information — they place the pivot on the bar it occurred, not the bar you learned about it. Backtest against `RES` / `SUP`, which are already delayed by `right` bars.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/support-resistance](https://ta.cognicode.org/learn/support-resistance)

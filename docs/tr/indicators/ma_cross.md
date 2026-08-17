@@ -64,7 +64,3 @@ date
 ## Dikkat edilmesi gerekenler
 
 Her iki girdi de geciktiği için kesişim iki kat gecikir: altın kesişim oluştuğunda hareketin büyük kısmı genellikle geride kalmıştır. Yatay bantta çift sürekli ileri geri keser ve her birini mekanik olarak işleme sokmak para kaybettirir.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/ma-crossovers](https://ta.cognicode.org/learn/ma-crossovers)

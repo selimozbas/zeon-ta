@@ -1,7 +1,4 @@
-"""Advanced tools: VWAP, Fibonacci retracement, pivot points and divergences.
-
-Formulas follow the TA 101 *Advanced Tools* module.
-"""
+"""Advanced tools: VWAP, Fibonacci retracement, pivot points and divergences."""
 
 from __future__ import annotations
 
@@ -101,10 +98,6 @@ def vwap(
     ...          'v': [10, 10, 10, 10]}.items()}
     >>> round(float(zeonta.vwap(bars['h'], bars['l'], bars['c'], bars['v']).iloc[-1, 0]), 4)
     3.0
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/vwap
     """
     if anchor not in ("session", "rolling"):
         raise ValueError(f"'anchor' must be 'session' or 'rolling', got {anchor!r}")
@@ -203,10 +196,6 @@ def fib_retracement(
     >>> out = zeonta.fib_retracement([1, 2, 3, 4, 5], [0, 1, 2, 3, 4], lookback=5)
     >>> float(out['FIBDIR'].iloc[-1])
     1.0
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/fibonacci
     """
     lookback = validate_length(lookback, "lookback", minimum=2)
     all_ratios = list(ratios) + (list(FIB_EXTENSIONS) if extensions else [])
@@ -297,10 +286,6 @@ def pivot_points(
     >>> out = zeonta.pivot_points([10, 11], [8, 9], [9, 10])
     >>> round(float(out['PP_classic'].iloc[1]), 4)
     9.0
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/pivot-points
     """
     if kind not in ("classic", "fibonacci"):
         raise ValueError(f"'kind' must be 'classic' or 'fibonacci', got {kind!r}")
@@ -402,10 +387,6 @@ def divergence(
     >>> out = zeonta.divergence(prices, prices, prices, left=2, right=2)
     >>> set(out.iloc[-1].dropna().unique()) <= {0.0, 1.0}
     True
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/divergences
     """
     left = validate_length(left, "left")
     right = validate_length(right, "right")

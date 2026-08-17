@@ -1,6 +1,6 @@
 """Internal building blocks. Not part of the public API — contents may change."""
 
-from .registry import OHLCV_FIELDS, IndicatorSpec, get_spec, indicator, iter_specs, lesson_url
+from .registry import OHLCV_FIELDS, IndicatorSpec, get_spec, indicator, iter_specs
 from .rolling import (
     LinregResult,
     rolling_linreg,
@@ -38,7 +38,6 @@ __all__ = [
     "get_spec",
     "indicator",
     "iter_specs",
-    "lesson_url",
     "require_aligned_index",
     "require_non_negative",
     "require_same_length",

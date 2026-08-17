@@ -1,7 +1,4 @@
-"""Volatility tools: True Range, ATR, Bollinger Bands, Keltner Channels, TTM Squeeze.
-
-Formulas follow the TA 101 *Volatility* module.
-"""
+"""Volatility tools: True Range, ATR, Bollinger Bands, Keltner Channels, TTM Squeeze."""
 
 from __future__ import annotations
 
@@ -82,10 +79,6 @@ def true_range(high: ArrayLike, low: ArrayLike, close: ArrayLike) -> pd.Series:
     >>> import zeonta
     >>> zeonta.true_range([10, 12], [8, 11], [9, 11.5]).tolist()
     [2.0, 3.0]
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/atr
     """
     require_aligned_index(high=high, low=low, close=close)
     high_values = as_array(high, "high")
@@ -125,10 +118,6 @@ def atr(high: ArrayLike, low: ArrayLike, close: ArrayLike, length: int = 14) -> 
     >>> import zeonta
     >>> float(zeonta.atr([2] * 20, [1] * 20, [1.5] * 20, length=14).iloc[-1])
     1.0
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/atr
     """
     length = validate_length(length)
     require_aligned_index(high=high, low=low, close=close)
@@ -188,10 +177,6 @@ def bbands(
     >>> out = zeonta.bbands([10] * 25)
     >>> float(out.iloc[-1]["BBB_20_2.0"])
     0.0
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/bollinger-bands
     """
     length = validate_length(length, minimum=2)
     multiplier = validate_multiplier(std, "std")
@@ -262,10 +247,6 @@ def keltner(
     >>> import zeonta
     >>> list(zeonta.keltner([2] * 30, [1] * 30, [1.5] * 30).columns)
     ['KCL_20_2.0', 'KCM_20_2.0', 'KCU_20_2.0']
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/keltner-channels
     """
     length = validate_length(length)
     atr_length = validate_length(atr_length, "atr_length")
@@ -339,10 +320,6 @@ def squeeze(
     >>> import zeonta
     >>> sorted(c.split('_')[1] for c in zeonta.squeeze([2] * 40, [1] * 40, [1.5] * 40).columns)
     ['MOM', 'OFF', 'ON']
-
-    References
-    ----------
-    https://ta.cognicode.org/learn/squeeze
     """
     bb_length = validate_length(bb_length, "bb_length", minimum=2)
     kc_length = validate_length(kc_length, "kc_length", minimum=2)
@@ -375,8 +352,8 @@ def squeeze(
     off[comparable & ~inside] = 1.0
 
     # avg(avg(highest high, lowest low), sma) — a nested average, so the range
-    # midpoint and the SMA each carry half the weight. The TA 101 lesson writes
-    # this as "Avg(HighestHigh, LowestLow, SMA)", which reads as an equal
+    # midpoint and the SMA each carry half the weight. Some casual descriptions
+    # write this as "Avg(HighestHigh, LowestLow, SMA)", which reads as an equal
     # three-way mean; that is not the published TTM Squeeze definition.
     range_mid = (rolling_max(high_values, kc_length) + rolling_min(low_values, kc_length)) / 2.0
     midline = (range_mid + rolling_mean(close_values, kc_length)) / 2.0

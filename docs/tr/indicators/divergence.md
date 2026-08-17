@@ -66,7 +66,3 @@ Normal uyumsuzluk trendin yorulduğunu ve dönüşün yaklaştığını savunur.
 ## Dikkat edilmesi gerekenler
 
 Uyumsuzluk bir uyarıdır, sinyal değil — güçlü bir trendde osilatör, fiyat yoluna devam ederken üç dört kez uyumsuzluk verebilir ve her biri geriye bakınca ikna edici görünür. Fiyat teyidini bekleyin. Ayrıca işaretler pivot barına düşer ve bu bar ancak `right` bar sonra bilinebilir: geriye dönük testten önce çıktıyı kaydırın.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/divergences](https://ta.cognicode.org/learn/divergences)

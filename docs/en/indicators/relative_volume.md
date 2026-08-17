@@ -61,7 +61,3 @@ date
 ## Pitfalls
 
 Relative volume is distorted around scheduled events — index rebalances, options expiry and earnings all produce huge readings that say nothing about conviction. It also runs high at the open and close of every session, so compare like with like.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/volume-basics](https://ta.cognicode.org/learn/volume-basics)

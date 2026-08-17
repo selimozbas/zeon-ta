@@ -66,7 +66,3 @@ Sıkışmayı izlemek için bakılacak sayı `BBB`'dir (bant genişliği) — ba
 ## Dikkat edilmesi gerekenler
 
 Üst banda değmek satış sinyali değildir. Güçlü bir trendde fiyat "bandı yürür" ve onlarca bar boyunca ona yaslanır — Bollinger'ın kendisi bantların bir işlem sistemi değil, göreceli yüksek-düşük ölçüsü olduğunu söylemiştir. Ayrıca buradaki standart sapma, grafik platformlarıyla uyumlu olacak şekilde anakütle sapmasıdır (`ddof=0`).
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/bollinger-bands](https://ta.cognicode.org/learn/bollinger-bands)

@@ -64,7 +64,3 @@ date
 ## Pitfalls
 
 The fit is recomputed every bar, so the channel repaints as new data arrives — the line you see today over past bars is not the line that existed back then. Also, a regression will happily fit a straight line through pure noise; check the slope against something like ADX before trusting it.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/trend-basics](https://ta.cognicode.org/learn/trend-basics)

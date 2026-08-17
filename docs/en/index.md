@@ -2,7 +2,7 @@
 
 [Türkçe](../tr/index.md)
 
-Every indicator in `zeon-ta`, grouped by module. Most formulas come from [TA 101](https://ta.cognicode.org); a few common indicators outside that curriculum are included too, each linking to its own external source.
+Every indicator in `zeon-ta`, grouped by module. A few indicators additionally link to the external source their formula was verified against.
 
 ## Foundations
 

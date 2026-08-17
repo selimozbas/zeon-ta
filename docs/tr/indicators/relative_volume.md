@@ -61,7 +61,3 @@ date
 ## Dikkat edilmesi gerekenler
 
 Göreceli hacim planlı olaylar çevresinde bozulur — endeks yeniden dengelemeleri, opsiyon vadeleri ve bilanço açıklamaları, inanç hakkında hiçbir şey söylemeyen çok yüksek değerler üretir. Ayrıca her seansın açılış ve kapanışında yüksek seyreder; benzeri benzerle karşılaştırın.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/volume-basics](https://ta.cognicode.org/learn/volume-basics)

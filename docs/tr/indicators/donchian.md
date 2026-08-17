@@ -62,7 +62,3 @@ date
 ## Dikkat edilmesi gerekenler
 
 Kanal mevcut barı da içerir, dolayısıyla fiyat asla kanalın dışında kapanamaz — "fiyat kanalı yukarı kırdı" aslında "fiyat kanala ulaştı" demektir. Kıran barın kendisini dışlayan bir kırılım istiyorsanız önceki barın kanalıyla karşılaştırın.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/donchian-channels](https://ta.cognicode.org/learn/donchian-channels)

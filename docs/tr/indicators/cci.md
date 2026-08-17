@@ -61,7 +61,3 @@ Name: CCI_20, dtype: float64
 ## Dikkat edilmesi gerekenler
 
 CCI sınırsızdır, dolayısıyla "+100 aşırı alımdır" bir tavan değil, bir gelenektir — güçlü trendler rutin olarak +300 basar. İki standart yorum (uç noktayı ters yönde kullanmak ya da kırılımı takip etmek) birbirinin zıddıdır; işlem yapmadan önce hangisini kullandığınıza karar verin.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/cci](https://ta.cognicode.org/learn/cci)

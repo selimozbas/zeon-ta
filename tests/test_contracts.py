@@ -15,12 +15,13 @@ from helpers import as_frames, call_spec
 from zeonta._core import IndicatorSpec, iter_specs
 
 
-def test_registry_covers_every_curriculum_lesson() -> None:
-    """The 24 TA 101 lessons must all be implemented — no more, no fewer.
+def test_registry_covers_every_standard_indicator() -> None:
+    """The core set of well-known indicators must all be implemented — no more,
+    no fewer. ``lesson`` is purely an internal category slug (no public URL).
 
-    Indicators outside that curriculum (OBV, CMF, MFI, ROC, Momentum, KAMA,
-    Parabolic SAR) carry ``reference`` instead of ``lesson`` and are excluded
-    from this set on purpose; see ``test_non_curriculum_indicators_have_a_reference``.
+    A smaller set of indicators (OBV, CMF, MFI, ROC, Momentum, KAMA, Parabolic
+    SAR) carry ``reference`` instead of ``lesson`` and are excluded from this
+    set on purpose; see ``test_indicators_with_a_reference``.
     """
     lessons = {spec.lesson for spec in iter_specs() if spec.lesson is not None}
     assert lessons == {
@@ -51,15 +52,19 @@ def test_registry_covers_every_curriculum_lesson() -> None:
     }
 
 
-def test_non_curriculum_indicators_have_a_reference() -> None:
+def test_indicators_with_a_reference() -> None:
+    """The minority of indicators that cite an external source, and only those."""
     expected = {"obv", "cmf", "mfi", "roc", "momentum", "kama", "parabolic_sar"}
-    with_reference = {spec.name for spec in iter_specs() if spec.lesson is None}
+    with_reference = {spec.name for spec in iter_specs() if spec.reference is not None}
     assert with_reference == expected
     for spec in iter_specs():
-        if spec.lesson is None:
+        if spec.name in expected:
+            assert spec.lesson is None
             assert spec.reference is not None
             assert spec.reference.startswith("https://")
             assert spec.url == spec.reference
+        else:
+            assert spec.url is None
 
 
 def test_length_is_preserved(spec: IndicatorSpec, ohlcv: pd.DataFrame) -> None:
@@ -142,10 +147,12 @@ def test_list_indicators_matches_registry() -> None:
     table = zeonta.list_indicators()
     assert list(table["name"]) == [spec.name for spec in iter_specs()]
     assert not table["summary"].str.strip().eq("").any()
-    assert table["source"].str.startswith("https://").all()
     for spec in iter_specs():
         row = table.loc[table["name"] == spec.name, "source"].iloc[0]
-        assert row == spec.url, spec.name
+        if spec.url is None:
+            assert pd.isna(row), spec.name
+        else:
+            assert row == spec.url and row.startswith("https://"), spec.name
 
 
 def test_public_api_is_exported() -> None:

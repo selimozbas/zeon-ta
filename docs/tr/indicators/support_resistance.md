@@ -75,7 +75,3 @@ zeonta.sr_levels(df['high'], df['low'], left=5, right=5, max_levels=3)
 ## Dikkat edilmesi gerekenler
 
 Bir pivot, sağında `right` bar daha oluşana kadar bilinemez; bu yüzden `PIVOTHIGH` / `PIVOTLOW` kolonları geleceğe bakma (look-ahead) bilgisi içerir — pivotu öğrendiğiniz bara değil, oluştuğu bara koyarlar. Geriye dönük testlerde `right` bar gecikmeli olan `RES` / `SUP` kolonlarını kullanın.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/support-resistance](https://ta.cognicode.org/learn/support-resistance)

@@ -64,7 +64,3 @@ date
 ## Dikkat edilmesi gerekenler
 
 MACD sınırsızdır ve değerleri fiyatla birlikte ölçeklenir; dolayısıyla 3 değeri 20 dolarlık bir hissede ve 2.000 dolarlık bir hissede tamamen farklı şey ifade eder — ham MACD'yi asla semboller arasında karşılaştırmayın. Ayrıca iki kez yumuşatılmış bir trend aracı olarak yatay bantta ciddi biçimde testere hareketi yapar.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/macd](https://ta.cognicode.org/learn/macd)

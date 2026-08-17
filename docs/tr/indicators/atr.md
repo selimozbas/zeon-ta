@@ -60,7 +60,3 @@ ATR, pozisyon büyüklüğü belirlemenin ve stop yerleştirmenin standart yolud
 ## Dikkat edilmesi gerekenler
 
 ATR yönsüzdür — bir çöküş ile bir sert yükseliş aynı değeri üretir. Ayrıca mutlak bir rakamdır; fiyatı bilmeden 5'lik bir ATR anlamsızdır. Semboller arasında karşılaştırmak istiyorsanız kapanışa bölün.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/atr](https://ta.cognicode.org/learn/atr)

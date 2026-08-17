@@ -10,9 +10,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-Seven indicators outside the TA 101 curriculum, each documenting its own
-external source rather than a TA 101 lesson (`IndicatorSpec.reference`, a new
-field alongside `lesson` — exactly one is set per indicator):
+Seven indicators, each additionally citing the external source its formula
+was verified against (`IndicatorSpec.reference`, a new field alongside
+`lesson`; the two are mutually exclusive):
 
 - **New `volume` category** — `obv` (On-Balance Volume), `cmf` (Chaikin Money
   Flow), `mfi` (Money Flow Index). These combine volume with price direction
@@ -29,13 +29,18 @@ field alongside `lesson` — exactly one is set per indicator):
   same one-pass recursive-state pattern as `supertrend` and `adx`.
 
 Registered indicators: 25 -> 32. `list_indicators()`'s `lesson` column is
-renamed `source` to reflect that it now links to either kind of reference.
+renamed `source`, now holding the external reference URL for the indicators
+that cite one and `None` for the rest.
 
 ### Changed
 
 - `IndicatorSpec` and the `@indicator` decorator: `lesson` is now optional and
-  `reference` (a full external URL) was added; registration requires exactly
-  one of the two, enforced by `IndicatorSpec.__post_init__`.
+  `reference` (a full external URL) was added; the two are mutually exclusive,
+  enforced by `IndicatorSpec.__post_init__`. `lesson` is a purely internal
+  category slug with no derived URL — `IndicatorSpec.url` now returns the
+  `reference` value directly (`None` when not set), rather than deriving a
+  link from `lesson`. Docstrings and generated docs only show a "Reference"
+  section for the indicators that actually cite one.
 
 ### Fixed
 
@@ -76,15 +81,14 @@ renamed `source` to reflect that it now links to either kind of reference.
   Plain arrays and lists carry no index and are unaffected.
 - `trend_channel`: the channel bands now measure scatter about the fitted
   regression line (residual standard deviation), not about the window mean.
-  The TA 101 lesson describes it this way too, but the initial implementation
-  used the wrong deviation, which inflated the channel exactly when price was
-  tracking the trend most cleanly.
+  The standard definition describes it this way too, but the initial
+  implementation used the wrong deviation, which inflated the channel exactly
+  when price was tracking the trend most cleanly.
 - `squeeze`: the momentum midline now uses the published TTM Squeeze nested
   average, `avg(avg(highest_high, lowest_low), sma)` (range midpoint and SMA
   weighted equally at 1/2 each), instead of an equal three-way mean of the
-  three inputs. The TA 101 lesson's wording, `Avg(HighestHigh, LowestLow,
-  SMA)`, reads as the latter; the source site is a third-party reference, not
-  authoritative, so this follows the canonical TTM Squeeze definition instead.
+  three inputs, which some casual descriptions suggest instead; this follows
+  the canonical TTM Squeeze definition.
 - `vwap` now rejects negative `volume` with a clear `ValueError` instead of
   producing a silent `NaN` once a window's net volume happened to cross zero.
 - `ichimoku`'s forward-projected cloud now continues as real future dates when
@@ -97,9 +101,8 @@ renamed `source` to reflect that it now links to either kind of reference.
 
 ## [0.1.0] - 2026-08-17
 
-First release. Covers the complete
-[TA 101](https://ta.cognicode.org) curriculum — all 24 lessons across six
-modules — as 25 registered indicator functions.
+First release. A core set of 24 standard technical-analysis indicators
+across six modules, as 25 registered indicator functions.
 
 ### Added
 
@@ -126,8 +129,8 @@ modules — as 25 registered indicator functions.
 - `vwap` with `anchor="session"` requires a `DatetimeIndex` and raises a clear
   error without one, rather than computing a different statistic quietly.
 - The TTM Squeeze follows the published formula, under which a larger
-  `kc_multiplier` makes squeezes *more* frequent. The TA 101 quiz for that
-  lesson asserts the opposite; the formula wins.
+  `kc_multiplier` makes squeezes *more* frequent, not less, despite some
+  casual descriptions asserting the opposite.
 
 [Unreleased]: https://github.com/selimozbas/zeon-ta/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/selimozbas/zeon-ta/compare/v0.1.1...v0.2.0

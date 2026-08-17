@@ -64,7 +64,3 @@ date
 ## Dikkat edilmesi gerekenler
 
 Uyum her barda yeniden hesaplanır, dolayısıyla yeni veri geldikçe kanal yeniden çizilir — bugün geçmiş barların üzerinde gördüğünüz çizgi, o zaman var olan çizgi değildir. Ayrıca regresyon, saf gürültünün içinden de gönül rahatlığıyla bir doğru geçirir; eğime güvenmeden önce ADX gibi bir ölçüyle karşılaştırın.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/trend-basics](https://ta.cognicode.org/learn/trend-basics)

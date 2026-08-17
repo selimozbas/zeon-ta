@@ -69,7 +69,3 @@ date
 ## Dikkat edilmesi gerekenler
 
 Fibonacci seviyeleri fiziksel bir sebepten değil, yeterince çok yatırımcı aynı çizgileri çizdiği için çalışır. Farklı swing seçen iki kişi farklı seviyeler bulur ve ikisi de "haklı" olabilir. Buradaki swing her barda yeniden hesaplandığı için yeni uç noktalar oluştukça seviyeler yeniden çizilir.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/fibonacci](https://ta.cognicode.org/learn/fibonacci)

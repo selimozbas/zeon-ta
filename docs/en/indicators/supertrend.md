@@ -64,7 +64,3 @@ date
 ## Pitfalls
 
 SuperTrend has no opinion about trend strength — it flips identically on a powerful move and a feeble one. In a range it flips repeatedly, and trading it mechanically as a stop-and-reverse system produces a string of small losses. Pair it with a strength filter such as [adx](adx.md).
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/supertrend](https://ta.cognicode.org/learn/supertrend)

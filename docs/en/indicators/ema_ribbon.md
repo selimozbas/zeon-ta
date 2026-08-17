@@ -64,7 +64,3 @@ Widely spaced and correctly ordered (shortest on top in an uptrend) means a stro
 ## Pitfalls
 
 The ribbon is six lagging indicators, not six independent opinions — they all come from the same closes, so their "agreement" is much weaker evidence than it looks. It is a visualisation aid more than a signal generator.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/ema-ribbon](https://ta.cognicode.org/learn/ema-ribbon)

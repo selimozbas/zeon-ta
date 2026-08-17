@@ -60,7 +60,3 @@ ATR is the standard way to size a position and place a stop: a stop at 2 x ATR i
 ## Pitfalls
 
 ATR is directionless — a crash and a melt-up produce the same reading. It is also an absolute figure, so an ATR of 5 is meaningless without knowing the price; divide by close if you need to compare across symbols.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/atr](https://ta.cognicode.org/learn/atr)

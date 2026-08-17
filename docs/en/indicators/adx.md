@@ -62,7 +62,3 @@ Readings below 20 mean no usable trend, above 25 a trend worth following, and ab
 ## Pitfalls
 
 A rising ADX in a downtrend is still a rising ADX — it never says "bullish". Because it smooths an already-smoothed series it needs roughly `2 x length` bars before it produces anything, and it turns late by construction.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/adx-dmi](https://ta.cognicode.org/learn/adx-dmi)

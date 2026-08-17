@@ -66,7 +66,3 @@ date
 ## Pitfalls
 
 Touching the upper band is not a sell signal. In a strong trend price "walks the band", riding it for dozens of bars — Bollinger himself said the bands are a relative measure of high and low, not a trading system. Note also that the standard deviation here is the population one (`ddof=0`), matching charting platforms.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/bollinger-bands](https://ta.cognicode.org/learn/bollinger-bands)

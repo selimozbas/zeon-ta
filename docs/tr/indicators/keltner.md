@@ -64,7 +64,3 @@ Kanalın dışında bir kapanış gerçek bir kırılım adayıdır, çünkü ka
 ## Dikkat edilmesi gerekenler
 
 Uygulamalar beklediğinizden çok daha fazla farklılık gösterir: bazıları orta çizgi için EMA yerine SMA kullanır, eski sürümler ise ATR yerine basit yüksek-düşük aralığını kullanır. Bu çıktıyı bir grafikle karşılaştırmadan önce tanımı kontrol edin.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/keltner-channels](https://ta.cognicode.org/learn/keltner-channels)

@@ -65,7 +65,3 @@ The central pivot is the day's reference: trading above it is a bullish session,
 ## Pitfalls
 
 Pivots are arithmetic, not analysis — they carry no information beyond the previous bar's range and work mainly as a shared reference grid. They are far less meaningful on instruments without a real session boundary.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/pivot-points](https://ta.cognicode.org/learn/pivot-points)

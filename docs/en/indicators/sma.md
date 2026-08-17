@@ -72,7 +72,3 @@ Price above a rising SMA is the textbook uptrend; price below a falling one is t
 ## Pitfalls
 
 An SMA lags by roughly half its length, so it confirms a turn well after it happened; it is a description of the past, not a forecast. In a sideways market price crosses it constantly, producing signals that are all noise.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/sma](https://ta.cognicode.org/learn/sma)

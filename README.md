@@ -1,8 +1,8 @@
 # zeon-ta
 
-[![PyPI](https://img.shields.io/pypi/v/zeon-ta)](https://pypi.org/project/zeon-ta/)
-[![Python](https://img.shields.io/pypi/pyversions/zeon-ta)](https://pypi.org/project/zeon-ta/)
-[![License](https://img.shields.io/pypi/l/zeon-ta)](LICENSE)
+[![CI](https://github.com/selimozbas/zeon-ta/actions/workflows/ci.yml/badge.svg)](https://github.com/selimozbas/zeon-ta/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
+[![License](https://img.shields.io/github/license/selimozbas/zeon-ta)](LICENSE)
 
 **Türkçe: [README.tr.md](README.tr.md)**
 
@@ -10,10 +10,9 @@ Technical analysis indicators for Python that are actually maintained — no C
 extension to compile, no abandoned API. NumPy and pandas are the only
 dependencies.
 
-Most formulas are implemented from the [TA 101](https://ta.cognicode.org)
-curriculum; a few common indicators outside that curriculum (OBV, CMF, MFI,
-ROC, Momentum, KAMA, Parabolic SAR) are included too. Every function's
-docstring links back to its specific source, TA 101 or otherwise.
+Formulas follow standard, widely published technical-analysis definitions. A
+few indicators additionally cite the specific external source their formula
+was verified against in their own docstring.
 
 ## Why another TA library
 
@@ -29,8 +28,18 @@ docstring links back to its specific source, TA 101 or otherwise.
 
 ## Install
 
+Not on PyPI yet — install straight from GitHub:
+
 ```bash
-pip install zeon-ta
+pip install git+https://github.com/selimozbas/zeon-ta.git
+```
+
+Or clone and install locally:
+
+```bash
+git clone https://github.com/selimozbas/zeon-ta.git
+cd zeon-ta
+pip install .
 ```
 
 Requires Python 3.12+.

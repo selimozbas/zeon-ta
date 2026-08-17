@@ -2,7 +2,7 @@
 
 [English](../en/index.md)
 
-`zeon-ta` içindeki tüm indikatörler, modüllere göre gruplanmıştır. Formüllerin çoğu [TA 101](https://ta.cognicode.org) kaynağından alınmıştır; bu müfredatın dışındaki birkaç yaygın indikatör de eklenmiştir, her biri kendi dış kaynağına bağlantı verir.
+`zeon-ta` içindeki tüm indikatörler, modüllere göre gruplanmıştır. Birkaç indikatör, formülünün doğrulandığı dış kaynağa ek olarak bağlantı verir.
 
 ## Temeller
 

@@ -64,7 +64,3 @@ Price above VWAP means buyers are paying up relative to the session's average. T
 ## Pitfalls
 
 A VWAP that never resets is a different statistic entirely and loses the benchmark meaning — the reset is the point. Session anchoring needs a `DatetimeIndex` to find session boundaries; without one this function raises rather than silently computing the wrong thing.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/vwap](https://ta.cognicode.org/learn/vwap)

@@ -62,7 +62,3 @@ A close at the upper channel means this bar made the highest high of the last n 
 ## Pitfalls
 
 The channel includes the current bar, so price can never close outside it — "price broke above the channel" really means "price reached the channel". Compare against the previous bar's channel if you want a breakout that excludes the breaking bar.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/donchian-channels](https://ta.cognicode.org/learn/donchian-channels)

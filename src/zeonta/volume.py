@@ -1,11 +1,11 @@
 """Volume-based indicators: On-Balance Volume, Chaikin Money Flow, Money Flow Index.
 
-None of these are part of the TA 101 curriculum; see each function's own
-``References`` section for its source. They sit apart from
-:func:`zeonta.relative_volume` (which normalises raw volume against its own
-recent average) and :func:`zeonta.vwap` (which weights *price* by volume) —
-this module instead combines volume with price *direction* to build a
-running measure of buying versus selling pressure.
+Each function's own ``References`` section cites the external source its
+formula was verified against. These sit apart from :func:`zeonta.relative_volume`
+(which normalises raw volume against its own recent average) and
+:func:`zeonta.vwap` (which weights *price* by volume) — this module instead
+combines volume with price *direction* to build a running measure of buying
+versus selling pressure.
 """
 
 from __future__ import annotations

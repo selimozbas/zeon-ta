@@ -66,7 +66,3 @@ Regular divergence argues the trend is tiring and a reversal is closer. Hidden d
 ## Pitfalls
 
 A divergence is a warning, not a signal — in a strong trend an oscillator can diverge three or four times while price keeps going, and each one looks convincing in hindsight. Wait for price confirmation. Note too that flags land on the pivot bar, which is only knowable `right` bars later: shift the output before backtesting.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/divergences](https://ta.cognicode.org/learn/divergences)

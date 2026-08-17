@@ -15,11 +15,10 @@ Two equivalent ways to call anything::
     zeonta.rsi(df['close'], length=14)   # functional
     df.zta.rsi(length=14)                # accessor, same code underneath
 
-Most indicators implement a formula from the TA 101 curriculum at
-https://ta.cognicode.org. A handful of common indicators outside that
-curriculum (OBV, CMF, MFI, ROC, Momentum, KAMA, Parabolic SAR) are also
-included; every function's docstring links to the specific source — TA 101 or
-otherwise — its formula was taken from.
+Formulas follow standard, widely published technical-analysis definitions. A
+handful of indicators (OBV, CMF, MFI, ROC, Momentum, KAMA, Parabolic SAR)
+additionally cite the specific external source their formula was verified
+against in a ``References`` section of their own docstring.
 """
 
 from __future__ import annotations
@@ -102,8 +101,8 @@ def list_indicators() -> pd.DataFrame:
 
     Columns: ``name``, ``category``, ``summary``, ``inputs`` (required OHLCV
     series), ``params`` (tunable parameters with their defaults), ``outputs``
-    (base column names) and ``source`` (link to the formula's origin — a TA 101
-    lesson for most indicators, an external reference for the rest).
+    (base column names) and ``source`` (the external reference URL, for the
+    indicators that cite one; ``None`` otherwise).
 
     Examples
     --------

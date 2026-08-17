@@ -64,8 +64,4 @@ date
 
 ## Dikkat edilmesi gerekenler
 
-Sıkışma bir hareketin muhtemel olduğunu söyler, hangi yöne olacağını asla söylemez — momentum okuması olmadan işlem yapmak yazı tura atmaktır. Ayrıca `kc_multiplier`'ı büyütmek Keltner bantlarını dışarı iter ve dolayısıyla sıkışmaları **daha** sık hâle getirir, daha seyrek değil; bu kütüphane, tersini söyleyen TA 101 sınav cevabını değil formülü esas alır. Momentum orta çizgisi, dersin ifadesinin çağrıştırdığı eşit üçlü ortalamayı değil, yayımlanmış TTM tanımındaki *iç içe* ortalamayı kullanır — `avg(avg(hh, ll), sma)`, yani aralık orta noktası ve SMA yarımşar ağırlıkla. Bu nedenle değerler, ifadeyi birebir izleyen bir uygulamadan farklı çıkar.
-
-## Kaynak
-
-Formül kaynağı: [https://ta.cognicode.org/learn/squeeze](https://ta.cognicode.org/learn/squeeze)
+Sıkışma bir hareketin muhtemel olduğunu söyler, hangi yöne olacağını asla söylemez — momentum okuması olmadan işlem yapmak yazı tura atmaktır. Ayrıca `kc_multiplier`'ı büyütmek Keltner bantlarını dışarı iter ve dolayısıyla sıkışmaları **daha** sık hâle getirir, daha seyrek değil — bu göstergeye dair bazı gündelik anlatımlar tam tersini iddia eder, ama bu iddia formülün kendisinden çıkmaz; bu kütüphane formülü esas alır. Momentum orta çizgisi, bazı gündelik anlatımların çağrıştırdığı eşit üçlü ortalamayı değil, yayımlanmış TTM tanımındaki *iç içe* ortalamayı kullanır — `avg(avg(hh, ll), sma)`, yani aralık orta noktası ve SMA yarımşar ağırlıkla. Bu nedenle değerler, o okumayı birebir izleyen bir uygulamadan farklı çıkar.

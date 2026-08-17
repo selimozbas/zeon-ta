@@ -61,7 +61,3 @@ The 0.015 constant is chosen so that roughly 70-80% of readings fall between -10
 ## Pitfalls
 
 CCI is unbounded, so "+100 is overbought" is a convention, not a ceiling — strong trends routinely print +300. The two standard interpretations (fade the extreme vs. follow the breakout) are opposites, so decide which one you are using before you trade it.
-
-## Reference
-
-Formula source: [https://ta.cognicode.org/learn/cci](https://ta.cognicode.org/learn/cci)

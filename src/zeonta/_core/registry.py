@@ -12,11 +12,12 @@ The registry powers three things:
 * the documentation tests, which assert that every ``.md`` file documents the
   parameters the code actually accepts.
 
-Most indicators implement a formula from the TA 101 curriculum
-(https://ta.cognicode.org); those pass ``lesson=`` to link back to the lesson.
-A handful of common indicators (OBV, CMF, MFI, ROC, Momentum, KAMA, Parabolic
-SAR) are not part of that curriculum and pass ``reference=`` with an external
-URL instead. Every indicator has exactly one of the two.
+Most indicators implement a well-known, widely published technical-analysis
+formula; those pass ``lesson=`` as a purely internal category tag (it carries
+no public URL). A smaller set of indicators additionally cite the specific
+external source their formula was verified against via ``reference=`` (a full
+URL) — used only when a formula has genuine ambiguity across sources worth
+pinning down. At most one of the two is set.
 """
 
 from __future__ import annotations
@@ -32,28 +33,20 @@ __all__ = [
     "get_spec",
     "indicator",
     "iter_specs",
-    "lesson_url",
 ]
 
 #: Series names an indicator may declare as positional inputs.
 OHLCV_FIELDS: tuple[str, ...] = ("open", "high", "low", "close", "volume")
 
-_LESSON_BASE = "https://ta.cognicode.org/learn/"
-
 F = TypeVar("F", bound=Callable[..., Any])
-
-
-def lesson_url(slug: str) -> str:
-    """Full URL of the TA 101 lesson a formula was taken from."""
-    return f"{_LESSON_BASE}{slug}"
 
 
 @dataclass(frozen=True)
 class IndicatorSpec:
     """Everything the library knows about one indicator.
 
-    Exactly one of ``lesson`` (a TA 101 slug) or ``reference`` (a full URL to
-    an external source) is set; the other is ``None``.
+    ``lesson`` is an internal category slug with no public meaning; at most
+    one of ``lesson``/``reference`` is set, and both may be ``None``.
     """
 
     name: str
@@ -68,15 +61,12 @@ class IndicatorSpec:
     func: Callable[..., Any] = field(repr=False)
 
     def __post_init__(self) -> None:
-        if (self.lesson is None) == (self.reference is None):
-            raise ValueError(f"{self.name!r}: exactly one of 'lesson' or 'reference' must be set")
+        if self.lesson is not None and self.reference is not None:
+            raise ValueError(f"{self.name!r}: 'lesson' and 'reference' are mutually exclusive")
 
     @property
-    def url(self) -> str:
-        """Link to the source this indicator's formula comes from."""
-        if self.lesson is not None:
-            return lesson_url(self.lesson)
-        assert self.reference is not None  # guaranteed by __post_init__
+    def url(self) -> str | None:
+        """External source URL, if this indicator cites one."""
         return self.reference
 
 
@@ -132,11 +122,12 @@ def indicator(
     outputs:
         Base names of the produced columns, before parameters are interpolated.
     lesson:
-        TA 101 lesson slug the formula was taken from. Mutually exclusive with
-        ``reference``; exactly one is required.
+        Internal category slug; carries no public URL. Mutually exclusive
+        with ``reference``.
     reference:
-        Full URL to an external, non-TA-101 source for indicators outside that
-        curriculum. Mutually exclusive with ``lesson``.
+        Full URL to the external source this indicator's formula was
+        verified against, for the minority of indicators that cite one.
+        Mutually exclusive with ``lesson``.
     returns_frame:
         Whether the indicator returns a ``DataFrame``. Defaults to ``True`` when
         more than one output is declared; pass it explicitly for indicators whose

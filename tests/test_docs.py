@@ -56,8 +56,14 @@ def test_required_inputs_are_documented(spec: IndicatorSpec, lang: str) -> None:
 
 
 @pytest.mark.parametrize("lang", LANGS)
-def test_every_doc_links_to_its_lesson(spec: IndicatorSpec, lang: str) -> None:
-    assert spec.url in doc_path(spec.name, lang).read_text(encoding="utf-8")
+def test_every_doc_with_a_reference_links_to_it(spec: IndicatorSpec, lang: str) -> None:
+    """Indicators that cite an external source must link to it; the rest must
+    not carry a stray link (nothing to attribute)."""
+    text = doc_path(spec.name, lang).read_text(encoding="utf-8")
+    if spec.url is None:
+        assert "## Reference" not in text and "## Kaynak" not in text
+    else:
+        assert spec.url in text
 
 
 @pytest.mark.parametrize("lang", LANGS)

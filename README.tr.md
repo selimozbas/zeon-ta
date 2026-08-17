@@ -92,28 +92,35 @@ düşen kısmını atmak yerine ek olarak döndürür.
 
 | İndikatör | Ne yapar | Doküman |
 | --- | --- | --- |
+| `dema` | Çift Üssel Hareketli Ortalama (DEMA) | [doküman](docs/tr/indicators/dema.md) |
 | `ema` | Üssel Hareketli Ortalama (EMA) | [doküman](docs/tr/indicators/ema.md) |
 | `ema_ribbon` | EMA Şeridi | [doküman](docs/tr/indicators/ema_ribbon.md) |
+| `hma` | Hull Hareketli Ortalaması (HMA) | [doküman](docs/tr/indicators/hma.md) |
 | `kama` | Kaufman Uyarlanabilir Hareketli Ortalama (KAMA) | [doküman](docs/tr/indicators/kama.md) |
 | `ma_cross` | Hareketli Ortalama Kesişimleri | [doküman](docs/tr/indicators/ma_cross.md) |
 | `sma` | Basit Hareketli Ortalama (SMA) | [doküman](docs/tr/indicators/sma.md) |
+| `tema` | Üçlü Üssel Hareketli Ortalama (TEMA) | [doküman](docs/tr/indicators/tema.md) |
 | `wma` | Ağırlıklı Hareketli Ortalama (WMA) | [doküman](docs/tr/indicators/wma.md) |
 
 ### Osilatörler
 
 | İndikatör | Ne yapar | Doküman |
 | --- | --- | --- |
+| `awesome_oscillator` | Awesome Osilatör (AO) | [doküman](docs/tr/indicators/awesome_oscillator.md) |
 | `cci` | Emtia Kanal Endeksi (CCI) | [doküman](docs/tr/indicators/cci.md) |
 | `macd` | MACD (Hareketli Ortalama Yakınsama Iraksama) | [doküman](docs/tr/indicators/macd.md) |
 | `momentum` | Momentum | [doküman](docs/tr/indicators/momentum.md) |
 | `roc` | Değişim Oranı (ROC) | [doküman](docs/tr/indicators/roc.md) |
 | `rsi` | Göreceli Güç Endeksi (RSI) | [doküman](docs/tr/indicators/rsi.md) |
 | `stoch` | Stokastik Osilatör | [doküman](docs/tr/indicators/stoch.md) |
+| `stoch_rsi` | Stokastik RSI (StochRSI) | [doküman](docs/tr/indicators/stoch_rsi.md) |
+| `williams_r` | Williams %R | [doküman](docs/tr/indicators/williams_r.md) |
 
 ### Hacim
 
 | İndikatör | Ne yapar | Doküman |
 | --- | --- | --- |
+| `adl` | Birikim/Dağıtım Çizgisi (ADL) | [doküman](docs/tr/indicators/adl.md) |
 | `cmf` | Chaikin Para Akışı (CMF) | [doküman](docs/tr/indicators/cmf.md) |
 | `mfi` | Para Akışı Endeksi (MFI) | [doküman](docs/tr/indicators/mfi.md) |
 | `obv` | Denge Hacmi (OBV) | [doküman](docs/tr/indicators/obv.md) |
@@ -133,6 +140,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | İndikatör | Ne yapar | Doküman |
 | --- | --- | --- |
 | `adx` | ADX / DMI | [doküman](docs/tr/indicators/adx.md) |
+| `aroon` | Aroon ve Aroon Osilatörü | [doküman](docs/tr/indicators/aroon.md) |
 | `donchian` | Donchian Kanalları | [doküman](docs/tr/indicators/donchian.md) |
 | `ichimoku` | Ichimoku | [doküman](docs/tr/indicators/ichimoku.md) |
 | `parabolic_sar` | Parabolik SAR | [doküman](docs/tr/indicators/parabolic_sar.md) |

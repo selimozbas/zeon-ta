@@ -287,3 +287,48 @@ def test_psar_gap_bar_does_not_silently_produce_a_finite_value() -> None:
     low[15] = np.nan
     out = zeonta.parabolic_sar(high, low)
     assert np.isnan(out["PSAR_0.02_0.02_0.2"].iloc[15])
+
+
+def test_aroon_matches_the_hand_computed_example() -> None:
+    out = zeonta.aroon([1, 2, 5, 2, 1], [0, 1, 4, 1, 0], length=4)
+    np.testing.assert_allclose(out.iloc[-1].to_numpy(), [50.0, 100.0, -50.0])
+
+
+def test_aroon_warmup_is_exactly_the_length() -> None:
+    # The window scanned is length+1 bars (today plus `length` back), so the
+    # first `length` bars (not length-1) cannot form a full window.
+    out = zeonta.aroon(list(range(20)), list(range(-1, 19)), length=5)
+    assert int(out["AROONU_5"].isna().sum()) == 5
+
+
+def test_aroon_up_is_100_when_today_is_the_highest_high() -> None:
+    out = zeonta.aroon(list(range(1, 30)), [x - 1 for x in range(1, 30)], length=10)
+    np.testing.assert_allclose(out["AROONU_10"].iloc[-1], 100.0)
+
+
+def test_aroon_down_is_100_when_today_is_the_lowest_low() -> None:
+    high = list(range(30, 1, -1))
+    low = [x - 1 for x in high]
+    out = zeonta.aroon(high, low, length=10)
+    np.testing.assert_allclose(out["AROOND_10"].iloc[-1], 100.0)
+
+
+def test_aroon_oscillator_is_up_minus_down() -> None:
+    out = zeonta.aroon([3, 1, 4, 1, 5, 9, 2, 6], [1, 0, 2, 0, 3, 7, 1, 4], length=4)
+    np.testing.assert_allclose(
+        out["AROONOSC_4"].to_numpy(),
+        (out["AROONU_4"] - out["AROOND_4"]).to_numpy(),
+        equal_nan=True,
+    )
+
+
+def test_aroon_stays_within_bounds(ohlcv: pd.DataFrame) -> None:
+    out = zeonta.aroon(ohlcv["high"], ohlcv["low"]).dropna()
+    assert out["AROONU_25"].between(0.0, 100.0).all()
+    assert out["AROOND_25"].between(0.0, 100.0).all()
+    assert out["AROONOSC_25"].between(-100.0, 100.0).all()
+
+
+def test_aroon_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.aroon([1.0, 2.0, 3.0], [0.0, 1.0, 2.0], length=0)

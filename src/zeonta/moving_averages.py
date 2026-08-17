@@ -1,7 +1,8 @@
-"""Moving averages: SMA, EMA, WMA, crossovers, the EMA ribbon, and KAMA.
+"""Moving averages: SMA, EMA, WMA, DEMA, TEMA, HMA, crossovers, the EMA
+ribbon, and KAMA.
 
-KAMA additionally cites the external source its formula was verified
-against; see its own ``References`` section.
+KAMA, HMA, DEMA and TEMA additionally cite the external source their formula
+was verified against; see each one's own ``References`` section.
 """
 
 from __future__ import annotations
@@ -26,7 +27,7 @@ from ._core import (
     wrap_series,
 )
 
-__all__ = ["ema", "ema_ribbon", "kama", "ma_cross", "sma", "wma"]
+__all__ = ["dema", "ema", "ema_ribbon", "hma", "kama", "ma_cross", "sma", "tema", "wma"]
 
 
 @indicator(
@@ -142,6 +143,101 @@ def ema(close: ArrayLike, length: int = 20) -> pd.Series:
     length = validate_length(length)
     values = as_array(close, "close")
     return wrap_series(ema_values(values, length), common_index(close), f"EMA_{length}")
+
+
+@indicator(
+    category="moving_averages",
+    summary="EMA with roughly half the lag, by offsetting a single EMA with its own EMA.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-overlays/double-exponential-moving-average-dema"
+    ),
+    outputs=("DEMA",),
+)
+def dema(close: ArrayLike, length: int = 20) -> pd.Series:
+    """Double Exponential Moving Average.
+
+    ``DEMA = 2 * EMA1 - EMA2``, where ``EMA1 = EMA(Close, n)`` and
+    ``EMA2 = EMA(EMA1, n)``. A single EMA lags price because it is, in effect,
+    always catching up; DEMA estimates how far behind EMA1 has fallen by
+    smoothing it a second time, then adds that gap back once to cancel most
+    of the lag out.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        EMA period, applied twice.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``DEMA_{length}``. The first ``2 * (length - 1)`` bars are
+        ``NaN`` — EMA2 needs a full window of already-warmed-up EMA1 values.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> float(zeonta.dema([1, 2, 3, 4, 5, 6, 7], length=3).iloc[-1])
+    7.0
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-overlays/double-exponential-moving-average-dema
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+    ema1 = ema_values(values, length)
+    ema2 = ema_values(ema1, length)
+    return wrap_series(2.0 * ema1 - ema2, common_index(close), f"DEMA_{length}")
+
+
+@indicator(
+    category="moving_averages",
+    summary="EMA with even less lag than DEMA, by combining three nested EMAs.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-overlays/triple-exponential-moving-average-tema"
+    ),
+    outputs=("TEMA",),
+)
+def tema(close: ArrayLike, length: int = 20) -> pd.Series:
+    """Triple Exponential Moving Average.
+
+    ``TEMA = 3*EMA1 - 3*EMA2 + EMA3``, where ``EMA1 = EMA(Close, n)``,
+    ``EMA2 = EMA(EMA1, n)`` and ``EMA3 = EMA(EMA2, n)`` — the same
+    lag-cancelling idea as :func:`dema`, carried one smoothing pass further.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        EMA period, applied three times.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``TEMA_{length}``. The first ``3 * (length - 1)`` bars are
+        ``NaN`` — EMA3 needs a full window of already-warmed-up EMA2 values.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> float(zeonta.tema([1, 2, 3, 4, 5, 6, 7, 8, 9], length=3).iloc[-1])
+    9.0
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-overlays/triple-exponential-moving-average-tema
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+    ema1 = ema_values(values, length)
+    ema2 = ema_values(ema1, length)
+    ema3 = ema_values(ema2, length)
+    return wrap_series(3.0 * ema1 - 3.0 * ema2 + ema3, common_index(close), f"TEMA_{length}")
 
 
 @indicator(
@@ -376,3 +472,58 @@ def kama(close: ArrayLike, length: int = 10, fast: int = 2, slow: int = 30) -> p
         result[i] = previous
 
     return wrap_series(result, common_index(close), f"KAMA_{length}_{fast}_{slow}")
+
+
+@indicator(
+    category="moving_averages",
+    summary="Fast-turning WMA-of-WMAs designed to cut lag without adding noise.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-overlays/hull-moving-average-hma"
+    ),
+    outputs=("HMA",),
+)
+def hma(close: ArrayLike, length: int = 20) -> pd.Series:
+    """Hull Moving Average.
+
+    ``Raw = 2 * WMA(Close, round(n/2)) - WMA(Close, n)``, then
+    ``HMA = WMA(Raw, round(sqrt(n)))``. The half-length WMA reacts fast; the
+    full-length WMA gives the "usual" reading; doubling the fast one and
+    subtracting the slow one extrapolates *ahead* of the fast WMA. Smoothing
+    that extrapolation with one more (short) WMA turns a jumpy overshoot into
+    a genuinely quick, still-smooth line — Hull's answer to the fact that
+    :func:`wma` alone reduces lag only modestly.
+
+    Both intermediate lengths are rounded to the nearest whole number
+    (``0.5`` rounds up), matching the source's own worked example.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Overall look-back. Must be >= 1 (``length=1`` returns the input).
+
+    Returns
+    -------
+    pandas.Series
+        Named ``HMA_{length}``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> round(float(zeonta.hma(list(range(1, 31)), length=9).iloc[-1]), 4)
+    29.3333
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-overlays/hull-moving-average-hma
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+
+    half_length = int(length / 2.0 + 0.5)
+    sqrt_length = int(length**0.5 + 0.5)
+
+    raw = 2.0 * rolling_wma(values, half_length) - rolling_wma(values, length)
+    return wrap_series(rolling_wma(raw, sqrt_length), common_index(close), f"HMA_{length}")

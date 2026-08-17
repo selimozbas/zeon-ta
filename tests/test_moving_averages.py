@@ -219,3 +219,98 @@ def test_kama_holds_its_value_exactly_through_a_gap_bar() -> None:
     # Bar 5 is the gap itself: nothing is knowable there, so it holds bar 4's
     # value rather than becoming NaN or silently updating on garbage input.
     np.testing.assert_allclose(result.iloc[5], result.iloc[4])
+
+
+def test_dema_matches_the_hand_computed_double_ema() -> None:
+    values = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]
+    result = zeonta.dema(values, length=3)
+    ema1 = zeonta.ema(values, length=3)
+    ema2 = zeonta.ema(ema1, length=3)
+    np.testing.assert_allclose(result.to_numpy(), (2.0 * ema1 - ema2).to_numpy(), equal_nan=True)
+
+
+def test_dema_warmup_is_double_emas_own() -> None:
+    # EMA1 warms up after `length - 1` bars; EMA2 needs a full window of
+    # already-warmed-up EMA1 values, so DEMA needs 2*(length-1) bars.
+    result = zeonta.dema(list(range(20)), length=4)
+    assert int(result.isna().sum()) == 2 * 3
+
+
+def test_dema_is_exact_on_a_flat_series() -> None:
+    np.testing.assert_allclose(zeonta.dema([7.0] * 20, length=5).dropna().to_numpy(), 7.0)
+
+
+def test_dema_has_less_steady_state_lag_than_ema() -> None:
+    ramp = list(np.linspace(0, 100, 200))
+    target = ramp[-1]
+    ema_lag = target - zeonta.ema(ramp, length=10).iloc[-1]
+    dema_lag = target - zeonta.dema(ramp, length=10).iloc[-1]
+    assert abs(dema_lag) < abs(ema_lag)
+
+
+def test_tema_matches_the_hand_computed_triple_ema() -> None:
+    values = [float(v) for v in range(1, 15)]
+    result = zeonta.tema(values, length=3)
+    ema1 = zeonta.ema(values, length=3)
+    ema2 = zeonta.ema(ema1, length=3)
+    ema3 = zeonta.ema(ema2, length=3)
+    expected = 3.0 * ema1 - 3.0 * ema2 + ema3
+    np.testing.assert_allclose(result.to_numpy(), expected.to_numpy(), equal_nan=True)
+
+
+def test_tema_warmup_is_triple_emas_own() -> None:
+    result = zeonta.tema(list(range(30)), length=4)
+    assert int(result.isna().sum()) == 3 * 3
+
+
+def test_tema_is_exact_on_a_flat_series() -> None:
+    np.testing.assert_allclose(zeonta.tema([7.0] * 30, length=5).dropna().to_numpy(), 7.0)
+
+
+def test_tema_has_less_lag_than_dema_on_a_curve() -> None:
+    """A pure straight ramp cancels lag exactly for both DEMA and TEMA (see
+    the flat/ramp tests above), which can't distinguish them — a curved
+    series can."""
+    curve = list(np.linspace(0, 10, 100) ** 2)
+    target = curve[-1]
+    dema_lag = target - zeonta.dema(curve, length=10).iloc[-1]
+    tema_lag = target - zeonta.tema(curve, length=10).iloc[-1]
+    assert abs(tema_lag) < abs(dema_lag)
+
+
+def test_hma_matches_the_source_rounding_example() -> None:
+    """The source's own worked example: n=11 -> half-length rounds up to 6
+    (11/2=5.5), sqrt-length rounds down to 3 (sqrt(11)=3.317)."""
+    values = list(np.linspace(1, 50, 40))
+    result = zeonta.hma(values, length=11)
+
+    values_array = np.array(values)
+    raw = (
+        2.0 * zeonta.wma(values_array, length=6).to_numpy()
+        - zeonta.wma(values_array, length=11).to_numpy()
+    )
+    expected = zeonta.wma(raw, length=3)
+
+    np.testing.assert_allclose(result.to_numpy(), expected.to_numpy(), equal_nan=True)
+
+
+def test_hma_of_one_is_the_input() -> None:
+    values = [3.0, 1.0, 4.0, 1.0, 5.0]
+    np.testing.assert_allclose(zeonta.hma(values, length=1).to_numpy(), values)
+
+
+def test_hma_is_exact_on_a_flat_series() -> None:
+    np.testing.assert_allclose(zeonta.hma([7.0] * 30, length=9).dropna().to_numpy(), 7.0)
+
+
+def test_hma_has_less_steady_state_lag_than_wma() -> None:
+    ramp = list(np.linspace(0, 100, 200))
+    target = ramp[-1]
+    wma_lag = target - zeonta.wma(ramp, length=10).iloc[-1]
+    hma_lag = target - zeonta.hma(ramp, length=10).iloc[-1]
+    assert abs(hma_lag) < abs(wma_lag)
+
+
+def test_hma_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.hma([1.0, 2.0, 3.0], length=0)

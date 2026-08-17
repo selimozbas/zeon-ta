@@ -39,11 +39,21 @@ from .advanced import (
     vwap,
 )
 from .foundations import candles, relative_volume, sr_levels, support_resistance, trend_channel
-from .moving_averages import ema, ema_ribbon, kama, ma_cross, sma, wma
-from .oscillators import cci, macd, momentum, roc, rsi, stoch
-from .trend import adx, donchian, ichimoku, parabolic_sar, supertrend
+from .moving_averages import dema, ema, ema_ribbon, hma, kama, ma_cross, sma, tema, wma
+from .oscillators import (
+    awesome_oscillator,
+    cci,
+    macd,
+    momentum,
+    roc,
+    rsi,
+    stoch,
+    stoch_rsi,
+    williams_r,
+)
+from .trend import adx, aroon, donchian, ichimoku, parabolic_sar, supertrend
 from .volatility import atr, bbands, keltner, squeeze, true_range
-from .volume import cmf, mfi, obv
+from .volume import adl, cmf, mfi, obv
 
 try:
     # Single source of truth: read back the version hatchling wrote into the
@@ -58,18 +68,23 @@ __all__ = [
     "FIB_RATIOS",
     "IndicatorSpec",
     "__version__",
+    "adl",
     "adx",
+    "aroon",
     "atr",
+    "awesome_oscillator",
     "bbands",
     "candles",
     "cci",
     "cmf",
+    "dema",
     "divergence",
     "donchian",
     "ema",
     "ema_ribbon",
     "fib_retracement",
     "get_spec",
+    "hma",
     "ichimoku",
     "kama",
     "keltner",
@@ -88,11 +103,14 @@ __all__ = [
     "squeeze",
     "sr_levels",
     "stoch",
+    "stoch_rsi",
     "supertrend",
     "support_resistance",
+    "tema",
     "trend_channel",
     "true_range",
     "vwap",
+    "williams_r",
     "wma",
 ]
 

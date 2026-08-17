@@ -1,7 +1,9 @@
-"""Momentum oscillators: RSI, Stochastic, MACD, CCI, Momentum and ROC.
+"""Momentum oscillators: RSI, Stochastic, MACD, CCI, Momentum, ROC, Williams
+%R, Stochastic RSI, and the Awesome Oscillator.
 
-Momentum and ROC additionally cite the external source their formula was
-verified against; see each function's own ``References`` section.
+Momentum, ROC, Williams %R, Stochastic RSI and the Awesome Oscillator
+additionally cite the external source their formula was verified against;
+see each function's own ``References`` section.
 """
 
 from __future__ import annotations
@@ -27,7 +29,17 @@ from ._core import (
     wrap_series,
 )
 
-__all__ = ["cci", "macd", "momentum", "roc", "rsi", "stoch"]
+__all__ = [
+    "awesome_oscillator",
+    "cci",
+    "macd",
+    "momentum",
+    "roc",
+    "rsi",
+    "stoch",
+    "stoch_rsi",
+    "williams_r",
+]
 
 
 def _shift(values: np.ndarray, length: int) -> np.ndarray:
@@ -170,6 +182,211 @@ def stoch(
         common_index(high, low, close),
         order=[f"STOCHk_{suffix}", f"STOCHd_{suffix}"],
     )
+
+
+@indicator(
+    category="oscillators",
+    summary="Where the close sits inside the recent high-low range, on a 0 to -100 scale.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/williams-r"
+    ),
+    outputs=("WILLR",),
+)
+def williams_r(high: ArrayLike, low: ArrayLike, close: ArrayLike, length: int = 14) -> pd.Series:
+    """Williams %R.
+
+    ``%R = (HighestHigh(n) - Close) / (HighestHigh(n) - LowestLow(n)) * -100``
+    — the same range-position idea as the unsmoothed ``%K`` in :func:`stoch`,
+    just inverted and shifted onto a 0 to -100 scale instead of 0 to 100
+    (``%R = %K - 100`` exactly, bar for bar).
+
+    Parameters
+    ----------
+    high, low, close:
+        Price series of equal length.
+    length:
+        Look-back for the high-low range.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``WILLR_{length}``, ranging 0 to -100. A dead-flat range (no
+        information either way) is pinned to -50, the midpoint.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> float(zeonta.williams_r([5, 6], [1, 2], [5, 5.5], length=2).iloc[-1])
+    -10.0
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/williams-r
+    """
+    length = validate_length(length)
+    require_aligned_index(high=high, low=low, close=close)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    require_same_length(high=high_values, low=low_values, close=close_values)
+
+    highest = rolling_max(high_values, length)
+    lowest = rolling_min(low_values, length)
+    span = highest - lowest
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = (highest - close_values) / span * -100.0
+    # A dead-flat range gives no information; convention puts %R mid-scale.
+    result = np.where(span == 0.0, -50.0, result)
+
+    return wrap_series(result, common_index(high, low, close), f"WILLR_{length}")
+
+
+@indicator(
+    category="oscillators",
+    summary="The Stochastic formula applied to RSI instead of price — momentum of momentum.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/stochrsi"
+    ),
+    outputs=("STOCHRSIk", "STOCHRSId"),
+)
+def stoch_rsi(
+    close: ArrayLike,
+    rsi_length: int = 14,
+    stoch_length: int = 14,
+    smooth_k: int = 3,
+    smooth_d: int = 3,
+) -> pd.DataFrame:
+    """Stochastic RSI.
+
+    ``StochRSI = (RSI - LowestLow(RSI, n)) / (HighestHigh(RSI, n) -
+    LowestLow(RSI, n))`` — the same range-position formula :func:`stoch`
+    applies to price, applied to :func:`rsi` instead. RSI alone measures
+    momentum; StochRSI measures how extreme *that* momentum reading is
+    relative to its own recent history, which makes it swing far more
+    aggressively than RSI itself.
+
+    Unlike the source formula (which is unsmoothed and ranges 0-1), this
+    scales to 0-100 and applies the same ``%K``/``%D`` smoothing
+    :func:`stoch` uses, matching how most charting platforms display it and
+    keeping the output on the same scale as this library's other oscillators.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    rsi_length:
+        Look-back for the underlying RSI.
+    stoch_length:
+        Look-back for the high-low range applied to RSI values.
+    smooth_k:
+        Smoothing applied to raw ``%K``. Use ``1`` for the unsmoothed line.
+    smooth_d:
+        Smoothing applied to ``%K`` to obtain the ``%D`` signal line.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``STOCHRSIk_{rsi_length}_{stoch_length}_{smooth_k}_{smooth_d}``
+        and ``STOCHRSId_...``, ranging 0-100.
+
+    Examples
+    --------
+    A steady uptrend pins RSI itself at 100 once gains dominate — but with RSI
+    now *flat* at 100, StochRSI's own high-low range collapses to zero and it
+    falls back to the midpoint convention, same as :func:`stoch` does on a
+    flat price range:
+
+    >>> import zeonta
+    >>> out = zeonta.stoch_rsi(list(range(1, 40)), rsi_length=5, stoch_length=5)
+    >>> float(out.iloc[-1, 0])
+    50.0
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/stochrsi
+    """
+    rsi_length = validate_length(rsi_length, "rsi_length")
+    stoch_length = validate_length(stoch_length, "stoch_length")
+    smooth_k = validate_length(smooth_k, "smooth_k")
+    smooth_d = validate_length(smooth_d, "smooth_d")
+
+    values = as_array(close, "close")
+    rsi_values = rsi(values, length=rsi_length).to_numpy()
+
+    lowest = rolling_min(rsi_values, stoch_length)
+    highest = rolling_max(rsi_values, stoch_length)
+    span = highest - lowest
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        raw_k = 100.0 * (rsi_values - lowest) / span
+    raw_k = np.where(span == 0.0, 50.0, raw_k)
+
+    percent_k = rolling_mean(raw_k, smooth_k) if smooth_k > 1 else raw_k
+    percent_d = rolling_mean(percent_k, smooth_d) if smooth_d > 1 else percent_k
+
+    suffix = f"{rsi_length}_{stoch_length}_{smooth_k}_{smooth_d}"
+    order = [f"STOCHRSIk_{suffix}", f"STOCHRSId_{suffix}"]
+    return wrap_frame(
+        dict(zip(order, (percent_k, percent_d), strict=True)),
+        common_index(close),
+        order=order,
+    )
+
+
+@indicator(
+    category="oscillators",
+    summary="Momentum from the gap between a fast and slow SMA of the bar's own midpoint.",
+    reference="https://www.metatrader5.com/en/terminal/help/indicators/bw_indicators/awesome",
+    outputs=("AO",),
+)
+def awesome_oscillator(high: ArrayLike, low: ArrayLike, fast: int = 5, slow: int = 34) -> pd.Series:
+    """Awesome Oscillator.
+
+    ``MedianPrice = (High + Low) / 2``;
+    ``AO = SMA(MedianPrice, fast) - SMA(MedianPrice, slow)``. Bill Williams'
+    momentum reading: it uses the bar's own midpoint rather than the close,
+    and — unlike :func:`macd`, which contrasts two EMAs — contrasts two plain
+    SMAs, so it has no memory beyond each window's edge.
+
+    Parameters
+    ----------
+    high, low:
+        Price series of equal length.
+    fast, slow:
+        SMA lengths; ``fast`` must be smaller than ``slow``.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``AO_{fast}_{slow}``, in price units, centred on zero.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> float(zeonta.awesome_oscillator([11] * 34, [9] * 34, fast=3, slow=5).iloc[-1])
+    0.0
+
+    References
+    ----------
+    https://www.metatrader5.com/en/terminal/help/indicators/bw_indicators/awesome
+    """
+    fast = validate_length(fast, "fast")
+    slow = validate_length(slow, "slow")
+    if fast >= slow:
+        raise ValueError(f"'fast' must be smaller than 'slow', got fast={fast}, slow={slow}")
+
+    require_aligned_index(high=high, low=low)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    require_same_length(high=high_values, low=low_values)
+
+    median_price = (high_values + low_values) / 2.0
+    result = rolling_mean(median_price, fast) - rolling_mean(median_price, slow)
+
+    return wrap_series(result, common_index(high, low), f"AO_{fast}_{slow}")
 
 
 @indicator(

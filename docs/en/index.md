@@ -17,28 +17,35 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 
 | Indicator | Summary |
 | --- | --- |
+| [`dema`](indicators/dema.md) | Double Exponential Moving Average (DEMA) |
 | [`ema`](indicators/ema.md) | Exponential Moving Average (EMA) |
 | [`ema_ribbon`](indicators/ema_ribbon.md) | EMA Ribbon |
+| [`hma`](indicators/hma.md) | Hull Moving Average (HMA) |
 | [`kama`](indicators/kama.md) | Kaufman's Adaptive Moving Average (KAMA) |
 | [`ma_cross`](indicators/ma_cross.md) | Moving Average Crossovers |
 | [`sma`](indicators/sma.md) | Simple Moving Average (SMA) |
+| [`tema`](indicators/tema.md) | Triple Exponential Moving Average (TEMA) |
 | [`wma`](indicators/wma.md) | Weighted Moving Average (WMA) |
 
 ## Oscillators
 
 | Indicator | Summary |
 | --- | --- |
+| [`awesome_oscillator`](indicators/awesome_oscillator.md) | Awesome Oscillator (AO) |
 | [`cci`](indicators/cci.md) | Commodity Channel Index (CCI) |
 | [`macd`](indicators/macd.md) | MACD (Moving Average Convergence Divergence) |
 | [`momentum`](indicators/momentum.md) | Momentum |
 | [`roc`](indicators/roc.md) | Rate of Change (ROC) |
 | [`rsi`](indicators/rsi.md) | Relative Strength Index (RSI) |
 | [`stoch`](indicators/stoch.md) | Stochastic Oscillator |
+| [`stoch_rsi`](indicators/stoch_rsi.md) | Stochastic RSI (StochRSI) |
+| [`williams_r`](indicators/williams_r.md) | Williams %R |
 
 ## Volume
 
 | Indicator | Summary |
 | --- | --- |
+| [`adl`](indicators/adl.md) | Accumulation/Distribution Line (ADL) |
 | [`cmf`](indicators/cmf.md) | Chaikin Money Flow (CMF) |
 | [`mfi`](indicators/mfi.md) | Money Flow Index (MFI) |
 | [`obv`](indicators/obv.md) | On-Balance Volume (OBV) |
@@ -58,6 +65,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | Indicator | Summary |
 | --- | --- |
 | [`adx`](indicators/adx.md) | ADX / DMI |
+| [`aroon`](indicators/aroon.md) | Aroon and the Aroon Oscillator |
 | [`donchian`](indicators/donchian.md) | Donchian Channels |
 | [`ichimoku`](indicators/ichimoku.md) | Ichimoku |
 | [`parabolic_sar`](indicators/parabolic_sar.md) | Parabolic SAR |

@@ -132,3 +132,40 @@ def test_rejects_negative_volume(func_name: str) -> None:
     func = getattr(zeonta, func_name)
     with pytest.raises(ValueError, match="'volume' must not contain negative values"):
         func([2.0] * 10, [1.0] * 10, [1.5] * 10, [-100.0] * 10)
+
+
+def test_adl_matches_the_hand_computed_running_total() -> None:
+    # Both bars close at the high -> multiplier = 1 on each -> MFV = volume.
+    result = zeonta.adl([11, 12], [9, 10], [11, 12], [100, 100])
+    np.testing.assert_allclose(result.to_numpy(), [100.0, 200.0])
+
+
+def test_adl_subtracts_when_the_close_is_at_the_low() -> None:
+    result = zeonta.adl([11, 12], [9, 10], [9, 10], [100, 50])
+    np.testing.assert_allclose(result.to_numpy(), [-100.0, -150.0])
+
+
+def test_adl_has_no_warmup_period() -> None:
+    result = zeonta.adl([11, 12, 13], [9, 10, 11], [10, 11, 12], [1, 2, 3])
+    assert not result.isna().any()
+
+
+def test_adl_treats_a_zero_range_bar_as_carrying_no_flow() -> None:
+    result = zeonta.adl([10.0, 10.0], [10.0, 10.0], [10.0, 10.0], [100.0, 100.0])
+    np.testing.assert_allclose(result.to_numpy(), [0.0, 0.0])
+
+
+def test_adl_rejects_negative_volume() -> None:
+    with pytest.raises(ValueError, match="'volume' must not contain negative values"):
+        zeonta.adl([11.0, 12.0], [9.0, 10.0], [11.0, 12.0], [100.0, -1.0])
+
+
+def test_adl_and_cmf_share_the_same_money_flow_multiplier(ohlcv: pd.DataFrame) -> None:
+    """CMF is ADL's per-bar increment summed over a window and normalised by
+    volume; the two must agree bar for bar on the underlying multiplier."""
+    adl = zeonta.adl(ohlcv["high"], ohlcv["low"], ohlcv["close"], ohlcv["volume"])
+    increment = adl.diff()
+    increment.iloc[0] = adl.iloc[0]
+    manual_cmf = increment.rolling(20).sum() / ohlcv["volume"].rolling(20).sum()
+    cmf = zeonta.cmf(ohlcv["high"], ohlcv["low"], ohlcv["close"], ohlcv["volume"], length=20)
+    np.testing.assert_allclose(cmf.to_numpy(), manual_cmf.to_numpy(), equal_nan=True, atol=1e-9)

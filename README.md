@@ -91,28 +91,35 @@ the cloud that projects past the last bar, rather than discarding it.
 
 | Indicator | What it does | Docs |
 | --- | --- | --- |
+| `dema` | Double Exponential Moving Average (DEMA) | [docs](docs/en/indicators/dema.md) |
 | `ema` | Exponential Moving Average (EMA) | [docs](docs/en/indicators/ema.md) |
 | `ema_ribbon` | EMA Ribbon | [docs](docs/en/indicators/ema_ribbon.md) |
+| `hma` | Hull Moving Average (HMA) | [docs](docs/en/indicators/hma.md) |
 | `kama` | Kaufman's Adaptive Moving Average (KAMA) | [docs](docs/en/indicators/kama.md) |
 | `ma_cross` | Moving Average Crossovers | [docs](docs/en/indicators/ma_cross.md) |
 | `sma` | Simple Moving Average (SMA) | [docs](docs/en/indicators/sma.md) |
+| `tema` | Triple Exponential Moving Average (TEMA) | [docs](docs/en/indicators/tema.md) |
 | `wma` | Weighted Moving Average (WMA) | [docs](docs/en/indicators/wma.md) |
 
 ### Oscillators
 
 | Indicator | What it does | Docs |
 | --- | --- | --- |
+| `awesome_oscillator` | Awesome Oscillator (AO) | [docs](docs/en/indicators/awesome_oscillator.md) |
 | `cci` | Commodity Channel Index (CCI) | [docs](docs/en/indicators/cci.md) |
 | `macd` | MACD (Moving Average Convergence Divergence) | [docs](docs/en/indicators/macd.md) |
 | `momentum` | Momentum | [docs](docs/en/indicators/momentum.md) |
 | `roc` | Rate of Change (ROC) | [docs](docs/en/indicators/roc.md) |
 | `rsi` | Relative Strength Index (RSI) | [docs](docs/en/indicators/rsi.md) |
 | `stoch` | Stochastic Oscillator | [docs](docs/en/indicators/stoch.md) |
+| `stoch_rsi` | Stochastic RSI (StochRSI) | [docs](docs/en/indicators/stoch_rsi.md) |
+| `williams_r` | Williams %R | [docs](docs/en/indicators/williams_r.md) |
 
 ### Volume
 
 | Indicator | What it does | Docs |
 | --- | --- | --- |
+| `adl` | Accumulation/Distribution Line (ADL) | [docs](docs/en/indicators/adl.md) |
 | `cmf` | Chaikin Money Flow (CMF) | [docs](docs/en/indicators/cmf.md) |
 | `mfi` | Money Flow Index (MFI) | [docs](docs/en/indicators/mfi.md) |
 | `obv` | On-Balance Volume (OBV) | [docs](docs/en/indicators/obv.md) |
@@ -132,6 +139,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | Indicator | What it does | Docs |
 | --- | --- | --- |
 | `adx` | ADX / DMI | [docs](docs/en/indicators/adx.md) |
+| `aroon` | Aroon and the Aroon Oscillator | [docs](docs/en/indicators/aroon.md) |
 | `donchian` | Donchian Channels | [docs](docs/en/indicators/donchian.md) |
 | `ichimoku` | Ichimoku | [docs](docs/en/indicators/ichimoku.md) |
 | `parabolic_sar` | Parabolic SAR | [docs](docs/en/indicators/parabolic_sar.md) |

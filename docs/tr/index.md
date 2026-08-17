@@ -17,28 +17,35 @@
 
 | İndikatör | Özet |
 | --- | --- |
+| [`dema`](indicators/dema.md) | Çift Üssel Hareketli Ortalama (DEMA) |
 | [`ema`](indicators/ema.md) | Üssel Hareketli Ortalama (EMA) |
 | [`ema_ribbon`](indicators/ema_ribbon.md) | EMA Şeridi |
+| [`hma`](indicators/hma.md) | Hull Hareketli Ortalaması (HMA) |
 | [`kama`](indicators/kama.md) | Kaufman Uyarlanabilir Hareketli Ortalama (KAMA) |
 | [`ma_cross`](indicators/ma_cross.md) | Hareketli Ortalama Kesişimleri |
 | [`sma`](indicators/sma.md) | Basit Hareketli Ortalama (SMA) |
+| [`tema`](indicators/tema.md) | Üçlü Üssel Hareketli Ortalama (TEMA) |
 | [`wma`](indicators/wma.md) | Ağırlıklı Hareketli Ortalama (WMA) |
 
 ## Osilatörler
 
 | İndikatör | Özet |
 | --- | --- |
+| [`awesome_oscillator`](indicators/awesome_oscillator.md) | Awesome Osilatör (AO) |
 | [`cci`](indicators/cci.md) | Emtia Kanal Endeksi (CCI) |
 | [`macd`](indicators/macd.md) | MACD (Hareketli Ortalama Yakınsama Iraksama) |
 | [`momentum`](indicators/momentum.md) | Momentum |
 | [`roc`](indicators/roc.md) | Değişim Oranı (ROC) |
 | [`rsi`](indicators/rsi.md) | Göreceli Güç Endeksi (RSI) |
 | [`stoch`](indicators/stoch.md) | Stokastik Osilatör |
+| [`stoch_rsi`](indicators/stoch_rsi.md) | Stokastik RSI (StochRSI) |
+| [`williams_r`](indicators/williams_r.md) | Williams %R |
 
 ## Hacim
 
 | İndikatör | Özet |
 | --- | --- |
+| [`adl`](indicators/adl.md) | Birikim/Dağıtım Çizgisi (ADL) |
 | [`cmf`](indicators/cmf.md) | Chaikin Para Akışı (CMF) |
 | [`mfi`](indicators/mfi.md) | Para Akışı Endeksi (MFI) |
 | [`obv`](indicators/obv.md) | Denge Hacmi (OBV) |
@@ -58,6 +65,7 @@
 | İndikatör | Özet |
 | --- | --- |
 | [`adx`](indicators/adx.md) | ADX / DMI |
+| [`aroon`](indicators/aroon.md) | Aroon ve Aroon Osilatörü |
 | [`donchian`](indicators/donchian.md) | Donchian Kanalları |
 | [`ichimoku`](indicators/ichimoku.md) | Ichimoku |
 | [`parabolic_sar`](indicators/parabolic_sar.md) | Parabolik SAR |

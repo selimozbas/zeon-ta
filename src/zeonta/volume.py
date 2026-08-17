@@ -1,4 +1,5 @@
-"""Volume-based indicators: On-Balance Volume, Chaikin Money Flow, Money Flow Index.
+"""Volume-based indicators: On-Balance Volume, Accumulation/Distribution Line,
+Chaikin Money Flow, Money Flow Index.
 
 Each function's own ``References`` section cites the external source its
 formula was verified against. These sit apart from :func:`zeonta.relative_volume`
@@ -26,7 +27,17 @@ from ._core import (
     wrap_series,
 )
 
-__all__ = ["cmf", "mfi", "obv"]
+__all__ = ["adl", "cmf", "mfi", "obv"]
+
+
+def _money_flow_multiplier(high: np.ndarray, low: np.ndarray, close: np.ndarray) -> np.ndarray:
+    """``((Close-Low)-(High-Close))/(High-Low)``, ``+1`` at the high, ``-1`` at
+    the low; a zero-range bar carries no information and is treated as ``0``.
+    """
+    span = high - low
+    with np.errstate(divide="ignore", invalid="ignore"):
+        multiplier = ((close - low) - (high - close)) / span
+    return np.where(span == 0.0, 0.0, multiplier)
 
 
 @indicator(
@@ -112,6 +123,70 @@ def obv(close: ArrayLike, volume: ArrayLike) -> pd.Series:
 
 @indicator(
     category="volume",
+    summary="Running total of volume weighted by where the close sits in its own range.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/accumulation-distribution-line"
+    ),
+    outputs=("ADL",),
+)
+def adl(high: ArrayLike, low: ArrayLike, close: ArrayLike, volume: ArrayLike) -> pd.Series:
+    """Accumulation/Distribution Line.
+
+    ``MFM = ((Close - Low) - (High - Close)) / (High - Low)`` — the Money Flow
+    Multiplier, ``+1`` when the close sits at the top of the bar's range,
+    ``-1`` at the bottom; ``MFV = MFM * Volume``; ``ADL = Previous ADL + MFV``.
+    Where :func:`obv` only asks whether the close was up or down, ADL asks
+    *where inside the bar's full range* the close landed and weights that by
+    volume — a more graded read on the same buying-versus-selling idea. It is
+    also the running-total version of :func:`cmf`, which instead sums ``MFV``
+    over a fixed window and divides by volume to get a bounded ratio.
+
+    Parameters
+    ----------
+    high, low, close, volume:
+        Series of equal length.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``ADL``. Never ``NaN`` — a running total, not a windowed
+        statistic. Like OBV, the absolute level is arbitrary; only its slope
+        and its divergence from price are meaningful.
+
+    Raises
+    ------
+    ValueError
+        If ``volume`` contains a negative value, which has no meaning for a
+        traded quantity.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> zeonta.adl([11, 12], [9, 10], [11, 12], [100, 100]).tolist()
+    [100.0, 200.0]
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/accumulation-distribution-line
+    """
+    require_aligned_index(high=high, low=low, close=close, volume=volume)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    volume_values = as_array(volume, "volume")
+    require_same_length(high=high_values, low=low_values, close=close_values, volume=volume_values)
+    require_non_negative(volume=volume_values)
+
+    multiplier = _money_flow_multiplier(high_values, low_values, close_values)
+    money_flow_volume = multiplier * volume_values
+    result = np.cumsum(money_flow_volume)
+
+    return wrap_series(result, common_index(high, low, close, volume), "ADL")
+
+
+@indicator(
+    category="volume",
     summary="Volume-weighted measure of where price closed within its own range.",
     reference=(
         "https://chartschool.stockcharts.com/table-of-contents/"
@@ -173,12 +248,7 @@ def cmf(
     require_same_length(high=high_values, low=low_values, close=close_values, volume=volume_values)
     require_non_negative(volume=volume_values)
 
-    span = high_values - low_values
-    with np.errstate(divide="ignore", invalid="ignore"):
-        multiplier = ((close_values - low_values) - (high_values - close_values)) / span
-    # A zero-range bar carries no information about buying/selling pressure.
-    multiplier = np.where(span == 0.0, 0.0, multiplier)
-
+    multiplier = _money_flow_multiplier(high_values, low_values, close_values)
     money_flow_volume = multiplier * volume_values
     sum_volume = rolling_sum(volume_values, length)
     sum_flow = rolling_sum(money_flow_volume, length)

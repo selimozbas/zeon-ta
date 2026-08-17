@@ -1,7 +1,7 @@
-"""Trend systems: SuperTrend, ADX/DMI, Ichimoku, Donchian and Parabolic SAR.
+"""Trend systems: SuperTrend, ADX/DMI, Ichimoku, Donchian, Parabolic SAR and Aroon.
 
-Parabolic SAR additionally cites the external source its formula was
-verified against; see its own ``References`` section.
+Parabolic SAR and Aroon additionally cite the external source their formula
+was verified against; see each one's own ``References`` section.
 
 SuperTrend, ADX and Parabolic SAR are the only genuinely sequential indicators
 in the library: their bands ratchet in one direction and depend on the
@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+from numpy.lib.stride_tricks import sliding_window_view
 
 from ._core import (
     ArrayLike,
@@ -33,7 +34,7 @@ from ._core import (
 )
 from .volatility import _true_range_values
 
-__all__ = ["adx", "donchian", "ichimoku", "parabolic_sar", "supertrend"]
+__all__ = ["adx", "aroon", "donchian", "ichimoku", "parabolic_sar", "supertrend"]
 
 
 @indicator(
@@ -600,6 +601,82 @@ def parabolic_sar(
     order = [f"PSAR_{suffix}", f"PSARd_{suffix}", f"PSARl_{suffix}", f"PSARs_{suffix}"]
     return wrap_frame(
         dict(zip(order, (sar, direction, long_line, short_line), strict=True)),
+        common_index(high, low),
+        order=order,
+    )
+
+
+@indicator(
+    category="trend",
+    summary="How recently price made a new high vs. a new low, as a 0-100 pair.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/aroon"
+    ),
+    outputs=("AROONU", "AROOND", "AROONOSC"),
+)
+def aroon(high: ArrayLike, low: ArrayLike, length: int = 25) -> pd.DataFrame:
+    """Aroon and the Aroon Oscillator.
+
+    ``Aroon-Up = ((n - DaysSinceHighestHigh) / n) * 100``;
+    ``Aroon-Down = ((n - DaysSinceLowestLow) / n) * 100``, where "days since"
+    is measured over a window of the current bar plus the ``n`` bars before
+    it, and ties go to the most recent occurrence. ``Aroon Oscillator =
+    Aroon-Up - Aroon-Down``. Where :func:`donchian` marks *where* the n-bar
+    high and low sit, Aroon marks *how long ago* they happened — a fresh
+    high scores Aroon-Up at 100 no matter how far away it is in price terms;
+    a high from ``n`` bars ago scores 0 even if price is still right next to
+    it.
+
+    Parameters
+    ----------
+    high, low:
+        Price series of equal length.
+    length:
+        Look-back window, excluding the current bar (``n`` in the formula
+        above; the window actually scanned is ``n + 1`` bars wide).
+
+    Returns
+    -------
+    pandas.DataFrame
+        ``AROONU_{length}`` and ``AROOND_{length}``, each 0-100;
+        ``AROONOSC_{length}``, their difference, -100 to 100.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> out = zeonta.aroon([1, 2, 5, 2, 1], [0, 1, 4, 1, 0], length=4)
+    >>> out.iloc[-1].tolist()
+    [50.0, 100.0, -50.0]
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/aroon
+    """
+    length = validate_length(length)
+    require_aligned_index(high=high, low=low)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    size = require_same_length(high=high_values, low=low_values)
+
+    window = length + 1
+    up = np.full(size, np.nan, dtype="float64")
+    down = np.full(size, np.nan, dtype="float64")
+
+    if size >= window:
+        # Reverse each window so index 0 is "today": argmax/argmin then
+        # directly gives "bars since the extreme", breaking ties toward the
+        # most recent occurrence exactly as the source's worked examples do.
+        recent_high = sliding_window_view(high_values, window)[:, ::-1]
+        recent_low = sliding_window_view(low_values, window)[:, ::-1]
+        days_since_high = np.argmax(recent_high, axis=1)
+        days_since_low = np.argmin(recent_low, axis=1)
+        up[window - 1 :] = (length - days_since_high) / length * 100.0
+        down[window - 1 :] = (length - days_since_low) / length * 100.0
+
+    order = [f"AROONU_{length}", f"AROOND_{length}", f"AROONOSC_{length}"]
+    return wrap_frame(
+        dict(zip(order, (up, down, up - down), strict=True)),
         common_index(high, low),
         order=order,
     )

@@ -146,3 +146,78 @@ def test_roc_is_undefined_when_the_reference_close_is_zero() -> None:
 
 def test_roc_is_zero_on_a_flat_series() -> None:
     np.testing.assert_allclose(zeonta.roc([5.0] * 20, length=5).dropna().to_numpy(), 0.0)
+
+
+def test_williams_r_equals_unsmoothed_stoch_k_minus_100(ohlcv: pd.DataFrame) -> None:
+    """The formula's own claim: %R = %K - 100 for the unsmoothed %K."""
+    willr = zeonta.williams_r(ohlcv["high"], ohlcv["low"], ohlcv["close"], length=14)
+    stoch_k = zeonta.stoch(
+        ohlcv["high"], ohlcv["low"], ohlcv["close"], length=14, smooth_k=1, smooth_d=1
+    )["STOCHk_14_1_1"]
+    np.testing.assert_allclose(willr.to_numpy(), (stoch_k - 100.0).to_numpy(), equal_nan=True)
+
+
+def test_williams_r_matches_the_hand_computed_value() -> None:
+    # highest high=6, lowest low=1, close=5.5 -> (6-5.5)/(6-1)*-100 = -10
+    result = zeonta.williams_r([5, 6], [1, 2], [5, 5.5], length=2)
+    np.testing.assert_allclose(result.iloc[-1], -10.0)
+
+
+def test_williams_r_stays_within_bounds(ohlcv: pd.DataFrame) -> None:
+    result = zeonta.williams_r(ohlcv["high"], ohlcv["low"], ohlcv["close"]).dropna()
+    assert result.between(-100.0, 0.0).all()
+
+
+def test_williams_r_is_midpoint_on_a_dead_flat_range() -> None:
+    result = zeonta.williams_r([5.0] * 20, [5.0] * 20, [5.0] * 20, length=5)
+    np.testing.assert_allclose(result.dropna().to_numpy(), -50.0)
+
+
+def test_stoch_rsi_stays_within_bounds(ohlcv: pd.DataFrame) -> None:
+    out = zeonta.stoch_rsi(ohlcv["close"]).dropna()
+    assert out.to_numpy().min() >= 0.0
+    assert out.to_numpy().max() <= 100.0
+
+
+def test_stoch_rsi_falls_back_to_the_midpoint_when_rsi_is_flat() -> None:
+    """A steady uptrend pins RSI at 100; once RSI itself stops moving,
+    StochRSI's own high-low range collapses to zero."""
+    result = zeonta.stoch_rsi(list(range(1, 40)), rsi_length=5, stoch_length=5)
+    np.testing.assert_allclose(result.iloc[-1, 0], 50.0)
+
+
+def test_stoch_rsi_d_is_the_smoothed_k() -> None:
+    prices = list(np.linspace(10, 40, 60))
+    out = zeonta.stoch_rsi(prices, rsi_length=5, stoch_length=5, smooth_k=3, smooth_d=3)
+    k, d = out.columns
+    np.testing.assert_allclose(out[d].to_numpy(), zeonta.sma(out[k], 3).to_numpy(), equal_nan=True)
+
+
+def test_stoch_rsi_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.stoch_rsi(list(range(20)), rsi_length=0)
+
+
+def test_awesome_oscillator_matches_the_hand_computed_sma_difference() -> None:
+    high = [11.0, 12.0, 13.0]
+    low = [9.0, 10.0, 11.0]
+    # median prices: 10, 11, 12 -> SMA(2)=11.5(fast), SMA(3)=11(slow) at bar 2
+    result = zeonta.awesome_oscillator(high, low, fast=2, slow=3)
+    np.testing.assert_allclose(result.iloc[-1], 11.5 - 11.0)
+
+
+def test_awesome_oscillator_is_zero_on_a_flat_median_price() -> None:
+    result = zeonta.awesome_oscillator([11.0] * 34, [9.0] * 34, fast=5, slow=34)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_awesome_oscillator_is_positive_in_an_uptrend() -> None:
+    high = list(np.linspace(11, 111, 60))
+    low = list(np.linspace(9, 109, 60))
+    result = zeonta.awesome_oscillator(high, low, fast=5, slow=34)
+    assert result.iloc[-1] > 0
+
+
+def test_awesome_oscillator_rejects_fast_not_smaller_than_slow() -> None:
+    with pytest.raises(ValueError, match="'fast' must be smaller than 'slow'"):
+        zeonta.awesome_oscillator([11.0] * 10, [9.0] * 10, fast=34, slow=5)

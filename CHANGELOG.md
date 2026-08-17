@@ -32,8 +32,27 @@ was verified against (`IndicatorSpec.reference`, a new field alongside
   and `ema` (exponential decay) in how fast it turns. Backed by a new
   `rolling_wma` core primitive, reusable by any future moving average built
   as a WMA chain.
+- **Moving averages** — `dema` and `tema` (Double/Triple Exponential Moving
+  Average, Patrick Mulloy), which cancel most of a plain EMA's lag by
+  offsetting it with its own EMA (and, for TEMA, EMA-of-EMA); `hma` (Hull
+  Moving Average), a WMA-of-WMAs that extrapolates ahead of a fast WMA then
+  re-smooths, cutting lag further still at the cost of occasional overshoot
+  on sharp reversals.
+- **Oscillators** — `williams_r` (mathematically `stoch`'s unsmoothed `%K`
+  minus 100, on a 0 to -100 scale); `stoch_rsi` (the `stoch` formula applied
+  to `rsi` instead of price, scaled to 0-100 and %K/%D-smoothed to match
+  `stoch`'s convention rather than the source's bare 0-1 form);
+  `awesome_oscillator` (Bill Williams; `macd`'s fast-SMA-minus-slow-SMA shape
+  applied to the bar's own midpoint instead of the close).
+- **Trend systems** — `aroon`, returning `AROONU`/`AROOND`/`AROONOSC` in one
+  call. Where `donchian` marks *where* the n-bar high/low sit, Aroon marks
+  *how long ago* they happened.
+- **New in `volume`** — `adl` (Accumulation/Distribution Line), the
+  running-total sibling of `cmf` — same Money Flow Multiplier (now factored
+  into a shared `_money_flow_multiplier` helper), but accumulated instead of
+  summed over a window and divided by volume.
 
-Registered indicators: 25 -> 33. `list_indicators()`'s `lesson` column is
+Registered indicators: 25 -> 41. `list_indicators()`'s `lesson` column is
 renamed `source`, now holding the external reference URL for the indicators
 that cite one and `None` for the rest.
 

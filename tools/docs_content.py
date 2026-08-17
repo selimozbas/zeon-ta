@@ -1692,4 +1692,416 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.wma(df["close"], length=20).tail(3),
         ],
     },
+    "dema": {
+        "title_en": "Double Exponential Moving Average (DEMA)",
+        "title_tr": "Çift Üssel Hareketli Ortalama (DEMA)",
+        "formula_en": "DEMA = (2 x EMA1) - EMA2, where EMA1 = EMA(Close, n) and EMA2 = EMA(EMA1, n)",
+        "formula_tr": (
+            "DEMA = (2 x EMA1) - EMA2, burada EMA1 = EMA(Kapanış, n) ve EMA2 = EMA(EMA1, n)"
+        ),
+        "about_en": (
+            "A single EMA always lags, because it is, by construction, still catching up to "
+            "price. DEMA estimates that lag by smoothing the EMA a second time — the gap between "
+            "EMA1 and EMA2 tells you roughly how far behind EMA1 has fallen — then adds that gap "
+            "back once to cancel most of it out."
+        ),
+        "about_tr": (
+            "Tek bir EMA her zaman geride kalır, çünkü tanımı gereği hâlâ fiyata yetişmeye "
+            "çalışıyordur. DEMA bu gecikmeyi EMA'yı ikinci kez yumuşatarak tahmin eder — EMA1 ile "
+            "EMA2 arasındaki fark, EMA1'in ne kadar geride kaldığını kabaca gösterir — sonra bu "
+            "farkı bir kez daha ekleyerek gecikmenin çoğunu iptal eder."
+        ),
+        "reading_en": (
+            "Read it exactly like `ema` — trend direction, support, crossovers — but expect "
+            "turns sooner: on a straight-line move DEMA carries essentially zero lag, a property "
+            "`ema` alone never has."
+        ),
+        "reading_tr": (
+            "Tam olarak `ema` gibi okuyun — trend yönü, destek, kesişimler — ama dönüşleri daha "
+            "erken bekleyin: düz bir doğrusal harekette DEMA'nın gecikmesi neredeyse sıfırdır; bu, "
+            "tek başına `ema`'nın hiçbir zaman sahip olmadığı bir özelliktir."
+        ),
+        "pitfalls_en": (
+            "Cancelling lag also cancels some of the smoothing that made moving averages useful "
+            "in the first place — DEMA overshoots and whips around real reversals more than `ema` "
+            "does, especially at short lengths. It also needs roughly twice the warm-up of a plain "
+            "EMA (`EMA2` needs a full window of already-warmed-up `EMA1` values)."
+        ),
+        "pitfalls_tr": (
+            "Gecikmeyi iptal etmek, hareketli ortalamaları başta faydalı kılan yumuşatmanın bir "
+            "kısmını da iptal eder — DEMA, özellikle kısa uzunluklarda, gerçek dönüşlerde `ema`'dan "
+            "daha fazla aşırı tepki verir ve savrulur. Ayrıca düz bir EMA'nın kabaca iki katı ısınma "
+            "süresine ihtiyaç duyar (`EMA2`, zaten ısınmış tam bir `EMA1` penceresi gerektirir)."
+        ),
+        "example": [
+            lambda df: zeonta.dema(df["close"], length=20).tail(3),
+        ],
+    },
+    "tema": {
+        "title_en": "Triple Exponential Moving Average (TEMA)",
+        "title_tr": "Üçlü Üssel Hareketli Ortalama (TEMA)",
+        "formula_en": (
+            "TEMA = (3 x EMA1) - (3 x EMA2) + EMA3, where EMA1 = EMA(Close, n), EMA2 = EMA(EMA1, "
+            "n) and EMA3 = EMA(EMA2, n)"
+        ),
+        "formula_tr": (
+            "TEMA = (3 x EMA1) - (3 x EMA2) + EMA3, burada EMA1 = EMA(Kapanış, n), EMA2 = "
+            "EMA(EMA1, n) ve EMA3 = EMA(EMA2, n)"
+        ),
+        "about_en": (
+            "The same lag-cancelling idea as `dema`, carried one smoothing pass further. Where a "
+            "straight price move already cancels almost perfectly under DEMA, TEMA's extra term "
+            "keeps that cancellation working on *curved* moves — accelerations and decelerations — "
+            "where DEMA itself starts to fall behind again."
+        ),
+        "about_tr": (
+            "`dema` ile aynı gecikme-iptal fikri, bir yumuşatma adımı daha ileri taşınmış hâli. "
+            "Düz bir fiyat hareketi DEMA altında zaten neredeyse mükemmel iptal olurken, TEMA'nın "
+            "ek terimi bu iptali *eğrisel* hareketlerde de — hızlanma ve yavaşlamalarda — sürdürür; "
+            "tam da DEMA'nın kendisinin yeniden geride kalmaya başladığı yerlerde."
+        ),
+        "reading_en": (
+            "Read it like `dema` or `ema`, but trust it most exactly where DEMA starts to slip: a "
+            "trend that is itself speeding up or slowing down, not just moving in a straight line."
+        ),
+        "reading_tr": (
+            "`dema` ya da `ema` gibi okuyun, ama tam olarak DEMA'nın kaymaya başladığı yerde ona "
+            "en çok güvenin: düz bir çizgide hareket etmekle kalmayıp kendisi hızlanan ya da "
+            "yavaşlayan bir trend."
+        ),
+        "pitfalls_en": (
+            "Three layers of lag-cancelling means three layers of overshoot risk — TEMA reacts to "
+            "noise even more eagerly than `dema` does, and needs roughly three times a plain EMA's "
+            "warm-up (`EMA3` needs a full window of already-warmed-up `EMA2` values)."
+        ),
+        "pitfalls_tr": (
+            "Üç katmanlı gecikme iptali, üç katmanlı aşırı tepki riski demektir — TEMA, gürültüye "
+            "`dema`'dan bile daha isteklice tepki verir ve düz bir EMA'nın kabaca üç katı ısınma "
+            "süresine ihtiyaç duyar (`EMA3`, zaten ısınmış tam bir `EMA2` penceresi gerektirir)."
+        ),
+        "example": [
+            lambda df: zeonta.tema(df["close"], length=20).tail(3),
+        ],
+    },
+    "hma": {
+        "title_en": "Hull Moving Average (HMA)",
+        "title_tr": "Hull Hareketli Ortalaması (HMA)",
+        "formula_en": (
+            "Raw = (2 x WMA(Close, round(n/2))) - WMA(Close, n); HMA = WMA(Raw, round(sqrt(n))) "
+            "— both intermediate lengths rounded to the nearest whole number, 0.5 rounding up"
+        ),
+        "formula_tr": (
+            "Ham = (2 x WMA(Kapanış, round(n/2))) - WMA(Kapanış, n); HMA = WMA(Ham, "
+            "round(sqrt(n))) — her iki ara uzunluk da en yakın tam sayıya yuvarlanır, 0,5 yukarı "
+            "yuvarlanır"
+        ),
+        "about_en": (
+            "`wma` alone reduces lag only modestly next to `sma`. Hull's insight: take a fast "
+            "half-length WMA, double it, and subtract the full-length WMA — this extrapolates "
+            "*ahead* of the fast WMA rather than just averaging alongside it. That extrapolation "
+            "is jumpy on its own, so one more short WMA smooths it back into a genuinely quick yet "
+            "still-smooth line."
+        ),
+        "about_tr": (
+            "Tek başına `wma`, `sma`'ya kıyasla gecikmeyi yalnızca ölçülü biçimde azaltır. Hull'un "
+            "içgörüsü şu: hızlı bir yarı-uzunluk WMA alıp iki katına çıkarın, tam-uzunluk WMA'yı "
+            "çıkarın — bu, hızlı WMA'nın yanında sadece ortalama almak yerine onun *ilerisine* "
+            "ekstrapolasyon yapar. Bu ekstrapolasyon tek başına oynaktır, bu yüzden bir kısa WMA "
+            "daha onu gerçekten hızlı ama yine de düzgün bir çizgiye dönüştürür."
+        ),
+        "reading_en": (
+            "Read it like any other moving average, but expect it to hug price far more closely "
+            "than `sma`, `ema` or plain `wma` at the same length — and to occasionally overshoot a "
+            "sharp turn before settling, a direct consequence of the extrapolation step."
+        ),
+        "reading_tr": (
+            "Diğer hareketli ortalamalar gibi okuyun, ama aynı uzunlukta `sma`, `ema` ya da düz "
+            "`wma`'dan çok daha yakından fiyata yapışmasını bekleyin — ve keskin bir dönüşte "
+            "yerleşmeden önce zaman zaman aşırı tepki vermesini de; bu, ekstrapolasyon adımının "
+            "doğrudan bir sonucudur."
+        ),
+        "pitfalls_en": (
+            "The same extrapolation that cuts lag also means HMA can overshoot past the actual "
+            "turning point on a sharp reversal, briefly pointing the wrong way before correcting — "
+            "unlike `sma`/`wma`, which merely lag, never overshoot. It is also the most compute-"
+            "heavy moving average in this library (three WMA passes per bar)."
+        ),
+        "pitfalls_tr": (
+            "Gecikmeyi azaltan aynı ekstrapolasyon, HMA'nın keskin bir dönüşte gerçek dönüş "
+            "noktasının ötesine geçebileceği, düzelmeden önce kısa süreliğine yanlış yönü "
+            "gösterebileceği anlamına da gelir — sadece geride kalan ve asla aşırı tepki vermeyen "
+            "`sma`/`wma`'nın aksine. Ayrıca bu kütüphanedeki en hesaplama yoğun hareketli "
+            "ortalamadır (bar başına üç WMA geçişi)."
+        ),
+        "example": [
+            lambda df: zeonta.hma(df["close"], length=20).tail(3),
+        ],
+    },
+    "williams_r": {
+        "title_en": "Williams %R",
+        "title_tr": "Williams %R",
+        "formula_en": ("%R = (HighestHigh(n) - Close) / (HighestHigh(n) - LowestLow(n)) x -100"),
+        "formula_tr": (
+            "%R = (EnYüksekZirve(n) - Kapanış) / (EnYüksekZirve(n) - EnDüşükDip(n)) x -100"
+        ),
+        "about_en": (
+            "The same range-position idea as `stoch`, developed independently by Larry Williams "
+            "and published first: where the close sits inside the recent high-low range. Williams "
+            "just inverted and shifted the scale — literally `%R = %K - 100` for the unsmoothed "
+            "`%K` — so it reads 0 to -100 instead of 0 to 100."
+        ),
+        "about_tr": (
+            "`stoch` ile aynı aralık-konumu fikri, Larry Williams tarafından bağımsız olarak "
+            "geliştirilmiş ve önce yayımlanmıştır: kapanışın son dönem yüksek-düşük aralığının "
+            "neresinde olduğu. Williams sadece ölçeği ters çevirip kaydırmıştır — yumuşatılmamış "
+            "`%K` için tam olarak `%R = %K - 100` — böylece 0 ile 100 yerine 0 ile -100 arasında "
+            "okunur."
+        ),
+        "reading_en": (
+            'Readings from -20 to 0 are conventionally "overbought", -80 to -100 "oversold" — '
+            "the exact mirror of `stoch`'s 80/20. A cross above -50 signals price trading in the "
+            "upper half of its recent range, below -50 the lower half."
+        ),
+        "reading_tr": (
+            '-20 ile 0 arası geleneksel olarak "aşırı alım", -80 ile -100 arası "aşırı satım" '
+            "sayılır — `stoch`'un 80/20'sinin tam aynası. -50'nin üstüne çıkış, fiyatın son dönem "
+            "aralığının üst yarısında işlem gördüğünü; altına iniş ise alt yarısında olduğunu "
+            "gösterir."
+        ),
+        "pitfalls_en": (
+            "Being mathematically identical to unsmoothed `stoch` minus 100, it inherits exactly "
+            "the same weakness: it saturates in a trend, pinning near 0 or -100 for as long as the "
+            "trend runs, generating premature reversal signals the whole way. Pair it with a trend "
+            "filter before acting on the extremes."
+        ),
+        "pitfalls_tr": (
+            "Yumuşatılmamış `stoch` eksi 100 ile matematiksel olarak özdeş olduğu için tam olarak "
+            "aynı zayıflığı devralır: bir trendde doyuma ulaşır, trend sürdüğü sürece 0'a ya da "
+            "-100'e yapışır ve bu süre boyunca erken dönüş sinyalleri üretir. Uç değerlere göre "
+            "işlem yapmadan önce bir trend filtresiyle birlikte kullanın."
+        ),
+        "example": [
+            lambda df: zeonta.williams_r(df["high"], df["low"], df["close"], length=14).tail(3),
+        ],
+    },
+    "stoch_rsi": {
+        "title_en": "Stochastic RSI (StochRSI)",
+        "title_tr": "Stokastik RSI (StochRSI)",
+        "formula_en": (
+            "StochRSI = (RSI - LowestLow(RSI, n)) / (HighestHigh(RSI, n) - LowestLow(RSI, n))"
+        ),
+        "formula_tr": (
+            "StochRSI = (RSI - EnDüşükDip(RSI, n)) / (EnYüksekZirve(RSI, n) - EnDüşükDip(RSI, n))"
+        ),
+        "about_en": (
+            "Takes `stoch`'s exact range-position formula and applies it to `rsi` instead of "
+            "price — an oscillator of an oscillator. RSI alone measures momentum; StochRSI "
+            "measures how extreme *that* momentum reading is relative to its own recent history, "
+            "which makes it swing between its bounds far more often and far more sharply than RSI "
+            "itself ever does."
+        ),
+        "about_tr": (
+            "`stoch`'un aralık-konumu formülünü aynen alıp fiyat yerine `rsi`'a uygular — bir "
+            "osilatörün osilatörü. RSI tek başına momentumu ölçer; StochRSI ise o momentum "
+            "okumasının kendi son dönem tarihine göre ne kadar uç olduğunu ölçer; bu da onun "
+            "RSI'nin kendisinden çok daha sık ve çok daha keskin biçimde sınırları arasında "
+            "salınmasına yol açar."
+        ),
+        "reading_en": (
+            'Above 80 conventionally "overbought", below 20 "oversold" — but because StochRSI '
+            "is so much more volatile than RSI, it spends far more time near those extremes, so "
+            "treat crossings of the 50 line or %K crossing %D as more useful signals than the "
+            "extremes alone."
+        ),
+        "reading_tr": (
+            '80\'in üstü geleneksel olarak "aşırı alım", 20\'nin altı "aşırı satım" sayılır — ama '
+            "StochRSI, RSI'den çok daha oynak olduğu için bu uç noktalara yakın çok daha fazla "
+            "zaman geçirir; bu yüzden 50 çizgisinin kesilmesini ya da %K'nin %D'yi kesmesini tek "
+            "başına uç değerlerden daha kullanışlı sinyaller olarak değerlendirin."
+        ),
+        "pitfalls_en": (
+            "When RSI itself goes flat — most obviously when it is pinned at 100 or 0 through a "
+            "strong trend — StochRSI's own high-low range collapses to zero and the indicator "
+            "falls back to the midpoint (50) rather than staying at an extreme, which can look "
+            "like a reversal signal that isn't one. It is also a doubly-derived indicator (RSI of "
+            "price, then Stochastic of RSI), so treat single readings with real caution."
+        ),
+        "pitfalls_tr": (
+            "RSI'nin kendisi yatay hâle geldiğinde — en belirgin biçimde güçlü bir trend boyunca "
+            "100'e ya da 0'a yapıştığında — StochRSI'nin kendi yüksek-düşük aralığı sıfıra çöker ve "
+            "gösterge bir uçta kalmak yerine orta noktaya (50) döner; bu da olmayan bir dönüş "
+            "sinyali gibi görünebilir. Ayrıca iki kez türetilmiş bir göstergedir (fiyatın RSI'si, "
+            "sonra RSI'nin Stokastiği), bu yüzden tekil okumalara gerçek bir temkinle yaklaşın."
+        ),
+        "example": [
+            lambda df: zeonta.stoch_rsi(df["close"]).tail(3),
+        ],
+    },
+    "awesome_oscillator": {
+        "title_en": "Awesome Oscillator (AO)",
+        "title_tr": "Awesome Osilatör (AO)",
+        "formula_en": (
+            "MedianPrice = (High + Low) / 2; AO = SMA(MedianPrice, 5) - SMA(MedianPrice, 34)"
+        ),
+        "formula_tr": (
+            "OrtaFiyat = (Yüksek + Düşük) / 2; AO = HO(OrtaFiyat, 5) - HO(OrtaFiyat, 34)"
+        ),
+        "about_en": (
+            'Bill Williams\' momentum reading, built from the same "fast SMA minus slow SMA" '
+            "shape as `macd`, but with two differences: it uses the bar's own midpoint rather than "
+            "the close, and contrasts two plain SMAs instead of two EMAs, so it carries no memory "
+            "beyond each window's own edge."
+        ),
+        "about_tr": (
+            'Bill Williams\'ın momentum okuması, `macd` ile aynı "hızlı HO eksi yavaş HO" '
+            "şeklinden kurulur, ama iki farkla: kapanış yerine barın kendi orta noktasını kullanır "
+            "ve iki EMA yerine iki düz HO'yu karşılaştırır, bu yüzden her pencerenin kendi "
+            "kenarının ötesinde bir hafızası yoktur."
+        ),
+        "reading_en": (
+            "Read the histogram like `macd`'s: positive and rising is strengthening upward "
+            "momentum, a colour/sign change at the zero line marks a shift in which side (5-bar or "
+            '34-bar) is currently dominant. A widely cited pattern ("saucer") looks for two or '
+            "three consecutive bars getting shorter then one getting taller, all on the same side "
+            "of zero."
+        ),
+        "reading_tr": (
+            "Histogramı `macd`'nin histogramı gibi okuyun: pozitif ve yükselen değerler güçlenen "
+            "yukarı yönlü momentumu gösterir; sıfır çizgisinde bir renk/işaret değişimi hangi "
+            "tarafın (5-bar mı 34-bar mı) şu an baskın olduğundaki bir kaymayı işaret eder. Sıkça "
+            'anılan bir formasyon ("çanak"), sıfırın aynı tarafında art arda iki ya da üç barın '
+            "kısalıp sonra birinin uzamasını arar."
+        ),
+        "pitfalls_en": (
+            "Using the bar's midpoint instead of the close means AO can shift even on a bar that "
+            "closed flat, purely from an intrabar wick — it is reading range, not just direction. "
+            "Being unbounded and denominated in price units, it also can't be compared across "
+            "symbols or price levels the way a 0-100 oscillator can."
+        ),
+        "pitfalls_tr": (
+            "Kapanış yerine barın orta noktasını kullanması, AO'nun düz kapanan bir barda bile "
+            "sadece gün içi bir fitilden dolayı hareket edebileceği anlamına gelir — yönü değil, "
+            "aralığı okur. Sınırsız ve fiyat biriminde ifade edildiği için, 0-100 aralığındaki bir "
+            "osilatörün aksine semboller ya da fiyat seviyeleri arasında karşılaştırılamaz."
+        ),
+        "example": [
+            lambda df: zeonta.awesome_oscillator(df["high"], df["low"]).tail(3),
+        ],
+    },
+    "aroon": {
+        "title_en": "Aroon and the Aroon Oscillator",
+        "title_tr": "Aroon ve Aroon Osilatörü",
+        "formula_en": (
+            "Aroon-Up = ((n - DaysSinceHighestHigh) / n) x 100; Aroon-Down = ((n - "
+            "DaysSinceLowestLow) / n) x 100; Aroon Oscillator = Aroon-Up - Aroon-Down"
+        ),
+        "formula_tr": (
+            "Aroon-Yukarı = ((n - EnYüksekZirveÜzerindenGeçenGün) / n) x 100; Aroon-Aşağı = ((n - "
+            "EnDüşükDipÜzerindenGeçenGün) / n) x 100; Aroon Osilatörü = Aroon-Yukarı - Aroon-Aşağı"
+        ),
+        "about_en": (
+            "Where `donchian` marks *where* the n-bar high and low currently sit in price terms, "
+            "Aroon marks *how long ago* they happened. A fresh high scores Aroon-Up at 100 no "
+            "matter how far away it is in price; a high from `n` bars back scores 0 even if price "
+            "is still sitting right next to it — the whole indicator is about recency, not level."
+        ),
+        "about_tr": (
+            "`donchian` n-bar en yüksek ve en düşüğün fiyat açısından *nerede* olduğunu "
+            "işaretlerken, Aroon bunların *ne kadar önce* olduğunu işaretler. Taze bir zirve, fiyat "
+            "açısından ne kadar uzakta olursa olsun Aroon-Yukarı'yı 100 yapar; `n` bar önceki bir "
+            "zirve ise fiyat hâlâ hemen yanında bile olsa 0 yapar — göstergenin tamamı seviyeyle "
+            "değil, yakın zamanlılıkla ilgilidir."
+        ),
+        "reading_en": (
+            "Aroon-Up above 70 with Aroon-Down below 30 signals a strong uptrend (highs keep "
+            "getting made, lows are stale); the mirror image signals a downtrend. The Aroon "
+            "Oscillator condenses both into one line around zero: sustained positive readings mark "
+            "an uptrend bias, sustained negative ones a downtrend bias."
+        ),
+        "reading_tr": (
+            "Aroon-Yukarı 70'in üstünde ve Aroon-Aşağı 30'un altındayken güçlü bir yükseliş trendi "
+            "işaret eder (zirveler yenilenmeye devam ediyor, dipler eskimiş); ayna görüntüsü bir "
+            "düşüş trendini işaret eder. Aroon Osilatörü ikisini sıfır etrafında tek bir çizgide "
+            "birleştirir: sürekli pozitif okumalar yükseliş eğilimini, sürekli negatif okumalar "
+            "düşüş eğilimini işaret eder."
+        ),
+        "pitfalls_en": (
+            "Aroon-Up and Aroon-Down can both be high or both be low at once (a choppy market can "
+            "make fresh highs and fresh lows in the same window), which the oscillator alone "
+            "hides by netting them against each other — check the two raw lines, not just the "
+            "oscillator, before concluding there is no trend. Ties for the extreme value within "
+            "the window are broken toward the most recent occurrence, per the source's own "
+            "convention."
+        ),
+        "pitfalls_tr": (
+            "Aroon-Yukarı ve Aroon-Aşağı aynı anda hem yüksek hem düşük olabilir (dalgalı bir "
+            "piyasa aynı pencerede hem taze zirve hem taze dip yapabilir); osilatör tek başına "
+            "bunları birbirinden çıkararak gizler — trend olmadığı sonucuna varmadan önce sadece "
+            "osilatöre değil, iki ham çizgiye de bakın. Pencere içindeki uç değer eşitlikleri, "
+            "kaynağın kendi kuralına uygun olarak en son gerçekleşen lehine çözülür."
+        ),
+        "example": [
+            lambda df: zeonta.aroon(df["high"], df["low"]).tail(3),
+        ],
+    },
+    "adl": {
+        "title_en": "Accumulation/Distribution Line (ADL)",
+        "title_tr": "Birikim/Dağıtım Çizgisi (ADL)",
+        "formula_en": (
+            "MFM = ((Close - Low) - (High - Close)) / (High - Low); MFV = MFM x Volume; ADL = "
+            "Previous ADL + MFV"
+        ),
+        "formula_tr": (
+            "PAÇ = ((Kapanış - Düşük) - (Yüksek - Kapanış)) / (Yüksek - Düşük); PAH = PAÇ x Hacim; "
+            "ADL = Önceki ADL + PAH"
+        ),
+        "about_en": (
+            "Where `obv` only asks whether the close was up or down and assigns the *entire* bar's "
+            "volume to one side or the other, ADL asks *where inside the bar's full range* the "
+            "close landed and weights volume by that graded position instead — a bar that closed "
+            "near, but not exactly at, the high contributes most (not all) of its volume "
+            "positively. It is also the running-total version of `cmf`, which instead sums the "
+            "same per-bar flow over a fixed window and divides by volume to get a bounded ratio."
+        ),
+        "about_tr": (
+            "`obv` yalnızca kapanışın yukarı mı aşağı mı olduğunu sorup barın *tüm* hacmini bir "
+            "tarafa yazarken, ADL kapanışın *barın tüm aralığının neresine* düştüğünü sorar ve "
+            "hacmi bu kademeli konuma göre ağırlıklandırır — zirveye yakın ama tam onda olmayan bir "
+            "kapanış, hacminin tamamını değil çoğunu pozitif katkı olarak sayar. Aynı zamanda "
+            "`cmf`'nin kümülatif toplam hâlidir; `cmf` bunun yerine aynı bar-başına akışı sabit bir "
+            "pencerede toplayıp hacme bölerek sınırlı bir oran elde eder."
+        ),
+        "reading_en": (
+            "Read it exactly like `obv`: the absolute level is arbitrary (it depends on where the "
+            "series happens to start), only its *slope* and its agreement or disagreement with "
+            "price matter. ADL rising while price is flat or falling is read as accumulation "
+            "building beneath the surface — the same bullish-divergence idea `obv` is used for, "
+            "just with a more graded input."
+        ),
+        "reading_tr": (
+            "Tam olarak `obv` gibi okuyun: mutlak seviye keyfidir (serinin nereden başladığına "
+            "bağlıdır), yalnızca *eğimi* ve fiyatla uyuşup uyuşmadığı önemlidir. Fiyat yatay ya da "
+            "düşerken ADL'nin yükselmesi, yüzeyin altında birikim oluştuğu şeklinde okunur — "
+            "`obv`'nin kullanıldığı aynı boğa-uyumsuzluğu fikri, sadece daha kademeli bir girdiyle."
+        ),
+        "pitfalls_en": (
+            "A very narrow high-low range makes the Money Flow Multiplier's denominator tiny, so "
+            "ordinary volume on a quiet bar can swing ADL sharply even though little actually "
+            "happened — this implementation defines the exact zero-range case as contributing "
+            "nothing rather than blowing up, but near-zero ranges are still noisy. Like `obv`, it "
+            "is a running total with no natural reset point, so comparing absolute levels across "
+            "two different time windows tells you nothing."
+        ),
+        "pitfalls_tr": (
+            "Çok dar bir yüksek-düşük aralığı, Para Akışı Çarpanı'nın paydasını küçültür; bu yüzden "
+            "sakin bir bardaki sıradan hacim, aslında pek bir şey olmamasına rağmen ADL'yi sert "
+            "sallayabilir — bu uygulama tam sıfır-aralık durumunu patlamak yerine hiçbir katkı "
+            "yapmayacak şekilde tanımlar, ama sıfıra yakın aralıklar yine de gürültülüdür. `obv` "
+            "gibi, doğal bir sıfırlama noktası olmayan bir kümülatif toplamdır; bu yüzden iki farklı "
+            "zaman penceresindeki mutlak seviyeleri karşılaştırmak size hiçbir şey söylemez."
+        ),
+        "example": [
+            lambda df: zeonta.adl(df["high"], df["low"], df["close"], df["volume"]).tail(3),
+        ],
+    },
 }

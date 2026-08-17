@@ -245,8 +245,6 @@ README_INTRO = {
 [![Python](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
 [![License](https://img.shields.io/github/license/selimozbas/zeon-ta)](LICENSE)
 
-**Türkçe: [README.tr.md](README.tr.md)**
-
 Technical analysis indicators for Python that are actually maintained — no C
 extension to compile, no abandoned API. NumPy and pandas are the only
 dependencies.

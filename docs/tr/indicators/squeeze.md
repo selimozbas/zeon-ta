@@ -51,9 +51,9 @@ zeonta.squeeze(df['high'], df['low'], df['close']).tail(3)
 ```text
             SQZ_ON_20_2.0_20_1.5  SQZ_OFF_20_2.0_20_1.5  SQZ_MOM_20_2.0_20_1.5
 date                                                                          
-2024-10-25                   1.0                    0.0              -0.449815
-2024-10-26                   1.0                    0.0              -0.718403
-2024-10-27                   0.0                    1.0              -1.010886
+2024-10-25                   1.0                    0.0              -0.410355
+2024-10-26                   1.0                    0.0              -0.675908
+2024-10-27                   0.0                    1.0              -0.975041
 ```
 
 **Accessor biçimi:** `df.zta.squeeze(...)`
@@ -64,7 +64,7 @@ date
 
 ## Dikkat edilmesi gerekenler
 
-Sıkışma bir hareketin muhtemel olduğunu söyler, hangi yöne olacağını asla söylemez — momentum okuması olmadan işlem yapmak yazı tura atmaktır. Ayrıca `kc_multiplier`'ı büyütmek Keltner bantlarını dışarı iter ve dolayısıyla sıkışmaları **daha** sık hâle getirir, daha seyrek değil; bu kütüphane, tersini söyleyen TA 101 sınav cevabını değil formülü esas alır.
+Sıkışma bir hareketin muhtemel olduğunu söyler, hangi yöne olacağını asla söylemez — momentum okuması olmadan işlem yapmak yazı tura atmaktır. Ayrıca `kc_multiplier`'ı büyütmek Keltner bantlarını dışarı iter ve dolayısıyla sıkışmaları **daha** sık hâle getirir, daha seyrek değil; bu kütüphane, tersini söyleyen TA 101 sınav cevabını değil formülü esas alır. Momentum orta çizgisi, dersin ifadesinin çağrıştırdığı eşit üçlü ortalamayı değil, yayımlanmış TTM tanımındaki *iç içe* ortalamayı kullanır — `avg(avg(hh, ll), sma)`, yani aralık orta noktası ve SMA yarımşar ağırlıkla. Bu nedenle değerler, ifadeyi birebir izleyen bir uygulamadan farklı çıkar.
 
 ## Kaynak
 

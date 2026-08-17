@@ -51,9 +51,9 @@ zeonta.squeeze(df['high'], df['low'], df['close']).tail(3)
 ```text
             SQZ_ON_20_2.0_20_1.5  SQZ_OFF_20_2.0_20_1.5  SQZ_MOM_20_2.0_20_1.5
 date                                                                          
-2024-10-25                   1.0                    0.0              -0.449815
-2024-10-26                   1.0                    0.0              -0.718403
-2024-10-27                   0.0                    1.0              -1.010886
+2024-10-25                   1.0                    0.0              -0.410355
+2024-10-26                   1.0                    0.0              -0.675908
+2024-10-27                   0.0                    1.0              -0.975041
 ```
 
 **Accessor form:** `df.zta.squeeze(...)`
@@ -64,7 +64,7 @@ date
 
 ## Pitfalls
 
-The squeeze says a move is likely, never which way — trading it without the momentum read is a coin flip. Note also that widening `kc_multiplier` pushes the Keltner bands further out and therefore makes squeezes **more** frequent, not less; this library follows the formula rather than the TA 101 quiz answer, which states the opposite.
+The squeeze says a move is likely, never which way — trading it without the momentum read is a coin flip. Note also that widening `kc_multiplier` pushes the Keltner bands further out and therefore makes squeezes **more** frequent, not less; this library follows the formula rather than the TA 101 quiz answer, which states the opposite. The momentum midline uses the published TTM *nested* average — `avg(avg(hh, ll), sma)`, weighting the range midpoint and the SMA at one half each — rather than the equal three-way mean the lesson's wording suggests, so values here will differ from an implementation that follows that wording literally.
 
 ## Reference
 

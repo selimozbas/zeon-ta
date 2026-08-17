@@ -166,12 +166,16 @@ CONTENT: dict[str, Doc] = {
         "reading_en": (
             "`LRCSLOPE` is the per-bar drift: positive is an uptrend, negative a downtrend, and its "
             "magnitude is the trend's steepness. Price near `LRCU` is extended relative to the "
-            "trend; near `LRCL` it is lagging behind it."
+            "trend; near `LRCL` it is lagging behind it. The band width is the scatter of price "
+            "**about the fitted line**, not about its mean, so a cleanly trending market gives a "
+            "narrow channel however steep it is."
         ),
         "reading_tr": (
             "`LRCSLOPE` bar başına düşen sürüklenmedir: pozitifse yükseliş, negatifse düşüş "
             "trendi; büyüklüğü ise trendin dikliğidir. `LRCU`'ya yakın fiyat trende göre "
-            "gerilmiştir; `LRCL`'ye yakın fiyat ise trendin gerisinde kalmıştır."
+            "gerilmiştir; `LRCL`'ye yakın fiyat ise trendin gerisinde kalmıştır. Bant genişliği "
+            "fiyatın ortalamadan değil, **uyum çizgisinden** sapmasıdır; bu yüzden temiz bir "
+            "trendde kanal, trend ne kadar dik olursa olsun dar kalır."
         ),
         "pitfalls_en": (
             "The fit is recomputed every bar, so the channel repaints as new data arrives — the "
@@ -831,14 +835,21 @@ CONTENT: dict[str, Doc] = {
             "The squeeze says a move is likely, never which way — trading it without the momentum "
             "read is a coin flip. Note also that widening `kc_multiplier` pushes the Keltner bands "
             "further out and therefore makes squeezes **more** frequent, not less; this library "
-            "follows the formula rather than the TA 101 quiz answer, which states the opposite."
+            "follows the formula rather than the TA 101 quiz answer, which states the opposite. "
+            "The momentum midline uses the published TTM *nested* average — "
+            "`avg(avg(hh, ll), sma)`, weighting the range midpoint and the SMA at one half each — "
+            "rather than the equal three-way mean the lesson's wording suggests, so values here "
+            "will differ from an implementation that follows that wording literally."
         ),
         "pitfalls_tr": (
             "Sıkışma bir hareketin muhtemel olduğunu söyler, hangi yöne olacağını asla söylemez — "
             "momentum okuması olmadan işlem yapmak yazı tura atmaktır. Ayrıca `kc_multiplier`'ı "
             "büyütmek Keltner bantlarını dışarı iter ve dolayısıyla sıkışmaları **daha** sık hâle "
             "getirir, daha seyrek değil; bu kütüphane, tersini söyleyen TA 101 sınav cevabını değil "
-            "formülü esas alır."
+            "formülü esas alır. Momentum orta çizgisi, dersin ifadesinin çağrıştırdığı eşit üçlü "
+            "ortalamayı değil, yayımlanmış TTM tanımındaki *iç içe* ortalamayı kullanır — "
+            "`avg(avg(hh, ll), sma)`, yani aralık orta noktası ve SMA yarımşar ağırlıkla. Bu "
+            "nedenle değerler, ifadeyi birebir izleyen bir uygulamadan farklı çıkar."
         ),
         "example": [
             lambda df: zeonta.squeeze(df["high"], df["low"], df["close"]).tail(3),

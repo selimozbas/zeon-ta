@@ -18,7 +18,6 @@ from ._core import (
     require_same_length,
     rolling_linreg,
     rolling_mean,
-    rolling_std,
     validate_length,
     validate_multiplier,
     wrap_frame,
@@ -351,8 +350,9 @@ def trend_channel(
     """Linear-regression trend channel.
 
     Fits ``y = a + b*x`` over the last ``length`` closes (``x = 0..n-1``) and
-    places bands at ``+/- multiplier`` standard deviations of price around the fitted
-    line. The slope sign is the objective answer to "is this an uptrend?".
+    places bands at ``+/- multiplier`` standard deviations **of the residuals**
+    around the fitted line. The slope sign is the objective answer to "is this an
+    uptrend?".
 
     Parameters
     ----------
@@ -385,8 +385,12 @@ def trend_channel(
     factor = validate_multiplier(multiplier)
 
     values = as_array(close, "close")
-    slope, _, endpoint = rolling_linreg(values, length)
-    deviation = rolling_std(values, length, ddof=0)
+    fit = rolling_linreg(values, length)
+    slope, endpoint = fit.slope, fit.endpoint
+    # Scatter is measured about the fitted line, not about the window mean: in a
+    # steep trend the deviation about the mean is mostly the trend itself, which
+    # would inflate the channel exactly when price is behaving most predictably.
+    deviation = fit.residual_std
 
     order = [f"LRCM_{length}", f"LRCU_{length}", f"LRCL_{length}", f"LRCSLOPE_{length}"]
     columns = (endpoint, endpoint + factor * deviation, endpoint - factor * deviation, slope)

@@ -9,10 +9,13 @@ behaviour the public API promises.
 
 from __future__ import annotations
 
+from typing import NamedTuple
+
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 
 __all__ = [
+    "LinregResult",
     "rolling_linreg",
     "rolling_max",
     "rolling_mean",
@@ -87,19 +90,33 @@ def rolling_mean_abs_dev(values: np.ndarray, length: int) -> np.ndarray:
     return out
 
 
-def rolling_linreg(values: np.ndarray, length: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+class LinregResult(NamedTuple):
+    """Rolling regression outputs, one array per statistic."""
+
+    slope: np.ndarray
+    intercept: np.ndarray
+    endpoint: np.ndarray
+    residual_std: np.ndarray
+
+
+def rolling_linreg(values: np.ndarray, length: int) -> LinregResult:
     """Rolling ordinary-least-squares fit over ``x = 0 .. length - 1``.
 
-    Returns ``(slope, intercept, endpoint)`` where ``endpoint`` is the fitted
-    value at the most recent bar of each window, i.e. ``intercept + slope * (length - 1)``.
-    That endpoint is what linear-regression channels and the TTM Squeeze
-    momentum histogram plot.
+    ``endpoint`` is the fitted value at the most recent bar of each window, i.e.
+    ``intercept + slope * (length - 1)`` — what linear-regression channels and
+    the TTM Squeeze momentum histogram plot.
+
+    ``residual_std`` is the population standard deviation of the window's points
+    **about the fitted line**, not about their mean. That distinction matters:
+    a regression channel is meant to measure scatter around the trend, and in a
+    steep trend the deviation about the mean is dominated by the trend itself.
     """
     slope = _blank(values)
     intercept = _blank(values)
     endpoint = _blank(values)
+    residual_std = _blank(values)
     if values.shape[0] < length:
-        return slope, intercept, endpoint
+        return LinregResult(slope, intercept, endpoint, residual_std)
     if length < 2:
         raise ValueError(f"'length' must be >= 2 for a linear regression, got {length}")
 
@@ -114,8 +131,11 @@ def rolling_linreg(values: np.ndarray, length: int) -> tuple[np.ndarray, np.ndar
 
     window_slope = (length * sum_xy - sum_x * sum_y) / denominator
     window_intercept = (sum_y - window_slope * sum_x) / length
+    fitted = window_intercept[:, None] + window_slope[:, None] * x[None, :]
+    residuals = windows - fitted
 
     slope[length - 1 :] = window_slope
     intercept[length - 1 :] = window_intercept
     endpoint[length - 1 :] = window_intercept + window_slope * (length - 1)
-    return slope, intercept, endpoint
+    residual_std[length - 1 :] = np.sqrt((residuals * residuals).mean(axis=1))
+    return LinregResult(slope, intercept, endpoint, residual_std)

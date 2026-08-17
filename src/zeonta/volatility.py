@@ -299,8 +299,9 @@ def squeeze(
     traders actually act on.
 
     Momentum is the linear-regression endpoint of price minus a midline:
-    ``LinReg(Close - Avg(HighestHigh(n), LowestLow(n), SMA(Close, n)), n)``.
-    Its sign tells you which way the compressed energy is pointing.
+    ``LinReg(Close - Avg(Avg(HighestHigh(n), LowestLow(n)), SMA(Close, n)), n)``.
+    Note the *nested* average — the high-low midpoint and the SMA each carry half
+    the weight. Its sign tells you which way the compressed energy is pointing.
 
     Parameters
     ----------
@@ -357,12 +358,13 @@ def squeeze(
     on[inside] = 1.0
     off[comparable & ~inside] = 1.0
 
-    midline = (
-        rolling_max(high_values, kc_length)
-        + rolling_min(low_values, kc_length)
-        + rolling_mean(close_values, kc_length)
-    ) / 3.0
-    _, _, momentum = rolling_linreg(close_values - midline, kc_length)
+    # avg(avg(highest high, lowest low), sma) — a nested average, so the range
+    # midpoint and the SMA each carry half the weight. The TA 101 lesson writes
+    # this as "Avg(HighestHigh, LowestLow, SMA)", which reads as an equal
+    # three-way mean; that is not the published TTM Squeeze definition.
+    range_mid = (rolling_max(high_values, kc_length) + rolling_min(low_values, kc_length)) / 2.0
+    midline = (range_mid + rolling_mean(close_values, kc_length)) / 2.0
+    momentum = rolling_linreg(close_values - midline, kc_length).endpoint
 
     suffix = f"{bb_length}_{bb_factor}_{kc_length}_{kc_factor}"
     order = [f"SQZ_ON_{suffix}", f"SQZ_OFF_{suffix}", f"SQZ_MOM_{suffix}"]

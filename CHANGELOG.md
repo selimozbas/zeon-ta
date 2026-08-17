@@ -6,6 +6,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- `trend_channel`: the channel bands now measure scatter about the fitted
+  regression line (residual standard deviation), not about the window mean.
+  The TA 101 lesson describes it this way too, but the initial implementation
+  used the wrong deviation, which inflated the channel exactly when price was
+  tracking the trend most cleanly.
+- `squeeze`: the momentum midline now uses the published TTM Squeeze nested
+  average, `avg(avg(highest_high, lowest_low), sma)` (range midpoint and SMA
+  weighted equally at 1/2 each), instead of an equal three-way mean of the
+  three inputs. The TA 101 lesson's wording, `Avg(HighestHigh, LowestLow,
+  SMA)`, reads as the latter; the source site is a third-party reference, not
+  authoritative, so this follows the canonical TTM Squeeze definition instead.
+
 ## [0.1.0] - 2026-08-17
 
 First release. Covers the complete

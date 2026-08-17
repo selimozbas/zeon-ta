@@ -50,16 +50,16 @@ zeonta.trend_channel(df['close'], length=50).tail(3)
 ```text
               LRCM_50    LRCU_50    LRCL_50  LRCSLOPE_50
 date                                                    
-2024-10-25  90.207156  92.134307  88.280006    -0.054643
-2024-10-26  90.072080  92.077091  88.067070    -0.057086
-2024-10-27  89.891669  92.029878  87.753459    -0.060957
+2024-10-25  90.207156  91.314703  89.099609    -0.054643
+2024-10-26  90.072080  91.214641  88.929520    -0.057086
+2024-10-27  89.891669  91.106883  88.676454    -0.060957
 ```
 
 **Accessor form:** `df.zta.trend_channel(...)`
 
 ## How to read it
 
-`LRCSLOPE` is the per-bar drift: positive is an uptrend, negative a downtrend, and its magnitude is the trend's steepness. Price near `LRCU` is extended relative to the trend; near `LRCL` it is lagging behind it.
+`LRCSLOPE` is the per-bar drift: positive is an uptrend, negative a downtrend, and its magnitude is the trend's steepness. Price near `LRCU` is extended relative to the trend; near `LRCL` it is lagging behind it. The band width is the scatter of price **about the fitted line**, not about its mean, so a cleanly trending market gives a narrow channel however steep it is.
 
 ## Pitfalls
 

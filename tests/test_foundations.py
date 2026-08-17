@@ -97,6 +97,29 @@ def test_trend_channel_slope_is_negative_in_a_downtrend() -> None:
     assert out["LRCSLOPE_20"].iloc[-1] < 0
 
 
+def test_trend_channel_bands_collapse_on_a_perfectly_linear_series() -> None:
+    """Bands measure scatter about the trend line, so a straight line has none.
+
+    Using the deviation about the window *mean* instead would give a wide
+    channel here, which is backwards: the more perfectly price follows the
+    trend, the tighter the channel should be.
+    """
+    out = zeonta.trend_channel([float(i) for i in range(60)], length=20)
+    last = out.iloc[-1]
+    np.testing.assert_allclose(last["LRCU_20"], last["LRCM_20"], atol=1e-9)
+    np.testing.assert_allclose(last["LRCL_20"], last["LRCM_20"], atol=1e-9)
+
+
+def test_trend_channel_widens_with_scatter_around_the_trend() -> None:
+    rng = np.random.default_rng(3)
+    trend = np.linspace(0, 100, 200)
+    quiet = zeonta.trend_channel(trend + rng.normal(0, 0.1, 200), length=30)
+    noisy = zeonta.trend_channel(trend + rng.normal(0, 5.0, 200), length=30)
+    quiet_width = quiet["LRCU_30"].iloc[-1] - quiet["LRCL_30"].iloc[-1]
+    noisy_width = noisy["LRCU_30"].iloc[-1] - noisy["LRCL_30"].iloc[-1]
+    assert noisy_width > 10 * quiet_width
+
+
 def test_trend_channel_bands_bracket_the_line(ohlcv: pd.DataFrame) -> None:
     out = zeonta.trend_channel(ohlcv["close"], length=50).dropna()
     assert (out["LRCU_50"] >= out["LRCM_50"]).all()

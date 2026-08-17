@@ -2,6 +2,7 @@
 
 from .registry import OHLCV_FIELDS, IndicatorSpec, get_spec, indicator, iter_specs, lesson_url
 from .rolling import (
+    LinregResult,
     rolling_linreg,
     rolling_max,
     rolling_mean,
@@ -26,6 +27,7 @@ __all__ = [
     "OHLCV_FIELDS",
     "ArrayLike",
     "IndicatorSpec",
+    "LinregResult",
     "Number",
     "as_array",
     "common_index",

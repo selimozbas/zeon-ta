@@ -112,6 +112,31 @@ def test_keltner_is_smoother_than_bollinger_through_a_shock(ohlcv: pd.DataFrame)
     assert bb_jump > kc_jump
 
 
+def test_squeeze_momentum_midline_is_a_nested_average(ohlcv: pd.DataFrame) -> None:
+    """TTM weights the high-low midpoint and the SMA equally, at 1/2 each.
+
+    The TA 101 lesson writes the midline as ``Avg(HighestHigh, LowestLow, SMA)``,
+    which reads as an equal three-way mean (1/3 each). The published TTM Squeeze
+    uses ``avg(avg(hh, ll), sma)``; this pins the weighting we implement.
+    """
+    high, low, close = ohlcv["high"], ohlcv["low"], ohlcv["close"]
+    length = 20
+    range_mid = (high.rolling(length).max() + low.rolling(length).min()) / 2
+    expected_midline = (range_mid + close.rolling(length).mean()) / 2
+    three_way = (
+        high.rolling(length).max() + low.rolling(length).min() + close.rolling(length).mean()
+    ) / 3
+
+    from zeonta._core import rolling_linreg
+
+    expected = rolling_linreg((close - expected_midline).to_numpy(), length).endpoint
+    wrong = rolling_linreg((close - three_way).to_numpy(), length).endpoint
+    actual = zeonta.squeeze(high, low, close).filter(like="SQZ_MOM").iloc[:, 0].to_numpy()
+
+    np.testing.assert_allclose(actual, expected, equal_nan=True)
+    assert not np.allclose(actual[length:], wrong[length:])
+
+
 def test_squeeze_flags_are_mutually_exclusive(ohlcv: pd.DataFrame) -> None:
     out = zeonta.squeeze(ohlcv["high"], ohlcv["low"], ohlcv["close"]).dropna()
     on = out.filter(like="SQZ_ON").iloc[:, 0]

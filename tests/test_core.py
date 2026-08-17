@@ -111,10 +111,32 @@ class TestRolling:
 
     def test_linreg_recovers_a_known_line(self) -> None:
         values = 3.0 + 2.0 * np.arange(20.0)
-        slope, intercept, endpoint = rolling_linreg(values, 5)
-        np.testing.assert_allclose(slope[-1], 2.0)
-        np.testing.assert_allclose(endpoint[-1], values[-1])
-        np.testing.assert_allclose(intercept[-1], values[-5])
+        fit = rolling_linreg(values, 5)
+        np.testing.assert_allclose(fit.slope[-1], 2.0)
+        np.testing.assert_allclose(fit.endpoint[-1], values[-1])
+        np.testing.assert_allclose(fit.intercept[-1], values[-5])
+
+    def test_linreg_residual_std_is_zero_on_a_perfect_line(self) -> None:
+        """Scatter is measured about the fitted line, not about the window mean.
+
+        A straight line has zero scatter about itself, but a large deviation
+        about its mean — this is exactly the distinction a regression channel
+        depends on.
+        """
+        values = 3.0 + 2.0 * np.arange(20.0)
+        fit = rolling_linreg(values, 5)
+        np.testing.assert_allclose(fit.residual_std[-1], 0.0, atol=1e-12)
+        assert rolling_std(values, 5)[-1] > 2.0
+
+    def test_linreg_residual_std_matches_a_direct_fit(self) -> None:
+        rng = np.random.default_rng(11)
+        values = np.cumsum(rng.normal(0, 1, 40))
+        fit = rolling_linreg(values, 10)
+        window = values[-10:]
+        x = np.arange(10.0)
+        slope, intercept = np.polyfit(x, window, 1)
+        residuals = window - (intercept + slope * x)
+        np.testing.assert_allclose(fit.residual_std[-1], np.sqrt((residuals**2).mean()))
 
     def test_linreg_needs_at_least_two_points(self) -> None:
         with pytest.raises(ValueError, match="must be >= 2"):

@@ -23,6 +23,7 @@ from ._core import (
     rolling_mean,
     rolling_mean_abs_dev,
     rolling_min,
+    rolling_sum,
     validate_length,
     wilder_values,
     wrap_frame,
@@ -32,12 +33,14 @@ from ._core import (
 __all__ = [
     "awesome_oscillator",
     "cci",
+    "elder_ray",
     "macd",
     "momentum",
     "roc",
     "rsi",
     "stoch",
     "stoch_rsi",
+    "ultimate_oscillator",
     "williams_r",
 ]
 
@@ -601,3 +604,159 @@ def roc(close: ArrayLike, length: int = 12) -> pd.Series:
     result = np.where(previous == 0.0, np.nan, result)
 
     return wrap_series(result, common_index(close), f"ROC_{length}")
+
+
+@indicator(
+    category="oscillators",
+    summary="Larry Williams' three-timeframe blend of buying pressure over true range.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/ultimate-oscillator"
+    ),
+    outputs=("UO",),
+)
+def ultimate_oscillator(
+    high: ArrayLike,
+    low: ArrayLike,
+    close: ArrayLike,
+    fast: int = 7,
+    medium: int = 14,
+    slow: int = 28,
+) -> pd.Series:
+    """Ultimate Oscillator.
+
+    ``BP = Close - Min(Low, PriorClose)`` (Buying Pressure);
+    ``TR = Max(High, PriorClose) - Min(Low, PriorClose)`` (True Range, the
+    same maximum-of-three-measures range :func:`true_range` computes, just
+    expressed via the prior close directly); ``Average_n = Sum(BP, n) /
+    Sum(TR, n)`` computed over each of the three windows;
+    ``UO = 100 * (4*Average_fast + 2*Average_medium + Average_slow) / 7``.
+    Blending three timeframes with descending weight aims to capture both
+    short-term momentum and the longer trend in one bounded line, tempering
+    the whipsaws a single-period oscillator gives in a choppy market.
+
+    Parameters
+    ----------
+    high, low, close:
+        Price series of equal length.
+    fast, medium, slow:
+        The three look-back windows, weighted 4:2:1 respectively in the
+        final blend; must satisfy ``fast < medium < slow``.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``UO_{fast}_{medium}_{slow}``, ranging 0-100.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> high = [11.0, 12.0, 10.5, 13.0]
+    >>> low = [9.0, 10.0, 8.5, 11.0]
+    >>> close = [10.0, 11.5, 9.0, 12.5]
+    >>> float(zeonta.ultimate_oscillator(high, low, close, fast=1, medium=2, slow=3).iloc[-1])
+    75.05668934240362
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/ultimate-oscillator
+    """
+    fast = validate_length(fast, "fast")
+    medium = validate_length(medium, "medium")
+    slow = validate_length(slow, "slow")
+    if not fast < medium < slow:
+        raise ValueError(
+            f"'fast' < 'medium' < 'slow' is required, got fast={fast}, medium={medium}, slow={slow}"
+        )
+
+    require_aligned_index(high=high, low=low, close=close)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    size = require_same_length(high=high_values, low=low_values, close=close_values)
+
+    prior_close = np.concatenate(([np.nan], close_values[:-1]))
+    buying_pressure = close_values - np.minimum(low_values, prior_close)
+    true_range = np.maximum(high_values, prior_close) - np.minimum(low_values, prior_close)
+
+    def average(length: int) -> np.ndarray:
+        # No prior close at bar 0, so both sums start from bar 1, matching
+        # the same alignment convention used by mfi() and vortex().
+        sum_bp = np.full(size, np.nan, dtype="float64")
+        sum_tr = np.full(size, np.nan, dtype="float64")
+        sum_bp[1:] = rolling_sum(buying_pressure[1:], length)
+        sum_tr[1:] = rolling_sum(true_range[1:], length)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            result = sum_bp / sum_tr
+        return np.where(np.isfinite(sum_tr) & (sum_tr == 0.0), 0.0, result)
+
+    avg_fast = average(fast)
+    avg_medium = average(medium)
+    avg_slow = average(slow)
+    result = 100.0 * (4.0 * avg_fast + 2.0 * avg_medium + avg_slow) / 7.0
+
+    return wrap_series(result, common_index(high, low, close), f"UO_{fast}_{medium}_{slow}")
+
+
+@indicator(
+    category="oscillators",
+    summary="Bull Power / Bear Power — the day's high and low measured against an EMA.",
+    reference="https://www.tradingview.com/support/solutions/43000717955-bull-bear-power/",
+    outputs=("BULLP", "BEARP"),
+)
+def elder_ray(high: ArrayLike, low: ArrayLike, close: ArrayLike, length: int = 13) -> pd.DataFrame:
+    """Elder Ray (Bull Power / Bear Power).
+
+    ``EMA = EMA(Close, length)``; ``Bull Power = High - EMA``;
+    ``Bear Power = Low - EMA``. Bull Power reads how far buyers pushed price
+    above the prevailing trend within the bar; Bear Power reads how far
+    sellers pushed it below. Developed by Alexander Elder as a way to see
+    the tug-of-war inside each bar relative to the trend, rather than just
+    where the bar closed.
+
+    Parameters
+    ----------
+    high, low, close:
+        Price series of equal length.
+    length:
+        EMA period the two power lines are measured against.
+
+    Returns
+    -------
+    pandas.DataFrame
+        ``BULLP_{length}`` and ``BEARP_{length}``. In a clean uptrend
+        Bull Power stays positive and Bear Power negative but shrinking;
+        Bear Power turning positive, or Bull Power turning negative, is the
+        classic warning that the trend has lost control of the bar.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> high = [11.0, 12.0, 13.0, 14.0]
+    >>> low = [9.0, 10.0, 11.0, 12.0]
+    >>> close = [10.0, 11.0, 12.0, 13.0]
+    >>> out = zeonta.elder_ray(high, low, close, length=3)
+    >>> [round(value, 4) for value in out.iloc[-1].tolist()]
+    [2.0, 0.0]
+
+    References
+    ----------
+    https://www.tradingview.com/support/solutions/43000717955-bull-bear-power/
+    """
+    length = validate_length(length)
+    require_aligned_index(high=high, low=low, close=close)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    require_same_length(high=high_values, low=low_values, close=close_values)
+
+    baseline = ema_values(close_values, length)
+    bull_power = high_values - baseline
+    bear_power = low_values - baseline
+
+    order = [f"BULLP_{length}", f"BEARP_{length}"]
+    return wrap_frame(
+        dict(zip(order, (bull_power, bear_power), strict=True)),
+        common_index(high, low, close),
+        order=order,
+    )

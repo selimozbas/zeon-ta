@@ -71,6 +71,11 @@ def test_indicators_with_a_reference() -> None:
         "hma",
         "dema",
         "tema",
+        "chaikin_oscillator",
+        "chandelier_exit",
+        "vortex",
+        "ultimate_oscillator",
+        "elder_ray",
     }
     with_reference = {spec.name for spec in iter_specs() if spec.reference is not None}
     assert with_reference == expected

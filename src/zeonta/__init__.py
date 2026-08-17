@@ -16,9 +16,9 @@ Two equivalent ways to call anything::
     df.zta.rsi(length=14)                # accessor, same code underneath
 
 Formulas follow standard, widely published technical-analysis definitions. A
-handful of indicators (OBV, CMF, MFI, ROC, Momentum, KAMA, Parabolic SAR)
-additionally cite the specific external source their formula was verified
-against in a ``References`` section of their own docstring.
+handful of indicators additionally cite the specific external source their
+formula was verified against in a ``References`` section of their own
+docstring.
 """
 
 from __future__ import annotations
@@ -43,17 +43,28 @@ from .moving_averages import dema, ema, ema_ribbon, hma, kama, ma_cross, sma, te
 from .oscillators import (
     awesome_oscillator,
     cci,
+    elder_ray,
     macd,
     momentum,
     roc,
     rsi,
     stoch,
     stoch_rsi,
+    ultimate_oscillator,
     williams_r,
 )
-from .trend import adx, aroon, donchian, ichimoku, parabolic_sar, supertrend
+from .trend import (
+    adx,
+    aroon,
+    chandelier_exit,
+    donchian,
+    ichimoku,
+    parabolic_sar,
+    supertrend,
+    vortex,
+)
 from .volatility import atr, bbands, keltner, squeeze, true_range
-from .volume import adl, cmf, mfi, obv
+from .volume import adl, chaikin_oscillator, cmf, mfi, obv
 
 try:
     # Single source of truth: read back the version hatchling wrote into the
@@ -76,10 +87,13 @@ __all__ = [
     "bbands",
     "candles",
     "cci",
+    "chaikin_oscillator",
+    "chandelier_exit",
     "cmf",
     "dema",
     "divergence",
     "donchian",
+    "elder_ray",
     "ema",
     "ema_ribbon",
     "fib_retracement",
@@ -109,6 +123,8 @@ __all__ = [
     "tema",
     "trend_channel",
     "true_range",
+    "ultimate_oscillator",
+    "vortex",
     "vwap",
     "williams_r",
     "wma",

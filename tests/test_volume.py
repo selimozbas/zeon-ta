@@ -160,6 +160,30 @@ def test_adl_rejects_negative_volume() -> None:
         zeonta.adl([11.0, 12.0], [9.0, 10.0], [11.0, 12.0], [100.0, -1.0])
 
 
+def test_adl_an_interior_gap_does_not_poison_the_running_total() -> None:
+    """A single unknown bar must contribute nothing and then get out of the
+    way, not turn every later bar into NaN via cumsum — the same convention
+    obv() uses."""
+    high = [11.0, 12.0, np.nan, 13.0, 14.0]
+    low = [9.0, 10.0, 8.0, 11.0, 12.0]
+    close = [10.0, 11.0, 9.0, 12.5, 13.5]
+    volume = [100.0, 50.0, 80.0, 60.0, 70.0]
+    result = zeonta.adl(high, low, close, volume)
+    assert not result.isna().any()
+    # bar 2 is the gap: contributes 0, so ADL holds at bar 1's value.
+    np.testing.assert_allclose(result.iloc[2], result.iloc[1])
+
+
+def test_adl_a_gap_in_volume_alone_also_holds_flat() -> None:
+    high = [11.0, 12.0, 13.0, 14.0]
+    low = [9.0, 10.0, 11.0, 12.0]
+    close = [10.0, 11.0, 12.0, 13.0]
+    volume = [100.0, 50.0, np.nan, 60.0]
+    result = zeonta.adl(high, low, close, volume)
+    assert not result.isna().any()
+    np.testing.assert_allclose(result.iloc[2], result.iloc[1])
+
+
 def test_adl_and_cmf_share_the_same_money_flow_multiplier(ohlcv: pd.DataFrame) -> None:
     """CMF is ADL's per-bar increment summed over a window and normalised by
     volume; the two must agree bar for bar on the underlying multiplier."""
@@ -169,3 +193,41 @@ def test_adl_and_cmf_share_the_same_money_flow_multiplier(ohlcv: pd.DataFrame) -
     manual_cmf = increment.rolling(20).sum() / ohlcv["volume"].rolling(20).sum()
     cmf = zeonta.cmf(ohlcv["high"], ohlcv["low"], ohlcv["close"], ohlcv["volume"], length=20)
     np.testing.assert_allclose(cmf.to_numpy(), manual_cmf.to_numpy(), equal_nan=True, atol=1e-9)
+
+
+def test_chaikin_oscillator_is_the_fast_minus_slow_ema_of_adl(ohlcv: pd.DataFrame) -> None:
+    adl = zeonta.adl(ohlcv["high"], ohlcv["low"], ohlcv["close"], ohlcv["volume"])
+    expected = zeonta.ema(adl, 3) - zeonta.ema(adl, 10)
+    result = zeonta.chaikin_oscillator(ohlcv["high"], ohlcv["low"], ohlcv["close"], ohlcv["volume"])
+    np.testing.assert_allclose(result.to_numpy(), expected.to_numpy(), equal_nan=True)
+
+
+def test_chaikin_oscillator_is_zero_on_a_flat_adl() -> None:
+    # Every bar closes at the midpoint -> multiplier 0 -> ADL never moves.
+    result = zeonta.chaikin_oscillator(
+        [10.0] * 20, [8.0] * 20, [9.0] * 20, [100.0] * 20, fast=3, slow=10
+    )
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_chaikin_oscillator_rejects_fast_not_smaller_than_slow() -> None:
+    with pytest.raises(ValueError, match="'fast' must be smaller than 'slow'"):
+        zeonta.chaikin_oscillator(
+            [11.0] * 15, [9.0] * 15, [10.0] * 15, [100.0] * 15, fast=10, slow=3
+        )
+
+
+def test_chaikin_oscillator_rejects_negative_volume() -> None:
+    with pytest.raises(ValueError, match="'volume' must not contain negative values"):
+        zeonta.chaikin_oscillator([11.0, 12.0], [9.0, 10.0], [11.0, 12.0], [100.0, -1.0])
+
+
+def test_chaikin_oscillator_an_interior_gap_does_not_poison_the_underlying_adl() -> None:
+    """The underlying ADL running total must not go permanently NaN after a
+    single bad bar — same convention as adl() and obv()."""
+    high = [11.0, 12.0, np.nan, 13.0, 14.0, 15.0]
+    low = [9.0, 10.0, 8.0, 11.0, 12.0, 13.0]
+    close = [10.0, 11.0, 9.0, 12.5, 13.5, 14.5]
+    volume = [100.0, 50.0, 80.0, 60.0, 70.0, 90.0]
+    result = zeonta.chaikin_oscillator(high, low, close, volume, fast=2, slow=3)
+    assert not result.iloc[3:].isna().any()

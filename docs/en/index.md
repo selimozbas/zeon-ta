@@ -2,7 +2,7 @@
 
 [Türkçe](../tr/index.md)
 
-Every indicator in `zeon-ta`, grouped by module. A few indicators additionally link to the external source their formula was verified against.
+Every indicator in `zeon-ta`, grouped by module. A few indicators additionally link to the external source their formula was verified against — see [methodology.md](methodology.md) for how that verification is done.
 
 ## Foundations
 
@@ -33,12 +33,14 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | --- | --- |
 | [`awesome_oscillator`](indicators/awesome_oscillator.md) | Awesome Oscillator (AO) |
 | [`cci`](indicators/cci.md) | Commodity Channel Index (CCI) |
+| [`elder_ray`](indicators/elder_ray.md) | Elder Ray (Bull Power / Bear Power) |
 | [`macd`](indicators/macd.md) | MACD (Moving Average Convergence Divergence) |
 | [`momentum`](indicators/momentum.md) | Momentum |
 | [`roc`](indicators/roc.md) | Rate of Change (ROC) |
 | [`rsi`](indicators/rsi.md) | Relative Strength Index (RSI) |
 | [`stoch`](indicators/stoch.md) | Stochastic Oscillator |
 | [`stoch_rsi`](indicators/stoch_rsi.md) | Stochastic RSI (StochRSI) |
+| [`ultimate_oscillator`](indicators/ultimate_oscillator.md) | Ultimate Oscillator |
 | [`williams_r`](indicators/williams_r.md) | Williams %R |
 
 ## Volume
@@ -46,6 +48,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | Indicator | Summary |
 | --- | --- |
 | [`adl`](indicators/adl.md) | Accumulation/Distribution Line (ADL) |
+| [`chaikin_oscillator`](indicators/chaikin_oscillator.md) | Chaikin Oscillator |
 | [`cmf`](indicators/cmf.md) | Chaikin Money Flow (CMF) |
 | [`mfi`](indicators/mfi.md) | Money Flow Index (MFI) |
 | [`obv`](indicators/obv.md) | On-Balance Volume (OBV) |
@@ -66,10 +69,12 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | --- | --- |
 | [`adx`](indicators/adx.md) | ADX / DMI |
 | [`aroon`](indicators/aroon.md) | Aroon and the Aroon Oscillator |
+| [`chandelier_exit`](indicators/chandelier_exit.md) | Chandelier Exit |
 | [`donchian`](indicators/donchian.md) | Donchian Channels |
 | [`ichimoku`](indicators/ichimoku.md) | Ichimoku |
 | [`parabolic_sar`](indicators/parabolic_sar.md) | Parabolic SAR |
 | [`supertrend`](indicators/supertrend.md) | SuperTrend |
+| [`vortex`](indicators/vortex.md) | Vortex Indicator |
 
 ## Advanced Tools
 

@@ -65,6 +65,9 @@ trend = df.zta.supertrend(length=10, multiplier=3)
 print(zeonta.list_indicators())
 ```
 
+Daha fazlası için, gömülü bir örnek veri setine karşı doğrudan çalıştırılabilen
+[examples/](examples/) dizinine bakın.
+
 ## Çıktı sözleşmesi
 
 | Girdi | Çıktı |
@@ -108,12 +111,14 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | --- | --- | --- |
 | `awesome_oscillator` | Awesome Osilatör (AO) | [doküman](docs/tr/indicators/awesome_oscillator.md) |
 | `cci` | Emtia Kanal Endeksi (CCI) | [doküman](docs/tr/indicators/cci.md) |
+| `elder_ray` | Elder Ray (Boğa Gücü / Ayı Gücü) | [doküman](docs/tr/indicators/elder_ray.md) |
 | `macd` | MACD (Hareketli Ortalama Yakınsama Iraksama) | [doküman](docs/tr/indicators/macd.md) |
 | `momentum` | Momentum | [doküman](docs/tr/indicators/momentum.md) |
 | `roc` | Değişim Oranı (ROC) | [doküman](docs/tr/indicators/roc.md) |
 | `rsi` | Göreceli Güç Endeksi (RSI) | [doküman](docs/tr/indicators/rsi.md) |
 | `stoch` | Stokastik Osilatör | [doküman](docs/tr/indicators/stoch.md) |
 | `stoch_rsi` | Stokastik RSI (StochRSI) | [doküman](docs/tr/indicators/stoch_rsi.md) |
+| `ultimate_oscillator` | Ultimate Osilatör | [doküman](docs/tr/indicators/ultimate_oscillator.md) |
 | `williams_r` | Williams %R | [doküman](docs/tr/indicators/williams_r.md) |
 
 ### Hacim
@@ -121,6 +126,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | İndikatör | Ne yapar | Doküman |
 | --- | --- | --- |
 | `adl` | Birikim/Dağıtım Çizgisi (ADL) | [doküman](docs/tr/indicators/adl.md) |
+| `chaikin_oscillator` | Chaikin Osilatörü | [doküman](docs/tr/indicators/chaikin_oscillator.md) |
 | `cmf` | Chaikin Para Akışı (CMF) | [doküman](docs/tr/indicators/cmf.md) |
 | `mfi` | Para Akışı Endeksi (MFI) | [doküman](docs/tr/indicators/mfi.md) |
 | `obv` | Denge Hacmi (OBV) | [doküman](docs/tr/indicators/obv.md) |
@@ -141,10 +147,12 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | --- | --- | --- |
 | `adx` | ADX / DMI | [doküman](docs/tr/indicators/adx.md) |
 | `aroon` | Aroon ve Aroon Osilatörü | [doküman](docs/tr/indicators/aroon.md) |
+| `chandelier_exit` | Chandelier Exit | [doküman](docs/tr/indicators/chandelier_exit.md) |
 | `donchian` | Donchian Kanalları | [doküman](docs/tr/indicators/donchian.md) |
 | `ichimoku` | Ichimoku | [doküman](docs/tr/indicators/ichimoku.md) |
 | `parabolic_sar` | Parabolik SAR | [doküman](docs/tr/indicators/parabolic_sar.md) |
 | `supertrend` | SuperTrend | [doküman](docs/tr/indicators/supertrend.md) |
+| `vortex` | Vortex İndikatörü | [doküman](docs/tr/indicators/vortex.md) |
 
 ### İleri Seviye Araçlar
 
@@ -168,6 +176,10 @@ Dokümantasyon üretilir: metinler `tools/docs_content.py` içinde yaşar; param
 tabloları, kolon adları ve örnek çıktılar ise doğrudan koddan ve her örneğin
 fiilen çalıştırılmasından alınır. Commit'lenmiş dosyalar saparsa bir test
 başarısız olur.
+
+Tam iş akışı için bkz. [CONTRIBUTING.md](CONTRIBUTING.md); bir formülün
+uygulanmadan önce nasıl doğrulandığı için bkz.
+[docs/tr/methodology.md](docs/tr/methodology.md).
 
 ## Lisans
 

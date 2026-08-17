@@ -332,3 +332,61 @@ def test_aroon_stays_within_bounds(ohlcv: pd.DataFrame) -> None:
 def test_aroon_rejects_non_positive_length() -> None:
     with pytest.raises(ValueError, match="must be >="):
         zeonta.aroon([1.0, 2.0, 3.0], [0.0, 1.0, 2.0], length=0)
+
+
+def test_chandelier_exit_long_is_highest_high_minus_multiplier_times_atr(
+    ohlcv: pd.DataFrame,
+) -> None:
+    out = zeonta.chandelier_exit(ohlcv["high"], ohlcv["low"], ohlcv["close"], length=22)
+    highest = ohlcv["high"].rolling(22).max()
+    atr = zeonta.atr(ohlcv["high"], ohlcv["low"], ohlcv["close"], length=22)
+    expected = highest - 3.0 * atr
+    np.testing.assert_allclose(out["CELONG_22_3.0"].to_numpy(), expected.to_numpy(), equal_nan=True)
+
+
+def test_chandelier_exit_short_is_lowest_low_plus_multiplier_times_atr(
+    ohlcv: pd.DataFrame,
+) -> None:
+    out = zeonta.chandelier_exit(ohlcv["high"], ohlcv["low"], ohlcv["close"], length=22)
+    lowest = ohlcv["low"].rolling(22).min()
+    atr = zeonta.atr(ohlcv["high"], ohlcv["low"], ohlcv["close"], length=22)
+    expected = lowest + 3.0 * atr
+    np.testing.assert_allclose(
+        out["CESHORT_22_3.0"].to_numpy(), expected.to_numpy(), equal_nan=True
+    )
+
+
+def test_chandelier_exit_long_sits_at_or_below_the_recent_high(ohlcv: pd.DataFrame) -> None:
+    out = zeonta.chandelier_exit(ohlcv["high"], ohlcv["low"], ohlcv["close"]).dropna()
+    highest = ohlcv["high"].rolling(22).max().loc[out.index]
+    assert (out["CELONG_22_3.0"] <= highest).all()
+
+
+def test_chandelier_exit_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.chandelier_exit([2.0] * 30, [1.0] * 30, [1.5] * 30, length=0)
+
+
+def test_vortex_matches_the_hand_computed_example() -> None:
+    high = [12.0, 13.0, 11.0, 14.0]
+    low = [10.0, 11.0, 9.0, 12.0]
+    close = [11.0, 12.0, 10.0, 13.0]
+    out = zeonta.vortex(high, low, close, length=3)
+    np.testing.assert_allclose(out.iloc[-1].to_numpy(), [8.0 / 9.0, 2.0 / 3.0])
+
+
+def test_vortex_plus_leads_in_a_clean_uptrend() -> None:
+    prices = np.arange(1.0, 60.0)
+    out = zeonta.vortex(prices + 1, prices - 1, prices, length=14).dropna()
+    assert (out["VTXP_14"] > out["VTXM_14"]).all()
+
+
+def test_vortex_minus_leads_in_a_clean_downtrend() -> None:
+    prices = np.arange(60.0, 1.0, -1.0)
+    out = zeonta.vortex(prices + 1, prices - 1, prices, length=14).dropna()
+    assert (out["VTXM_14"] > out["VTXP_14"]).all()
+
+
+def test_vortex_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.vortex([2.0] * 20, [1.0] * 20, [1.5] * 20, length=0)

@@ -27,6 +27,7 @@ from ._core import (
     require_same_length,
     rolling_max,
     rolling_min,
+    rolling_sum,
     validate_length,
     validate_multiplier,
     wilder_values,
@@ -34,7 +35,16 @@ from ._core import (
 )
 from .volatility import _true_range_values
 
-__all__ = ["adx", "aroon", "donchian", "ichimoku", "parabolic_sar", "supertrend"]
+__all__ = [
+    "adx",
+    "aroon",
+    "chandelier_exit",
+    "donchian",
+    "ichimoku",
+    "parabolic_sar",
+    "supertrend",
+    "vortex",
+]
 
 
 @indicator(
@@ -678,5 +688,176 @@ def aroon(high: ArrayLike, low: ArrayLike, length: int = 25) -> pd.DataFrame:
     return wrap_frame(
         dict(zip(order, (up, down, up - down), strict=True)),
         common_index(high, low),
+        order=order,
+    )
+
+
+@indicator(
+    category="trend",
+    summary="ATR-based trailing stop set from the recent n-bar high/low.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-overlays/chandelier-exit"
+    ),
+    outputs=("CELONG", "CESHORT"),
+)
+def chandelier_exit(
+    high: ArrayLike,
+    low: ArrayLike,
+    close: ArrayLike,
+    length: int = 22,
+    multiplier: Number = 3.0,
+) -> pd.DataFrame:
+    """Chandelier Exit.
+
+    ``Long = HighestHigh(n) - ATR(n) * multiplier``;
+    ``Short = LowestLow(n) + ATR(n) * multiplier``. A stop anchored to
+    volatility, the same idea :func:`supertrend` and :func:`parabolic_sar`
+    use, but simpler: recomputed fresh from the last ``n`` bars on every bar
+    rather than ratcheted forward — unlike those two, a Chandelier Exit line
+    *can* move against an open position from one bar to the next.
+
+    Parameters
+    ----------
+    high, low, close:
+        Price series of equal length.
+    length:
+        Look-back window shared by the highest-high/lowest-low and by ATR.
+    multiplier:
+        ATR multiplier controlling how far the stop sits from the extreme.
+
+    Returns
+    -------
+    pandas.DataFrame
+        ``CELONG_{length}_{multiplier}`` — trailing stop for a long position,
+        set below the recent high; ``CESHORT_{length}_{multiplier}`` —
+        trailing stop for a short position, set above the recent low. Use
+        whichever line matches the position actually held.
+
+    Notes
+    -----
+    Because it is recomputed from the raw window every bar instead of
+    ratcheted like SuperTrend, this stop can retreat: a fresh, lower high
+    combined with a wider ATR can pull the long stop *down* even while the
+    trend is intact. Some platforms layer an optional one-way ratchet on
+    top of this; this implementation follows the plain published formula.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> high = [12.0, 13.0, 11.0]
+    >>> low = [10.0, 11.0, 9.0]
+    >>> close = [11.0, 12.0, 10.0]
+    >>> out = zeonta.chandelier_exit(high, low, close, length=2, multiplier=1.0)
+    >>> [round(value, 4) for value in out.iloc[-1].tolist()]
+    [10.5, 11.5]
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-overlays/chandelier-exit
+    """
+    length = validate_length(length)
+    factor = validate_multiplier(multiplier)
+
+    require_aligned_index(high=high, low=low, close=close)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    require_same_length(high=high_values, low=low_values, close=close_values)
+
+    ranges = wilder_values(_true_range_values(high_values, low_values, close_values), length)
+    highest = rolling_max(high_values, length)
+    lowest = rolling_min(low_values, length)
+    long_exit = highest - factor * ranges
+    short_exit = lowest + factor * ranges
+
+    suffix = f"{length}_{factor}"
+    order = [f"CELONG_{suffix}", f"CESHORT_{suffix}"]
+    return wrap_frame(
+        dict(zip(order, (long_exit, short_exit), strict=True)),
+        common_index(high, low, close),
+        order=order,
+    )
+
+
+@indicator(
+    category="trend",
+    summary="Compares how far price moved from the prior bar's opposite extreme, both directions.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/vortex-indicator"
+    ),
+    outputs=("VTXP", "VTXM"),
+)
+def vortex(high: ArrayLike, low: ArrayLike, close: ArrayLike, length: int = 14) -> pd.DataFrame:
+    """Vortex Indicator.
+
+    ``+VM = |High - PriorLow|``; ``-VM = |Low - PriorHigh|``;
+    ``+VI = Sum(+VM, n) / Sum(TR, n)``; ``-VI = Sum(-VM, n) / Sum(TR, n)``.
+    Each line measures how far the current bar's range stretched away from
+    the *opposite* extreme of the prior bar; +VI leads -VI in an uptrend and
+    the two cross around trend changes, the same way :func:`adx`'s DI pair
+    does, though Vortex uses plain rolling sums instead of Wilder smoothing.
+
+    Parameters
+    ----------
+    high, low, close:
+        Price series of equal length.
+    length:
+        Look-back window for both sums.
+
+    Returns
+    -------
+    pandas.DataFrame
+        ``VTXP_{length}`` (+VI) and ``VTXM_{length}`` (-VI). Both typically
+        range roughly 0.5 to 1.5; there is no fixed upper bound.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> high = [12.0, 13.0, 11.0, 14.0]
+    >>> low = [10.0, 11.0, 9.0, 12.0]
+    >>> close = [11.0, 12.0, 10.0, 13.0]
+    >>> out = zeonta.vortex(high, low, close, length=3)
+    >>> [round(value, 4) for value in out.iloc[-1].tolist()]
+    [0.8889, 0.6667]
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/vortex-indicator
+    """
+    length = validate_length(length)
+    require_aligned_index(high=high, low=low, close=close)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    size = require_same_length(high=high_values, low=low_values, close=close_values)
+
+    prior_low = np.concatenate(([np.nan], low_values[:-1]))
+    prior_high = np.concatenate(([np.nan], high_values[:-1]))
+    plus_vm = np.abs(high_values - prior_low)
+    minus_vm = np.abs(low_values - prior_high)
+    true_range = _true_range_values(high_values, low_values, close_values)
+
+    # +VM/-VM have no value at bar 0 (no prior bar); TR's own bar-0
+    # convention falls back to a plain High-Low instead of NaN. Summing all
+    # three from bar 1 onward keeps every window built from the same bars.
+    sum_plus = np.full(size, np.nan, dtype="float64")
+    sum_minus = np.full(size, np.nan, dtype="float64")
+    sum_tr = np.full(size, np.nan, dtype="float64")
+    sum_plus[1:] = rolling_sum(plus_vm[1:], length)
+    sum_minus[1:] = rolling_sum(minus_vm[1:], length)
+    sum_tr[1:] = rolling_sum(true_range[1:], length)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        plus_vi = sum_plus / sum_tr
+        minus_vi = sum_minus / sum_tr
+    plus_vi = np.where(np.isfinite(sum_tr) & (sum_tr == 0.0), 0.0, plus_vi)
+    minus_vi = np.where(np.isfinite(sum_tr) & (sum_tr == 0.0), 0.0, minus_vi)
+
+    order = [f"VTXP_{length}", f"VTXM_{length}"]
+    return wrap_frame(
+        dict(zip(order, (plus_vi, minus_vi), strict=True)),
+        common_index(high, low, close),
         order=order,
     )

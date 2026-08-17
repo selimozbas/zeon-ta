@@ -51,8 +51,20 @@ was verified against (`IndicatorSpec.reference`, a new field alongside
   running-total sibling of `cmf` — same Money Flow Multiplier (now factored
   into a shared `_money_flow_multiplier` helper), but accumulated instead of
   summed over a window and divided by volume.
+- **New in `volume`** — `chaikin_oscillator`, `macd`'s fast-EMA-minus-slow-EMA
+  shape applied to `adl` instead of price.
+- **Trend systems** — `chandelier_exit`, an ATR-anchored trailing stop
+  recomputed fresh from the last n bars' extreme every bar rather than
+  ratcheted, unlike `supertrend`/`parabolic_sar`; `vortex`, a +VI/-VI
+  directional pair built from plain rolling sums instead of Wilder smoothing,
+  the same crossover relationship `adx`'s DI pair has.
+- **Oscillators** — `ultimate_oscillator` (Larry Williams; blends three
+  look-backs weighted 4:2:1 to resist the false divergences a single-period
+  oscillator gives); `elder_ray` (Bull Power / Bear Power — high and low
+  measured against an EMA, reading the tug-of-war inside each bar rather than
+  just where it closed).
 
-Registered indicators: 25 -> 41. `list_indicators()`'s `lesson` column is
+Registered indicators: 25 -> 46. `list_indicators()`'s `lesson` column is
 renamed `source`, now holding the external reference URL for the indicators
 that cite one and `None` for the rest.
 
@@ -76,6 +88,12 @@ that cite one and `None` for the rest.
   `mfi`, matching the check `vwap` already had. Volume cannot be negative;
   previously a bad feed produced a numerically valid but meaningless result
   (e.g. negative volume nudging OBV the wrong way) instead of failing loudly.
+- `adl` (and `chaikin_oscillator`, which builds on the same running total) no
+  longer goes permanently `NaN` after a single unknown `high`/`low`/`close`/
+  `volume` bar. `np.cumsum` was propagating that one gap's `NaN` through
+  every bar after it, contradicting both `adl`'s own "Never NaN" docstring
+  promise and the gap-handling convention `obv` already followed. A gap bar's
+  contribution is now `0`, same as `obv`.
 - **NaN-gap handling made consistent across the three recursive/cumulative
   indicators added in this release:**
   - `obv`: a single unknown close or volume no longer poisons every bar after

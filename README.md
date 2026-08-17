@@ -64,6 +64,8 @@ trend = df.zta.supertrend(length=10, multiplier=3)
 print(zeonta.list_indicators())
 ```
 
+More in [examples/](examples/), runnable directly against a committed sample dataset.
+
 ## Output contract
 
 | Input | Output |
@@ -107,12 +109,14 @@ the cloud that projects past the last bar, rather than discarding it.
 | --- | --- | --- |
 | `awesome_oscillator` | Awesome Oscillator (AO) | [docs](docs/en/indicators/awesome_oscillator.md) |
 | `cci` | Commodity Channel Index (CCI) | [docs](docs/en/indicators/cci.md) |
+| `elder_ray` | Elder Ray (Bull Power / Bear Power) | [docs](docs/en/indicators/elder_ray.md) |
 | `macd` | MACD (Moving Average Convergence Divergence) | [docs](docs/en/indicators/macd.md) |
 | `momentum` | Momentum | [docs](docs/en/indicators/momentum.md) |
 | `roc` | Rate of Change (ROC) | [docs](docs/en/indicators/roc.md) |
 | `rsi` | Relative Strength Index (RSI) | [docs](docs/en/indicators/rsi.md) |
 | `stoch` | Stochastic Oscillator | [docs](docs/en/indicators/stoch.md) |
 | `stoch_rsi` | Stochastic RSI (StochRSI) | [docs](docs/en/indicators/stoch_rsi.md) |
+| `ultimate_oscillator` | Ultimate Oscillator | [docs](docs/en/indicators/ultimate_oscillator.md) |
 | `williams_r` | Williams %R | [docs](docs/en/indicators/williams_r.md) |
 
 ### Volume
@@ -120,6 +124,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | Indicator | What it does | Docs |
 | --- | --- | --- |
 | `adl` | Accumulation/Distribution Line (ADL) | [docs](docs/en/indicators/adl.md) |
+| `chaikin_oscillator` | Chaikin Oscillator | [docs](docs/en/indicators/chaikin_oscillator.md) |
 | `cmf` | Chaikin Money Flow (CMF) | [docs](docs/en/indicators/cmf.md) |
 | `mfi` | Money Flow Index (MFI) | [docs](docs/en/indicators/mfi.md) |
 | `obv` | On-Balance Volume (OBV) | [docs](docs/en/indicators/obv.md) |
@@ -140,10 +145,12 @@ the cloud that projects past the last bar, rather than discarding it.
 | --- | --- | --- |
 | `adx` | ADX / DMI | [docs](docs/en/indicators/adx.md) |
 | `aroon` | Aroon and the Aroon Oscillator | [docs](docs/en/indicators/aroon.md) |
+| `chandelier_exit` | Chandelier Exit | [docs](docs/en/indicators/chandelier_exit.md) |
 | `donchian` | Donchian Channels | [docs](docs/en/indicators/donchian.md) |
 | `ichimoku` | Ichimoku | [docs](docs/en/indicators/ichimoku.md) |
 | `parabolic_sar` | Parabolic SAR | [docs](docs/en/indicators/parabolic_sar.md) |
 | `supertrend` | SuperTrend | [docs](docs/en/indicators/supertrend.md) |
+| `vortex` | Vortex Indicator | [docs](docs/en/indicators/vortex.md) |
 
 ### Advanced Tools
 
@@ -167,6 +174,10 @@ Documentation is generated: prose lives in `tools/docs_content.py`, while
 parameter tables, column names and example output are taken from the code
 itself and from actually running each example. A test fails if the committed
 files drift.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow, and
+[docs/en/methodology.md](docs/en/methodology.md) for how a formula gets
+verified before it's implemented.
 
 ## License
 

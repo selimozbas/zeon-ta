@@ -18,6 +18,7 @@ from ._core import (
     ArrayLike,
     as_array,
     common_index,
+    ema_values,
     indicator,
     require_aligned_index,
     require_non_negative,
@@ -27,7 +28,7 @@ from ._core import (
     wrap_series,
 )
 
-__all__ = ["adl", "cmf", "mfi", "obv"]
+__all__ = ["adl", "chaikin_oscillator", "cmf", "mfi", "obv"]
 
 
 def _money_flow_multiplier(high: np.ndarray, low: np.ndarray, close: np.ndarray) -> np.ndarray:
@@ -38,6 +39,20 @@ def _money_flow_multiplier(high: np.ndarray, low: np.ndarray, close: np.ndarray)
     with np.errstate(divide="ignore", invalid="ignore"):
         multiplier = ((close - low) - (high - close)) / span
     return np.where(span == 0.0, 0.0, multiplier)
+
+
+def _adl_values(
+    high: np.ndarray, low: np.ndarray, close: np.ndarray, volume: np.ndarray
+) -> np.ndarray:
+    """Cumulative Money Flow Volume — the shared core of :func:`adl` and
+    :func:`chaikin_oscillator`. A bar with an unknown high, low, close or
+    volume contributes nothing to the running total rather than corrupting
+    every bar after it via ``NaN`` propagating through ``cumsum``, the same
+    convention :func:`obv` uses.
+    """
+    money_flow_volume = _money_flow_multiplier(high, low, close) * volume
+    money_flow_volume = np.where(np.isfinite(money_flow_volume), money_flow_volume, 0.0)
+    return np.cumsum(money_flow_volume)
 
 
 @indicator(
@@ -160,6 +175,15 @@ def adl(high: ArrayLike, low: ArrayLike, close: ArrayLike, volume: ArrayLike) ->
         If ``volume`` contains a negative value, which has no meaning for a
         traded quantity.
 
+    Notes
+    -----
+    A bar with an unknown high, low, close or volume (``NaN``) contributes
+    nothing to the running total rather than corrupting every bar after it —
+    a single bad tick in the middle of an otherwise clean feed does not erase
+    months of accumulated ADL, the same convention :func:`obv` uses. Unlike
+    OBV, ADL has no day-to-day comparison to re-anchor, so no special
+    handling is needed for the bar right after a gap.
+
     Examples
     --------
     >>> import zeonta
@@ -178,11 +202,89 @@ def adl(high: ArrayLike, low: ArrayLike, close: ArrayLike, volume: ArrayLike) ->
     require_same_length(high=high_values, low=low_values, close=close_values, volume=volume_values)
     require_non_negative(volume=volume_values)
 
-    multiplier = _money_flow_multiplier(high_values, low_values, close_values)
-    money_flow_volume = multiplier * volume_values
-    result = np.cumsum(money_flow_volume)
+    result = _adl_values(high_values, low_values, close_values, volume_values)
 
     return wrap_series(result, common_index(high, low, close, volume), "ADL")
+
+
+@indicator(
+    category="volume",
+    summary="MACD's fast-EMA-minus-slow-EMA shape applied to the A/D Line instead of price.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/chaikin-oscillator"
+    ),
+    outputs=("ADOSC",),
+)
+def chaikin_oscillator(
+    high: ArrayLike,
+    low: ArrayLike,
+    close: ArrayLike,
+    volume: ArrayLike,
+    fast: int = 3,
+    slow: int = 10,
+) -> pd.Series:
+    """Chaikin Oscillator.
+
+    ``ChaikinOsc = EMA(ADL, fast) - EMA(ADL, slow)`` — the same fast-EMA-minus-
+    slow-EMA shape as :func:`macd`, but applied to :func:`adl` instead of raw
+    price. Where ADL tracks the cumulative level of buying versus selling
+    pressure, this measures whether that pressure is currently accelerating
+    or decelerating — a rate-of-change read on ADL, the same relationship
+    :func:`awesome_oscillator` has to price.
+
+    Parameters
+    ----------
+    high, low, close, volume:
+        Series of equal length.
+    fast, slow:
+        EMA lengths applied to the A/D Line; ``fast`` must be smaller than
+        ``slow``.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``ADOSC_{fast}_{slow}``. Like ADL itself, only its sign and
+        slope are meaningful — the absolute level depends on where the
+        underlying ADL happens to sit.
+
+    Raises
+    ------
+    ValueError
+        If ``volume`` contains a negative value, or if ``fast`` is not
+        smaller than ``slow``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> highs = [11.0, 12.0, 11.5, 13.0, 12.5]
+    >>> lows = [9.0, 10.0, 9.5, 11.0, 10.5]
+    >>> closes = [10.5, 11.5, 10.0, 12.5, 11.0]
+    >>> volumes = [100.0, 120.0, 90.0, 150.0, 110.0]
+    >>> float(zeonta.chaikin_oscillator(highs, lows, closes, volumes, fast=2, slow=3).iloc[-1])
+    -0.6944444444444429
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/chaikin-oscillator
+    """
+    fast = validate_length(fast, "fast")
+    slow = validate_length(slow, "slow")
+    if fast >= slow:
+        raise ValueError(f"'fast' must be smaller than 'slow', got fast={fast}, slow={slow}")
+
+    require_aligned_index(high=high, low=low, close=close, volume=volume)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    volume_values = as_array(volume, "volume")
+    require_same_length(high=high_values, low=low_values, close=close_values, volume=volume_values)
+    require_non_negative(volume=volume_values)
+
+    adl_values = _adl_values(high_values, low_values, close_values, volume_values)
+    result = ema_values(adl_values, fast) - ema_values(adl_values, slow)
+
+    return wrap_series(result, common_index(high, low, close, volume), f"ADOSC_{fast}_{slow}")
 
 
 @indicator(

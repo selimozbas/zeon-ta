@@ -2104,4 +2104,289 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.adl(df["high"], df["low"], df["close"], df["volume"]).tail(3),
         ],
     },
+    "chaikin_oscillator": {
+        "title_en": "Chaikin Oscillator",
+        "title_tr": "Chaikin Osilatörü",
+        "formula_en": "ChaikinOsc = EMA(ADL, fast) - EMA(ADL, slow)",
+        "formula_tr": "ChaikinOsc = EMA(ADL, hızlı) - EMA(ADL, yavaş)",
+        "about_en": (
+            "The same fast-EMA-minus-slow-EMA shape `macd` applies to price, applied here to "
+            "`adl` instead. ADL itself only tells you the cumulative *level* of buying versus "
+            "selling pressure; taking the difference of two EMAs of it turns that into a "
+            "rate-of-change reading — whether accumulation/distribution is currently speeding up "
+            "or slowing down, the same relationship `awesome_oscillator` has to raw price."
+        ),
+        "about_tr": (
+            "`macd`'nin fiyata uyguladığı hızlı-EMA eksi yavaş-EMA şeklinin, burada `adl`'ye "
+            "uygulanmış hâli. ADL'nin kendisi yalnızca alım-satım baskısının kümülatif "
+            "*seviyesini* söyler; onun iki EMA'sının farkını almak bunu bir değişim hızı okumasına "
+            "dönüştürür — birikim/dağıtımın şu anda hızlanıp hızlanmadığını gösterir, tıpkı "
+            "`awesome_oscillator`'ın ham fiyatla kurduğu ilişki gibi."
+        ),
+        "reading_en": (
+            "Read it like any zero-centred momentum oscillator: crossing above zero signals ADL "
+            "is accelerating upward (buying pressure building faster than its own recent average), "
+            "crossing below signals the opposite. A divergence between the Chaikin Oscillator and "
+            "price — price making a new high while the oscillator fails to — is read the same "
+            "bearish-divergence way `macd` divergence is."
+        ),
+        "reading_tr": (
+            "Sıfır merkezli herhangi bir momentum osilatörü gibi okuyun: sıfırın üzerine çıkması "
+            "ADL'nin yukarı yönde hızlandığını (alım baskısının kendi yakın ortalamasından daha "
+            "hızlı arttığını) işaret eder, altına inmesi tersini işaret eder. Chaikin Osilatörü ile "
+            "fiyat arasındaki bir uyumsuzluk — fiyat yeni bir zirve yaparken osilatörün bunu "
+            "yapamaması — `macd` uyumsuzluğuyla aynı ayı-uyumsuzluğu mantığıyla okunur."
+        ),
+        "pitfalls_en": (
+            "Inherits every caveat `adl` has: a very narrow high-low range makes the underlying "
+            "Money Flow Multiplier noisy, and the whole thing is built on a running total with no "
+            "natural reset point. Because it is the difference of two EMAs, it also inherits "
+            "`macd`'s own lag — both EMAs react to the same underlying series, so the oscillator "
+            "reflects a *change* in ADL's trend a few bars after it actually happens, not at the "
+            "moment it happens."
+        ),
+        "pitfalls_tr": (
+            "`adl`'nin sahip olduğu her uyarıyı miras alır: çok dar bir yüksek-düşük aralığı, "
+            "altındaki Para Akışı Çarpanı'nı gürültülü yapar ve bütün yapı doğal bir sıfırlama "
+            "noktası olmayan bir kümülatif toplam üzerine kuruludur. İki EMA'nın farkı olduğu için "
+            "`macd`'nin kendi gecikmesini de miras alır — her iki EMA da aynı altta yatan seriye "
+            "tepki verir, bu yüzden osilatör ADL'nin trendindeki bir değişimi, tam o an değil, "
+            "gerçekleştikten birkaç bar sonra yansıtır."
+        ),
+        "example": [
+            lambda df: zeonta.chaikin_oscillator(
+                df["high"], df["low"], df["close"], df["volume"]
+            ).tail(3),
+        ],
+    },
+    "chandelier_exit": {
+        "title_en": "Chandelier Exit",
+        "title_tr": "Chandelier Exit",
+        "formula_en": (
+            "Long = HighestHigh(n) - ATR(n) x multiplier; "
+            "Short = LowestLow(n) + ATR(n) x multiplier"
+        ),
+        "formula_tr": (
+            "Uzun = EnYüksekZirve(n) - ATR(n) x çarpan; Kısa = EnDüşükDip(n) + ATR(n) x çarpan"
+        ),
+        "about_en": (
+            "A volatility-anchored trailing stop, the same core idea `supertrend` and "
+            "`parabolic_sar` use, but built differently: instead of ratcheting forward bar by bar, "
+            "it is recomputed fresh from the last `n` bars' extreme and ATR every single time. "
+            "That makes it simpler to reason about — no internal state to track — but it also "
+            "means, unlike those two, the line itself can move against an open position from one "
+            "bar to the next."
+        ),
+        "about_tr": (
+            "`supertrend` ve `parabolic_sar`'ın kullandığı volatiliteye dayalı iz süren stop "
+            "mantığını taşır, ama farklı kurulmuştur: bar bar ileri doğru zincirlenmek yerine, her "
+            "seferinde son `n` bar'ın uç noktasından ve ATR'sinden yeniden hesaplanır. Bu, "
+            "üzerinde düşünmeyi kolaylaştırır — takip edilecek bir iç durum yoktur — ama aynı "
+            "zamanda, o iki göstergenin aksine, çizginin kendisinin bir bardan diğerine açık "
+            "pozisyonun aleyhine hareket edebileceği anlamına da gelir."
+        ),
+        "reading_en": (
+            "Hold a long position above `CELONG`; a close below it is the exit signal. Hold a "
+            "short position below `CESHORT`; a close above it is the exit signal. Which line is "
+            "relevant depends entirely on the position actually held — the indicator itself has no "
+            "opinion about which side you are on."
+        ),
+        "reading_tr": (
+            "Uzun bir pozisyonu `CELONG`'un üzerinde tutun; altına kapanış çıkış sinyalidir. Kısa "
+            "bir pozisyonu `CESHORT`'un altında tutun; üzerine kapanış çıkış sinyalidir. Hangi "
+            "çizginin geçerli olduğu tamamen elde tutulan pozisyona bağlıdır — göstergenin "
+            "kendisinin hangi tarafta olduğunuz konusunda bir görüşü yoktur."
+        ),
+        "pitfalls_en": (
+            "Because each bar recomputes the stop from scratch rather than ratcheting it, a fresh "
+            "(lower) high combined with a wider ATR reading can pull the long stop *down* even "
+            "while the trend is fully intact — a real retreat, not a bug. Some charting platforms "
+            "add an optional one-way ratchet on top of the plain formula; this implementation "
+            "follows the published formula exactly, with no ratchet."
+        ),
+        "pitfalls_tr": (
+            "Her bar stopu zincirlemek yerine sıfırdan yeniden hesapladığından, taze (daha düşük) "
+            "bir zirve ile daha geniş bir ATR okuması bir araya geldiğinde, trend tamamen sağlam "
+            "olsa bile uzun stopu *aşağı* çekebilir — bu gerçek bir geri çekilmedir, hata değil. "
+            "Bazı grafik platformları düz formülün üzerine isteğe bağlı tek yönlü bir zincirleme "
+            "ekler; bu uygulama yayınlanan formülü zincirleme olmadan, aynen izler."
+        ),
+        "example": [
+            lambda df: zeonta.chandelier_exit(df["high"], df["low"], df["close"]).tail(3),
+        ],
+    },
+    "vortex": {
+        "title_en": "Vortex Indicator",
+        "title_tr": "Vortex İndikatörü",
+        "formula_en": (
+            "+VM = |High - PriorLow|; -VM = |Low - PriorHigh|; "
+            "+VI = Sum(+VM, n) / Sum(TR, n); -VI = Sum(-VM, n) / Sum(TR, n)"
+        ),
+        "formula_tr": (
+            "+VM = |Yüksek - ÖncekiDüşük|; -VM = |Düşük - ÖncekiYüksek|; "
+            "+VI = Toplam(+VM, n) / Toplam(GerçekAralık, n); -VI = Toplam(-VM, n) / Toplam(GerçekAralık, n)"
+        ),
+        "about_en": (
+            "Each line measures how far the current bar's range stretched away from the *opposite* "
+            "extreme of the prior bar, summed over a window and normalised by the same window's "
+            "true range. +VI leads -VI in an uptrend and the two cross around trend changes — the "
+            "same directional-pair relationship `adx`'s +DI/-DI lines have, though Vortex uses "
+            "plain rolling sums throughout rather than Wilder smoothing, so it reacts faster and "
+            "forgets old bars completely once they age out of the window."
+        ),
+        "about_tr": (
+            "Her çizgi, geçerli barın aralığının önceki barın *karşıt* ucundan ne kadar uzaklaştığını "
+            "ölçer, bir pencere boyunca toplanır ve aynı pencerenin gerçek aralığına göre "
+            "normalize edilir. +VI bir yükseliş trendinde -VI'nin önünde gider ve ikisi trend "
+            "değişimleri civarında kesişir — `adx`'in +DI/-DI çizgilerinin sahip olduğu aynı yönsel "
+            "çift ilişkisi, ama Vortex baştan sona Wilder yumuşatması yerine düz kayan toplamlar "
+            "kullanır; bu yüzden daha hızlı tepki verir ve pencereden çıkan eski barları tamamen "
+            "unutur."
+        ),
+        "reading_en": (
+            "A crossover of +VI above -VI is read as a bullish signal, the reverse as bearish — "
+            "the further apart the two lines sit, the stronger the implied trend. Because the "
+            "lines use plain sums, they respond quickly to a fresh burst of directional movement, "
+            "which also means more crossovers (and more false signals) in a genuinely choppy market "
+            "than a Wilder-smoothed pair like ADX's DI lines would give."
+        ),
+        "reading_tr": (
+            "+VI'nin -VI'nin üzerine çıkması boğa sinyali, tersi ayı sinyali olarak okunur — iki "
+            "çizgi ne kadar birbirinden uzaklaşırsa, ima edilen trend o kadar güçlüdür. Çizgiler düz "
+            "toplamlar kullandığından, yönsel harekette taze bir patlamaya hızlı tepki verirler; bu "
+            "da gerçekten dalgalı bir piyasada, ADX'in DI çizgileri gibi Wilder-yumuşatılmış bir "
+            "çiftin vereceğinden daha fazla kesişim (ve daha fazla yanlış sinyal) anlamına gelir."
+        ),
+        "pitfalls_en": (
+            "Vortex has no fixed upper bound the way RSI or Stochastic do — both lines typically "
+            "sit somewhere around 0.5 to 1.5, but a sharp enough move can push either one higher "
+            "still, so treat the absolute level with caution and lean on the crossover and the gap "
+            "between the two lines instead."
+        ),
+        "pitfalls_tr": (
+            "Vortex'in RSI veya Stokastik gibi sabit bir üst sınırı yoktur — her iki çizgi de "
+            "genellikle 0.5 ila 1.5 civarında oturur, ama yeterince keskin bir hareket ikisinden "
+            "birini daha da yükseğe itebilir; bu yüzden mutlak seviyeye temkinli yaklaşın ve bunun "
+            "yerine kesişime ve iki çizgi arasındaki farka dayanın."
+        ),
+        "example": [
+            lambda df: zeonta.vortex(df["high"], df["low"], df["close"]).tail(3),
+        ],
+    },
+    "ultimate_oscillator": {
+        "title_en": "Ultimate Oscillator",
+        "title_tr": "Ultimate Osilatör",
+        "formula_en": (
+            "BP = Close - Min(Low, PriorClose); TR = Max(High, PriorClose) - Min(Low, PriorClose); "
+            "Average_n = Sum(BP, n) / Sum(TR, n); "
+            "UO = 100 x (4xAverage_fast + 2xAverage_medium + Average_slow) / 7"
+        ),
+        "formula_tr": (
+            "AB = Kapanış - Min(Düşük, ÖncekiKapanış); "
+            "GA = Max(Yüksek, ÖncekiKapanış) - Min(Düşük, ÖncekiKapanış); "
+            "Ortalama_n = Toplam(AB, n) / Toplam(GA, n); "
+            "UO = 100 x (4xOrtalama_hızlı + 2xOrtalama_orta + Ortalama_yavaş) / 7"
+        ),
+        "about_en": (
+            "Developed by Larry Williams specifically to fix single-period oscillators' tendency "
+            "to give false divergence signals: by blending three different look-backs (weighted "
+            "4:2:1 toward the fastest) into one line, a bearish-looking divergence on the short "
+            "window alone gets outvoted when the two longer windows disagree. Buying Pressure (BP) "
+            "and True Range (TR) are both measured against the *prior* close rather than the "
+            "current bar's own open, so a gap is counted as part of that bar's range instead of "
+            "being invisible to it."
+        ),
+        "about_tr": (
+            "Larry Williams tarafından, tek periyotlu osilatörlerin yanlış uyumsuzluk sinyali verme "
+            "eğilimini düzeltmek için özel olarak geliştirildi: üç farklı geriye bakışı (en hızlıya "
+            "doğru 4:2:1 ağırlıklı) tek bir çizgide harmanlayarak, yalnızca kısa pencerede ayı gibi "
+            "görünen bir uyumsuzluk, iki uzun pencere aynı fikirde olmadığında geçersiz kılınır. "
+            "Alım Baskısı (BP) ve Gerçek Aralık (TR), geçerli barın kendi açılışına değil *önceki* "
+            "kapanışa göre ölçülür; böylece bir boşluk (gap), o barın aralığına görünmez kalmak "
+            "yerine aralığın bir parçası sayılır."
+        ),
+        "reading_en": (
+            "Readings above 70 are considered overbought, below 30 oversold — the classic buy "
+            "signal Williams himself described is a bullish divergence (price makes a lower low, "
+            "UO does not) that then breaks back above 50, all three conditions together rather than "
+            "any one alone."
+        ),
+        "reading_tr": (
+            "70'in üzerindeki okumalar aşırı alım, 30'un altındakiler aşırı satım kabul edilir — "
+            "Williams'ın kendisinin tarif ettiği klasik alım sinyali, boğa uyumsuzluğunun (fiyat "
+            "daha düşük bir dip yaparken UO yapmaması) ardından 50'nin üzerine geri kırılmasıdır; "
+            "tek başına herhangi biri değil, üç koşulun birlikte gerçekleşmesidir."
+        ),
+        "pitfalls_en": (
+            "The three windows must satisfy `fast < medium < slow`; passing them out of order "
+            "raises `ValueError` rather than silently computing something meaningless. Like RSI "
+            "and Stochastic, being at an overbought or oversold reading is not by itself a signal "
+            "to act — Williams' own rule requires the divergence-plus-50-break combination, not "
+            "the raw level alone."
+        ),
+        "pitfalls_tr": (
+            "Üç pencere `hızlı < orta < yavaş` koşulunu sağlamalıdır; sırasız verilmesi sessizce "
+            "anlamsız bir şey hesaplamak yerine `ValueError` fırlatır. RSI ve Stokastik gibi, aşırı "
+            "alım ya da aşırı satım okumasında olmak tek başına bir işlem sinyali değildir — "
+            "Williams'ın kendi kuralı, tek başına ham seviyeyi değil, uyumsuzluk-artı-50-kırılımı "
+            "kombinasyonunu gerektirir."
+        ),
+        "example": [
+            lambda df: zeonta.ultimate_oscillator(df["high"], df["low"], df["close"]).tail(3),
+        ],
+    },
+    "elder_ray": {
+        "title_en": "Elder Ray (Bull Power / Bear Power)",
+        "title_tr": "Elder Ray (Boğa Gücü / Ayı Gücü)",
+        "formula_en": "EMA = EMA(Close, length); Bull Power = High - EMA; Bear Power = Low - EMA",
+        "formula_tr": "EMA = EMA(Kapanış, uzunluk); Boğa Gücü = Yüksek - EMA; Ayı Gücü = Düşük - EMA",
+        "about_en": (
+            "Developed by Alexander Elder as a way to look inside each individual bar relative to "
+            "the prevailing trend rather than only at where it closed. Bull Power reads how far "
+            "buyers managed to push price above the EMA within the bar; Bear Power reads how far "
+            "sellers pushed it below. Two numbers per bar instead of one closing-price comparison "
+            "captures the tug-of-war that happened *during* the bar, which the close alone erases."
+        ),
+        "about_tr": (
+            "Alexander Elder tarafından, her bir barın içine, yalnızca nerede kapandığına değil, "
+            "geçerli trende göre bakmanın bir yolu olarak geliştirildi. Boğa Gücü, alıcıların bar "
+            "içinde fiyatı EMA'nın ne kadar üzerine itebildiğini okur; Ayı Gücü, satıcıların onu ne "
+            "kadar altına ittiğini okur. Tek bir kapanış-fiyatı karşılaştırması yerine bar başına "
+            "iki sayı, barın *içinde* yaşanan çekişmeyi yakalar; bu, kapanışın tek başına sildiği "
+            "bir bilgidir."
+        ),
+        "reading_en": (
+            "In a healthy uptrend, Bull Power stays positive while Bear Power stays negative but "
+            "shrinks toward zero bar by bar — sellers are losing their grip even during pullbacks. "
+            "Bear Power turning positive, or Bull Power turning negative, while the EMA itself is "
+            "still rising is the classic Elder Ray warning that the trend has lost control of the "
+            "bar and a reversal may be near."
+        ),
+        "reading_tr": (
+            "Sağlıklı bir yükseliş trendinde, Boğa Gücü pozitif kalırken Ayı Gücü negatif kalır ama "
+            "bar bar sıfıra doğru küçülür — satıcılar geri çekilmeler sırasında bile hakimiyetini "
+            "kaybediyordur. EMA'nın kendisi hâlâ yükselirken Ayı Gücü'nün pozitife dönmesi ya da "
+            "Boğa Gücü'nün negatife dönmesi, trendin barın kontrolünü kaybettiğine ve bir dönüşün "
+            "yakın olabileceğine dair klasik Elder Ray uyarısıdır."
+        ),
+        "pitfalls_en": (
+            "On a steady, non-accelerating trend, the EMA's own fixed lag can exceed the bar's "
+            "high-low spread, which flips Bear Power positive (in an uptrend) or Bull Power "
+            "negative (in a downtrend) even though nothing about the trend has actually changed — "
+            "a real property of how far a lagging EMA sits behind price, not a signal of weakness. "
+            "Elder's own rule reads the two lines *together* with the EMA's slope, never Bull or "
+            "Bear Power in isolation."
+        ),
+        "pitfalls_tr": (
+            "Sabit, hızlanmayan bir trendde, EMA'nın kendi sabit gecikmesi barın yüksek-düşük "
+            "aralığını aşabilir; bu da trendde aslında hiçbir şey değişmemişken bile Ayı Gücü'nü "
+            "(yükseliş trendinde) pozitife ya da Boğa Gücü'nü (düşüş trendinde) negatife çevirir — "
+            "bu, gecikmeli bir EMA'nın fiyatın ne kadar gerisinde kaldığının gerçek bir özelliğidir, "
+            "zayıflık sinyali değildir. Elder'ın kendi kuralı iki çizgiyi EMA'nın eğimiyle *birlikte* "
+            "okur, Boğa ya da Ayı Gücü'nü asla tek başına değil."
+        ),
+        "example": [
+            lambda df: zeonta.elder_ray(df["high"], df["low"], df["close"]).tail(3),
+        ],
+    },
 }

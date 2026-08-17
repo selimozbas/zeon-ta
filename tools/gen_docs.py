@@ -217,10 +217,12 @@ def render_index(lang: str) -> str:
     heading = "Indicator Reference" if lang == "en" else "İndikatör Referansı"
     intro = (
         "Every indicator in `zeon-ta`, grouped by module. A few indicators additionally "
-        "link to the external source their formula was verified against."
+        "link to the external source their formula was verified against — see "
+        "[methodology.md](methodology.md) for how that verification is done."
         if lang == "en"
         else "`zeon-ta` içindeki tüm indikatörler, modüllere göre gruplanmıştır. Birkaç "
-        "indikatör, formülünün doğrulandığı dış kaynağa ek olarak bağlantı verir."
+        "indikatör, formülünün doğrulandığı dış kaynağa ek olarak bağlantı verir — bu "
+        "doğrulamanın nasıl yapıldığı için bkz. [methodology.md](methodology.md)."
     )
     header = "| Indicator | Summary |" if lang == "en" else "| İndikatör | Özet |"
     lines = [f"# {heading}", "", f"[{labels['other_lang']}](../{other}/index.md)", "", intro, ""]
@@ -303,6 +305,8 @@ trend = df.zta.supertrend(length=10, multiplier=3)
 print(zeonta.list_indicators())
 ```
 
+More in [examples/](examples/), runnable directly against a committed sample dataset.
+
 ## Output contract
 
 | Input | Output |
@@ -332,6 +336,10 @@ Documentation is generated: prose lives in `tools/docs_content.py`, while
 parameter tables, column names and example output are taken from the code
 itself and from actually running each example. A test fails if the committed
 files drift.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow, and
+[docs/en/methodology.md](docs/en/methodology.md) for how a formula gets
+verified before it's implemented.
 
 ## License
 
@@ -404,6 +412,9 @@ trend = df.zta.supertrend(length=10, multiplier=3)
 print(zeonta.list_indicators())
 ```
 
+Daha fazlası için, gömülü bir örnek veri setine karşı doğrudan çalıştırılabilen
+[examples/](examples/) dizinine bakın.
+
 ## Çıktı sözleşmesi
 
 | Girdi | Çıktı |
@@ -433,6 +444,10 @@ Dokümantasyon üretilir: metinler `tools/docs_content.py` içinde yaşar; param
 tabloları, kolon adları ve örnek çıktılar ise doğrudan koddan ve her örneğin
 fiilen çalıştırılmasından alınır. Commit'lenmiş dosyalar saparsa bir test
 başarısız olur.
+
+Tam iş akışı için bkz. [CONTRIBUTING.md](CONTRIBUTING.md); bir formülün
+uygulanmadan önce nasıl doğrulandığı için bkz.
+[docs/tr/methodology.md](docs/tr/methodology.md).
 
 ## Lisans
 

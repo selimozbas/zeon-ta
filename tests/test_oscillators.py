@@ -221,3 +221,81 @@ def test_awesome_oscillator_is_positive_in_an_uptrend() -> None:
 def test_awesome_oscillator_rejects_fast_not_smaller_than_slow() -> None:
     with pytest.raises(ValueError, match="'fast' must be smaller than 'slow'"):
         zeonta.awesome_oscillator([11.0] * 10, [9.0] * 10, fast=34, slow=5)
+
+
+def test_ultimate_oscillator_matches_the_hand_computed_value() -> None:
+    high = [11.0, 12.0, 10.5, 13.0]
+    low = [9.0, 10.0, 8.5, 11.0]
+    close = [10.0, 11.5, 9.0, 12.5]
+    # bar 3: priorClose=9.0 -> BP=12.5-min(11,9)=3.5, TR=max(13,9)-min(11,9)=4.0
+    # bar 2: priorClose=11.5 -> BP=9.0-min(8.5,11.5)=0.5, TR=max(10.5,11.5)-min(8.5,11.5)=3.0
+    # bar 1: priorClose=10.0 -> BP=11.5-min(10,10)=1.5, TR=max(12,10)-min(10,10)=2.0
+    avg1 = 3.5 / 4.0
+    avg2 = (3.5 + 0.5) / (4.0 + 3.0)
+    avg3 = (3.5 + 0.5 + 1.5) / (4.0 + 3.0 + 2.0)
+    expected = 100.0 * (4.0 * avg1 + 2.0 * avg2 + avg3) / 7.0
+    result = zeonta.ultimate_oscillator(high, low, close, fast=1, medium=2, slow=3)
+    np.testing.assert_allclose(result.iloc[-1], expected)
+
+
+def test_ultimate_oscillator_stays_within_bounds(ohlcv: pd.DataFrame) -> None:
+    result = zeonta.ultimate_oscillator(ohlcv["high"], ohlcv["low"], ohlcv["close"]).dropna()
+    assert result.between(0.0, 100.0).all()
+
+
+def test_ultimate_oscillator_is_high_in_an_accelerating_uptrend() -> None:
+    # A *linear* ramp keeps BP/TR pinned at a constant 0.5 at every window
+    # (each day's gain and range both grow by the same fixed step), which
+    # can't separate up from down — an accelerating move is needed instead.
+    prices = np.array([float(i) ** 1.5 for i in range(1, 60)])
+    result = zeonta.ultimate_oscillator(prices + 1, prices - 1, prices)
+    assert result.iloc[-1] > 70.0
+
+
+def test_ultimate_oscillator_is_low_in_an_accelerating_downtrend() -> None:
+    prices = np.array([float(i) ** 1.5 for i in range(1, 60)])[::-1]
+    result = zeonta.ultimate_oscillator(prices + 1, prices - 1, prices)
+    assert result.iloc[-1] < 30.0
+
+
+def test_ultimate_oscillator_rejects_windows_out_of_order() -> None:
+    with pytest.raises(ValueError, match="'fast' < 'medium' < 'slow'"):
+        zeonta.ultimate_oscillator([11.0] * 30, [9.0] * 30, [10.0] * 30, fast=14, medium=7, slow=28)
+
+
+def test_elder_ray_matches_the_hand_computed_value() -> None:
+    high = [11.0, 12.0, 13.0, 14.0]
+    low = [9.0, 10.0, 11.0, 12.0]
+    close = [10.0, 11.0, 12.0, 13.0]
+    out = zeonta.elder_ray(high, low, close, length=3)
+    ema = zeonta.ema(close, length=3)
+    np.testing.assert_allclose(
+        out["BULLP_3"].to_numpy(), (np.array(high) - ema).to_numpy(), equal_nan=True
+    )
+    np.testing.assert_allclose(
+        out["BEARP_3"].to_numpy(), (np.array(low) - ema).to_numpy(), equal_nan=True
+    )
+
+
+def test_elder_ray_bull_power_is_positive_in_a_clean_uptrend() -> None:
+    prices = np.arange(1.0, 60.0)
+    out = zeonta.elder_ray(prices + 1, prices - 1, prices).dropna()
+    assert (out["BULLP_13"] > 0.0).all()
+
+
+def test_elder_ray_bear_power_is_negative_right_after_a_sharp_drop() -> None:
+    # Right after a sudden drop, the lagging EMA is still well above the new
+    # low, so bear power is unambiguously negative — unlike a steady linear
+    # ramp, where EMA's fixed lag can exceed the bar's own high-low spread
+    # and flip bear power positive (a real, documented property of this
+    # indicator, not a bug).
+    high = [50.0] * 20 + [10.0] * 10
+    low = [49.0] * 20 + [9.0] * 10
+    close = [49.5] * 20 + [9.5] * 10
+    out = zeonta.elder_ray(high, low, close, length=13).dropna()
+    assert (out["BEARP_13"].iloc[-10:] < 0.0).all()
+
+
+def test_elder_ray_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.elder_ray([2.0] * 20, [1.0] * 20, [1.5] * 20, length=0)

@@ -2,7 +2,7 @@
 
 [English](../en/index.md)
 
-`zeon-ta` içindeki tüm indikatörler, modüllere göre gruplanmıştır. Birkaç indikatör, formülünün doğrulandığı dış kaynağa ek olarak bağlantı verir.
+`zeon-ta` içindeki tüm indikatörler, modüllere göre gruplanmıştır. Birkaç indikatör, formülünün doğrulandığı dış kaynağa ek olarak bağlantı verir — bu doğrulamanın nasıl yapıldığı için bkz. [methodology.md](methodology.md).
 
 ## Temeller
 
@@ -33,12 +33,14 @@
 | --- | --- |
 | [`awesome_oscillator`](indicators/awesome_oscillator.md) | Awesome Osilatör (AO) |
 | [`cci`](indicators/cci.md) | Emtia Kanal Endeksi (CCI) |
+| [`elder_ray`](indicators/elder_ray.md) | Elder Ray (Boğa Gücü / Ayı Gücü) |
 | [`macd`](indicators/macd.md) | MACD (Hareketli Ortalama Yakınsama Iraksama) |
 | [`momentum`](indicators/momentum.md) | Momentum |
 | [`roc`](indicators/roc.md) | Değişim Oranı (ROC) |
 | [`rsi`](indicators/rsi.md) | Göreceli Güç Endeksi (RSI) |
 | [`stoch`](indicators/stoch.md) | Stokastik Osilatör |
 | [`stoch_rsi`](indicators/stoch_rsi.md) | Stokastik RSI (StochRSI) |
+| [`ultimate_oscillator`](indicators/ultimate_oscillator.md) | Ultimate Osilatör |
 | [`williams_r`](indicators/williams_r.md) | Williams %R |
 
 ## Hacim
@@ -46,6 +48,7 @@
 | İndikatör | Özet |
 | --- | --- |
 | [`adl`](indicators/adl.md) | Birikim/Dağıtım Çizgisi (ADL) |
+| [`chaikin_oscillator`](indicators/chaikin_oscillator.md) | Chaikin Osilatörü |
 | [`cmf`](indicators/cmf.md) | Chaikin Para Akışı (CMF) |
 | [`mfi`](indicators/mfi.md) | Para Akışı Endeksi (MFI) |
 | [`obv`](indicators/obv.md) | Denge Hacmi (OBV) |
@@ -66,10 +69,12 @@
 | --- | --- |
 | [`adx`](indicators/adx.md) | ADX / DMI |
 | [`aroon`](indicators/aroon.md) | Aroon ve Aroon Osilatörü |
+| [`chandelier_exit`](indicators/chandelier_exit.md) | Chandelier Exit |
 | [`donchian`](indicators/donchian.md) | Donchian Kanalları |
 | [`ichimoku`](indicators/ichimoku.md) | Ichimoku |
 | [`parabolic_sar`](indicators/parabolic_sar.md) | Parabolik SAR |
 | [`supertrend`](indicators/supertrend.md) | SuperTrend |
+| [`vortex`](indicators/vortex.md) | Vortex İndikatörü |
 
 ## İleri Seviye Araçlar
 

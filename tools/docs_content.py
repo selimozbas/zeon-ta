@@ -1177,14 +1177,14 @@ CONTENT: dict[str, Doc] = {
         "title_tr": "Pivot Noktaları",
         "formula_en": (
             "Classic: Pivot = (High + Low + Close) / 3; R1 = 2xPivot - Low; S1 = 2xPivot - High; "
-            "R2 = Pivot + (High - Low); S2 = Pivot - (High - Low); R3 = High + 2x(Pivot - Low); "
-            "S3 = Low - 2x(High - Pivot). Fibonacci: R1/S1 = Pivot +/- 0.382x(High - Low); R2/S2 = "
+            "R2 = Pivot + (High - Low); S2 = Pivot - (High - Low); R3 = Pivot + 2x(High - Low); "
+            "S3 = Pivot - 2x(High - Low). Fibonacci: R1/S1 = Pivot +/- 0.382x(High - Low); R2/S2 = "
             "Pivot +/- 0.618x(High - Low); R3/S3 = Pivot +/- 1.0x(High - Low)"
         ),
         "formula_tr": (
             "Klasik: Pivot = (Yüksek + Düşük + Kapanış) / 3; R1 = 2xPivot - Düşük; S1 = 2xPivot - "
-            "Yüksek; R2 = Pivot + (Yüksek - Düşük); S2 = Pivot - (Yüksek - Düşük); R3 = Yüksek + "
-            "2x(Pivot - Düşük); S3 = Düşük - 2x(Yüksek - Pivot). Fibonacci: R1/S1 = Pivot +/- "
+            "Yüksek; R2 = Pivot + (Yüksek - Düşük); S2 = Pivot - (Yüksek - Düşük); R3 = Pivot + "
+            "2x(Yüksek - Düşük); S3 = Pivot - 2x(Yüksek - Düşük). Fibonacci: R1/S1 = Pivot +/- "
             "0,382x(Yüksek - Düşük); R2/S2 = Pivot +/- 0,618x(Yüksek - Düşük); R3/S3 = Pivot +/- "
             "1,0x(Yüksek - Düşük)"
         ),
@@ -1212,12 +1212,18 @@ CONTENT: dict[str, Doc] = {
         "pitfalls_en": (
             "Pivots are arithmetic, not analysis — they carry no information beyond the previous "
             "bar's range and work mainly as a shared reference grid. They are far less meaningful "
-            "on instruments without a real session boundary."
+            "on instruments without a real session boundary. Classic R3/S3 has no single "
+            "universally cited formula (StockCharts' own Classic page does not define R3/S3 at "
+            "all); this library follows TradingView's own documented formula, confirmed "
+            "empirically against a live reading."
         ),
         "pitfalls_tr": (
             "Pivotlar analiz değil aritmetiktir — önceki barın aralığının ötesinde bir bilgi "
             "taşımazlar ve esas olarak ortak bir referans ızgarası olarak işe yararlar. Gerçek bir "
-            "seans sınırı olmayan enstrümanlarda çok daha az anlamlıdırlar."
+            "seans sınırı olmayan enstrümanlarda çok daha az anlamlıdırlar. Klasik R3/S3'ün "
+            "evrensel olarak kabul görmüş tek bir formülü yoktur (StockCharts'ın kendi Klasik "
+            "sayfası R3/S3'ü hiç tanımlamaz); bu kütüphane, canlı bir okumaya karşı ampirik olarak "
+            "doğrulanmış TradingView'in kendi belgelediği formülü izler."
         ),
         "example": [
             lambda df: zeonta.pivot_points(df["high"], df["low"], df["close"], kind="classic").tail(

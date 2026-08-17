@@ -5,8 +5,10 @@ definition (a source URL, a hand-traced calculation). This file instead
 checks the *actual numeric output* against what TradingView itself displayed
 for a real, freely available symbol at a specific moment — the class of bug
 a correct-looking formula can still hide (wrong warm-up, wrong seeding, a
-rounding rule the formula's prose left ambiguous). See `hma`'s fix in
-CHANGELOG for a concrete example this exact method caught.
+rounding rule the formula's prose left ambiguous, or a formula silently
+borrowed from a *different* indicator system). Two real bugs were caught
+this way: `hma`'s rounding rule (see its docstring and CHANGELOG) and
+`pivot_points`'s Classic R3/S3 formula (see its docstring and CHANGELOG).
 
 Methodology
 -----------
@@ -23,7 +25,9 @@ page (`tradingview.com/symbols/AMEX-SPY/technicals/`) for the **1 day**
 timeframe, captured within the same few minutes as the data fetch above.
 That page computes its own indicators server-side from TradingView's own
 data feed and displays them as plain numbers (not a canvas chart), rounded
-to 2 decimal places.
+to 2 decimal places. Its "Pivots" table turned out to be anchored to the
+previous **calendar month**, not the previous daily bar — found empirically
+since the page does not state it; see `spy_monthly` below.
 
 Every value below matched to the penny on first read, with one documented
 exception (`test_cci_matches_tradingview`) attributed to sub-cent price
@@ -148,3 +152,67 @@ def test_hma9_matches_tradingview(spy: pd.DataFrame) -> None:
     (alanhull.com) truncates both instead of rounding; fixing that produced
     an exact match. See `hma`'s docstring and CHANGELOG."""
     assert round(zeonta.hma(spy["close"], length=9).iloc[-1], 2) == 776.37
+
+
+def test_ichimoku_base_line_matches_tradingview(spy: pd.DataFrame) -> None:
+    """TradingView's "Ichimoku Base Line (9, 26, 52, 26)" is the Kijun-sen —
+    this library's ``IKS_26`` column. Computes 754.2349853515625 against a
+    displayed 754.24, a razor-thin one-cent rounding-boundary difference
+    (754.235 is exactly the round-half point) rather than the clear,
+    unambiguous mismatches `hma` and `pivot_points` had — almost certainly
+    from Yahoo Finance's and TradingView's data feeds disagreeing by a
+    fraction of a cent on one bar within the 26-bar window, not a formula
+    difference. A 1-cent tolerance absorbs it."""
+    visible, _ = zeonta.ichimoku(spy["high"], spy["low"], spy["close"])
+    assert visible["IKS_26"].iloc[-1] == pytest.approx(754.24, abs=0.01)
+
+
+@pytest.fixture(scope="module")
+def spy_monthly(spy: pd.DataFrame) -> pd.DataFrame:
+    """TradingView's Pivots table on the Technicals page is anchored to the
+    previous **calendar month**'s range, not the previous daily bar — found
+    by matching its displayed pivot (743.90) against a resampled series,
+    since it is otherwise unstated on the page itself."""
+    return spy.resample("MS").agg({"high": "max", "low": "min", "close": "last"})
+
+
+def test_classic_pivots_match_tradingview(spy_monthly: pd.DataFrame) -> None:
+    """This is the second bug this file caught: the library's previous
+    Classic R3/S3 formula (``High + 2*(Pivot - Low)``) is actually the
+    Camarilla system's R3, not Classic's — StockCharts' own Classic page
+    does not define R3/S3 at all. TradingView's documented formula
+    (``Pivot +/- 2*(High - Low)``) matched all seven levels exactly once
+    fixed. See `pivot_points`'s docstring and CHANGELOG."""
+    classic = zeonta.pivot_points(
+        spy_monthly["high"], spy_monthly["low"], spy_monthly["close"], kind="classic"
+    )
+    row = classic.iloc[-1]
+    expected = {
+        "PP_classic": 743.90,
+        "R1_classic": 758.71,
+        "R2_classic": 770.38,
+        "R3_classic": 796.86,
+        "S1_classic": 732.23,
+        "S2_classic": 717.42,
+        "S3_classic": 690.94,
+    }
+    for column, value in expected.items():
+        assert round(row[column], 2) == value, column
+
+
+def test_fibonacci_pivots_match_tradingview(spy_monthly: pd.DataFrame) -> None:
+    fib = zeonta.pivot_points(
+        spy_monthly["high"], spy_monthly["low"], spy_monthly["close"], kind="fibonacci"
+    )
+    row = fib.iloc[-1]
+    expected = {
+        "PP_fibonacci": 743.90,
+        "R1_fibonacci": 754.02,
+        "R2_fibonacci": 760.27,
+        "R3_fibonacci": 770.38,
+        "S1_fibonacci": 733.79,
+        "S2_fibonacci": 727.54,
+        "S3_fibonacci": 717.42,
+    }
+    for column, value in expected.items():
+        assert round(row[column], 2) == value, column

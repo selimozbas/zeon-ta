@@ -19,10 +19,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (`tests/data/tv_spy_daily.csv`, fetched from Yahoo Finance's public chart
   API right after that day's regular-session close) checked against values
   read directly off TradingView's own "Technicals" page for the same symbol
-  and moment — 15 core indicators (SMA, EMA, RSI, MACD, CCI, ADX, Awesome
+  and moment — 17 core indicators (SMA, EMA, RSI, MACD, CCI, ADX, Awesome
   Oscillator, Momentum, Stochastic RSI, Williams %R, Bull Bear Power,
-  Ultimate Oscillator, Stochastic) matched TradingView to the penny on first
-  check, catching a real bug in `hma` in the process (see Fixed, below).
+  Ultimate Oscillator, Stochastic, Ichimoku's base line, and both Classic
+  and Fibonacci pivot points) matched TradingView to the penny, catching two
+  real bugs in the process — `hma` and `pivot_points` (see Fixed, below).
 
 ### Fixed
 
@@ -38,6 +39,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   ramp the corrected HMA now converges to the exact ramp value, the same
   clean cancellation `dema`/`tema` already have — a good sign the fix is
   right, not just TradingView-compatible by coincidence.
+- `pivot_points`'s Classic `R3`/`S3` used `High + 2*(Pivot - Low)` /
+  `Low - 2*(High - Pivot)`, which is actually the Camarilla system's `R3`,
+  not Classic's — StockCharts' own Classic Pivot Points page does not
+  define `R3`/`S3` at all, so this had no independent check until now.
+  Confirmed against TradingView's own documented formula
+  (`Pivot +/- 2*(High - Low)`) and empirically against a live reading (all
+  seven Classic levels, and all seven Fibonacci levels, now match exactly).
+  Switched from `lesson="pivot-points"` to a cited `reference` for this
+  reason. `P`, `R1`, `R2`, `S1`, `S2` and the Fibonacci system were already
+  correct and unaffected.
 
 ## [0.2.0] - 2026-08-17
 

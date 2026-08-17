@@ -11,7 +11,7 @@ Bugün için, daha piyasa açılmadan dünün aralığından hesaplanan bir sevi
 ## Formül
 
 ```text
-Klasik: Pivot = (Yüksek + Düşük + Kapanış) / 3; R1 = 2xPivot - Düşük; S1 = 2xPivot - Yüksek; R2 = Pivot + (Yüksek - Düşük); S2 = Pivot - (Yüksek - Düşük); R3 = Yüksek + 2x(Pivot - Düşük); S3 = Düşük - 2x(Yüksek - Pivot). Fibonacci: R1/S1 = Pivot +/- 0,382x(Yüksek - Düşük); R2/S2 = Pivot +/- 0,618x(Yüksek - Düşük); R3/S3 = Pivot +/- 1,0x(Yüksek - Düşük)
+Klasik: Pivot = (Yüksek + Düşük + Kapanış) / 3; R1 = 2xPivot - Düşük; S1 = 2xPivot - Yüksek; R2 = Pivot + (Yüksek - Düşük); S2 = Pivot - (Yüksek - Düşük); R3 = Pivot + 2x(Yüksek - Düşük); S3 = Pivot - 2x(Yüksek - Düşük). Fibonacci: R1/S1 = Pivot +/- 0,382x(Yüksek - Düşük); R2/S2 = Pivot +/- 0,618x(Yüksek - Düşük); R3/S3 = Pivot +/- 1,0x(Yüksek - Düşük)
 ```
 
 ## Parametreler
@@ -52,8 +52,8 @@ zeonta.pivot_points(df['high'], df['low'], df['close'], kind='classic').tail(2)
 ```text
             PP_classic  R1_classic  R2_classic  R3_classic  S1_classic  S2_classic  S3_classic
 date                                                                                          
-2024-10-26   90.229367   90.693933   91.291667   91.756233   89.631633   89.167067   88.569333
-2024-10-27   89.485600   89.875200   90.631400   91.021000   88.729400   88.339800   87.583600
+2024-10-26   90.229367   90.693933   91.291667   92.353967   89.631633   89.167067   88.104767
+2024-10-27   89.485600   89.875200   90.631400   91.777200   88.729400   88.339800   87.194000
 ```
 
 **Accessor biçimi:** `df.zta.pivot_points(...)`
@@ -64,4 +64,8 @@ Merkezî pivot günün referansıdır: üzerinde işlem görmek boğa seansı, a
 
 ## Dikkat edilmesi gerekenler
 
-Pivotlar analiz değil aritmetiktir — önceki barın aralığının ötesinde bir bilgi taşımazlar ve esas olarak ortak bir referans ızgarası olarak işe yararlar. Gerçek bir seans sınırı olmayan enstrümanlarda çok daha az anlamlıdırlar.
+Pivotlar analiz değil aritmetiktir — önceki barın aralığının ötesinde bir bilgi taşımazlar ve esas olarak ortak bir referans ızgarası olarak işe yararlar. Gerçek bir seans sınırı olmayan enstrümanlarda çok daha az anlamlıdırlar. Klasik R3/S3'ün evrensel olarak kabul görmüş tek bir formülü yoktur (StockCharts'ın kendi Klasik sayfası R3/S3'ü hiç tanımlamaz); bu kütüphane, canlı bir okumaya karşı ampirik olarak doğrulanmış TradingView'in kendi belgelediği formülü izler.
+
+## Kaynak
+
+Formül kaynağı: [https://www.tradingview.com/support/solutions/43000521824-pivot-points-standard/](https://www.tradingview.com/support/solutions/43000521824-pivot-points-standard/)

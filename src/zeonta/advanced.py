@@ -238,7 +238,7 @@ def fib_retracement(
 @indicator(
     category="advanced",
     summary="Classic or Fibonacci pivot levels derived from the previous bar.",
-    lesson="pivot-points",
+    reference="https://www.tradingview.com/support/solutions/43000521824-pivot-points-standard/",
     outputs=("PP", "R1", "R2", "R3", "S1", "S2", "S3"),
 )
 def pivot_points(
@@ -254,7 +254,7 @@ def pivot_points(
         P  = (High + Low + Close) / 3
         R1 = 2*P - Low          S1 = 2*P - High
         R2 = P + (High - Low)   S2 = P - (High - Low)
-        R3 = High + 2*(P - Low) S3 = Low - 2*(High - P)
+        R3 = P + 2*(High - Low) S3 = P - 2*(High - Low)
 
     Fibonacci::
 
@@ -280,12 +280,24 @@ def pivot_points(
     the output is causal and safe to trade on. Feed daily bars for daily pivots,
     weekly bars for weekly pivots.
 
+    Classic R3/S3 has no single universally cited formula — StockCharts'
+    own Classic Pivot Points page does not define R3/S3 at all, and other
+    write-ups describe a different one (``High + 2*(P - Low)``, actually the
+    Camarilla system's R3, not Classic's) that this library previously used
+    by mistake. ``P +/- 2*(High - Low)`` here is TradingView's own documented
+    formula, confirmed both against their support page and empirically
+    against a live TradingView reading; see ``tests/test_tradingview_parity.py``.
+
     Examples
     --------
     >>> import zeonta
     >>> out = zeonta.pivot_points([10, 11], [8, 9], [9, 10])
     >>> round(float(out['PP_classic'].iloc[1]), 4)
     9.0
+
+    References
+    ----------
+    https://www.tradingview.com/support/solutions/43000521824-pivot-points-standard/
     """
     if kind not in ("classic", "fibonacci"):
         raise ValueError(f"'kind' must be 'classic' or 'fibonacci', got {kind!r}")
@@ -306,8 +318,7 @@ def pivot_points(
     if kind == "classic":
         r1, s1 = 2.0 * pivot - previous_low, 2.0 * pivot - previous_high
         r2, s2 = pivot + span, pivot - span
-        r3 = previous_high + 2.0 * (pivot - previous_low)
-        s3 = previous_low - 2.0 * (previous_high - pivot)
+        r3, s3 = pivot + 2.0 * span, pivot - 2.0 * span
     else:
         r1, s1 = pivot + 0.382 * span, pivot - 0.382 * span
         r2, s2 = pivot + 0.618 * span, pivot - 0.618 * span

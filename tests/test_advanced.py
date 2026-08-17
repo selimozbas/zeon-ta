@@ -126,6 +126,18 @@ def test_classic_pivot_points_match_the_formula() -> None:
     np.testing.assert_allclose(row["S2_classic"], 7.0)
 
 
+def test_classic_pivot_points_r3_s3_match_tradingviews_own_formula() -> None:
+    """R3/S3 = P +/- 2*(High-Low), TradingView's own documented formula
+    (their Pivot Points Standard support page) and empirically confirmed
+    against a live reading. StockCharts' own Classic page does not define
+    R3/S3 at all, and this library previously used a different formula
+    (High + 2*(P-Low), actually Camarilla's R3, not Classic's) by mistake."""
+    out = zeonta.pivot_points([10, 11], [8, 9], [9, 10])
+    row = out.iloc[1]
+    np.testing.assert_allclose(row["R3_classic"], 13.0)
+    np.testing.assert_allclose(row["S3_classic"], 5.0)
+
+
 def test_fibonacci_pivot_points_use_fib_ratios() -> None:
     out = zeonta.pivot_points([10, 11], [8, 9], [9, 10], kind="fibonacci")
     row = out.iloc[1]

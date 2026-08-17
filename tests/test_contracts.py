@@ -54,7 +54,6 @@ def test_registry_covers_every_standard_indicator() -> None:
         "donchian-channels",
         "vwap",
         "fibonacci",
-        "pivot-points",
         "divergences",
     }
 
@@ -83,6 +82,7 @@ def test_indicators_with_a_reference() -> None:
         "vortex",
         "ultimate_oscillator",
         "elder_ray",
+        "pivot_points",
     }
     with_reference = {spec.name for spec in iter_specs() if spec.reference is not None}
     assert with_reference == expected

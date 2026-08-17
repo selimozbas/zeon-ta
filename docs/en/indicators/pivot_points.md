@@ -11,7 +11,7 @@ A grid of levels for today, computed from yesterday's range before the market ev
 ## Formula
 
 ```text
-Classic: Pivot = (High + Low + Close) / 3; R1 = 2xPivot - Low; S1 = 2xPivot - High; R2 = Pivot + (High - Low); S2 = Pivot - (High - Low); R3 = High + 2x(Pivot - Low); S3 = Low - 2x(High - Pivot). Fibonacci: R1/S1 = Pivot +/- 0.382x(High - Low); R2/S2 = Pivot +/- 0.618x(High - Low); R3/S3 = Pivot +/- 1.0x(High - Low)
+Classic: Pivot = (High + Low + Close) / 3; R1 = 2xPivot - Low; S1 = 2xPivot - High; R2 = Pivot + (High - Low); S2 = Pivot - (High - Low); R3 = Pivot + 2x(High - Low); S3 = Pivot - 2x(High - Low). Fibonacci: R1/S1 = Pivot +/- 0.382x(High - Low); R2/S2 = Pivot +/- 0.618x(High - Low); R3/S3 = Pivot +/- 1.0x(High - Low)
 ```
 
 ## Parameters
@@ -52,8 +52,8 @@ zeonta.pivot_points(df['high'], df['low'], df['close'], kind='classic').tail(2)
 ```text
             PP_classic  R1_classic  R2_classic  R3_classic  S1_classic  S2_classic  S3_classic
 date                                                                                          
-2024-10-26   90.229367   90.693933   91.291667   91.756233   89.631633   89.167067   88.569333
-2024-10-27   89.485600   89.875200   90.631400   91.021000   88.729400   88.339800   87.583600
+2024-10-26   90.229367   90.693933   91.291667   92.353967   89.631633   89.167067   88.104767
+2024-10-27   89.485600   89.875200   90.631400   91.777200   88.729400   88.339800   87.194000
 ```
 
 **Accessor form:** `df.zta.pivot_points(...)`
@@ -64,4 +64,8 @@ The central pivot is the day's reference: trading above it is a bullish session,
 
 ## Pitfalls
 
-Pivots are arithmetic, not analysis — they carry no information beyond the previous bar's range and work mainly as a shared reference grid. They are far less meaningful on instruments without a real session boundary.
+Pivots are arithmetic, not analysis — they carry no information beyond the previous bar's range and work mainly as a shared reference grid. They are far less meaningful on instruments without a real session boundary. Classic R3/S3 has no single universally cited formula (StockCharts' own Classic page does not define R3/S3 at all); this library follows TradingView's own documented formula, confirmed empirically against a live reading.
+
+## Reference
+
+Formula source: [https://www.tradingview.com/support/solutions/43000521824-pivot-points-standard/](https://www.tradingview.com/support/solutions/43000521824-pivot-points-standard/)

@@ -11,6 +11,12 @@ The registry powers three things:
 * :func:`zeonta.list_indicators`, the discovery entry point;
 * the documentation tests, which assert that every ``.md`` file documents the
   parameters the code actually accepts.
+
+Most indicators implement a formula from the TA 101 curriculum
+(https://ta.cognicode.org); those pass ``lesson=`` to link back to the lesson.
+A handful of common indicators (OBV, CMF, MFI, ROC, Momentum, KAMA, Parabolic
+SAR) are not part of that curriculum and pass ``reference=`` with an external
+URL instead. Every indicator has exactly one of the two.
 """
 
 from __future__ import annotations
@@ -44,22 +50,34 @@ def lesson_url(slug: str) -> str:
 
 @dataclass(frozen=True)
 class IndicatorSpec:
-    """Everything the library knows about one indicator."""
+    """Everything the library knows about one indicator.
+
+    Exactly one of ``lesson`` (a TA 101 slug) or ``reference`` (a full URL to
+    an external source) is set; the other is ``None``.
+    """
 
     name: str
     category: str
     summary: str
-    lesson: str
+    lesson: str | None
+    reference: str | None
     inputs: tuple[str, ...]
     params: Mapping[str, Any]
     outputs: tuple[str, ...]
     returns_frame: bool
     func: Callable[..., Any] = field(repr=False)
 
+    def __post_init__(self) -> None:
+        if (self.lesson is None) == (self.reference is None):
+            raise ValueError(f"{self.name!r}: exactly one of 'lesson' or 'reference' must be set")
+
     @property
     def url(self) -> str:
-        """Link to the lesson this indicator's formula comes from."""
-        return lesson_url(self.lesson)
+        """Link to the source this indicator's formula comes from."""
+        if self.lesson is not None:
+            return lesson_url(self.lesson)
+        assert self.reference is not None  # guaranteed by __post_init__
+        return self.reference
 
 
 _REGISTRY: dict[str, IndicatorSpec] = {}
@@ -97,8 +115,9 @@ def indicator(
     *,
     category: str,
     summary: str,
-    lesson: str,
     outputs: tuple[str, ...],
+    lesson: str | None = None,
+    reference: str | None = None,
     returns_frame: bool | None = None,
     name: str | None = None,
 ) -> Callable[[F], F]:
@@ -110,10 +129,14 @@ def indicator(
         Curriculum module the indicator belongs to.
     summary:
         One-line description, surfaced by :func:`zeonta.list_indicators`.
-    lesson:
-        TA 101 lesson slug the formula was taken from.
     outputs:
         Base names of the produced columns, before parameters are interpolated.
+    lesson:
+        TA 101 lesson slug the formula was taken from. Mutually exclusive with
+        ``reference``; exactly one is required.
+    reference:
+        Full URL to an external, non-TA-101 source for indicators outside that
+        curriculum. Mutually exclusive with ``lesson``.
     returns_frame:
         Whether the indicator returns a ``DataFrame``. Defaults to ``True`` when
         more than one output is declared; pass it explicitly for indicators whose
@@ -132,6 +155,7 @@ def indicator(
             category=category,
             summary=summary,
             lesson=lesson,
+            reference=reference,
             inputs=inputs,
             params=params,
             outputs=tuple(outputs),
@@ -159,9 +183,10 @@ def iter_specs() -> tuple[IndicatorSpec, ...]:
         "foundations": 0,
         "moving_averages": 1,
         "oscillators": 2,
-        "volatility": 3,
-        "trend": 4,
-        "advanced": 5,
+        "volume": 3,
+        "volatility": 4,
+        "trend": 5,
+        "advanced": 6,
     }
     return tuple(
         sorted(_REGISTRY.values(), key=lambda spec: (order.get(spec.category, 99), spec.name))

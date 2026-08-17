@@ -37,6 +37,41 @@ def isolated_registry() -> Iterator[None]:
 
 
 class TestRegistration:
+    def test_indicator_must_have_exactly_one_of_lesson_or_reference(self) -> None:
+        """The ``indicator`` decorator always passes a valid combination; this
+        pins the ``IndicatorSpec`` invariant it relies on directly."""
+        from zeonta._core.registry import IndicatorSpec
+
+        def dummy(close: pd.Series) -> pd.Series:  # pragma: no cover - never called
+            return close
+
+        with pytest.raises(ValueError, match="exactly one of 'lesson' or 'reference'"):
+            IndicatorSpec(
+                name="dummy",
+                category="x",
+                summary="s",
+                lesson="rsi",
+                reference="https://example.com",
+                inputs=("close",),
+                params={},
+                outputs=("O",),
+                returns_frame=False,
+                func=dummy,
+            )
+        with pytest.raises(ValueError, match="exactly one of 'lesson' or 'reference'"):
+            IndicatorSpec(
+                name="dummy",
+                category="x",
+                summary="s",
+                lesson=None,
+                reference=None,
+                inputs=("close",),
+                params={},
+                outputs=("O",),
+                returns_frame=False,
+                func=dummy,
+            )
+
     def test_a_parameter_without_a_default_is_rejected(self) -> None:
         with pytest.raises(TypeError, match="must either be an OHLCV input"):
 
@@ -69,7 +104,7 @@ class TestRegistration:
 
     def test_unknown_indicator_lookup_lists_the_alternatives(self) -> None:
         with pytest.raises(KeyError, match="available:"):
-            get_spec("parabolic_sar")
+            get_spec("triple_witching_hour")
 
 
 class TestAccessorInternals:

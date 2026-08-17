@@ -1,11 +1,14 @@
-"""Trend systems: SuperTrend, ADX/DMI, Ichimoku and Donchian Channels.
+"""Trend systems: SuperTrend, ADX/DMI, Ichimoku, Donchian and Parabolic SAR.
 
-Formulas follow the TA 101 *Trend Systems* module.
+SuperTrend, ADX, Ichimoku and Donchian follow the TA 101 *Trend Systems*
+module. Parabolic SAR is outside that curriculum; see its own ``References``
+section for its source.
 
-SuperTrend and ADX are the only genuinely sequential indicators in the library:
-their bands ratchet in one direction and depend on the previous bar's state, so
-they cannot be expressed as a pure window reduction. Both keep a single readable
-pass over the data rather than an obscure vectorised trick.
+SuperTrend, ADX and Parabolic SAR are the only genuinely sequential indicators
+in the library: their bands ratchet in one direction and depend on the
+previous bar's state, so they cannot be expressed as a pure window reduction.
+All three keep a single readable pass over the data rather than an obscure
+vectorised trick.
 """
 
 from __future__ import annotations
@@ -31,7 +34,7 @@ from ._core import (
 )
 from .volatility import _true_range_values
 
-__all__ = ["adx", "donchian", "ichimoku", "supertrend"]
+__all__ = ["adx", "donchian", "ichimoku", "parabolic_sar", "supertrend"]
 
 
 @indicator(
@@ -437,4 +440,139 @@ def donchian(high: ArrayLike, low: ArrayLike, length: int = 20) -> pd.DataFrame:
     order = [f"DCL_{length}", f"DCM_{length}", f"DCU_{length}"]
     return wrap_frame(
         dict(zip(order, (lower, middle, upper), strict=True)), common_index(high, low), order=order
+    )
+
+
+@indicator(
+    category="trend",
+    summary="Trailing stop-and-reverse dots that accelerate the longer a trend runs.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-overlays/parabolic-sar"
+    ),
+    outputs=("PSAR", "PSARd", "PSARl", "PSARs"),
+)
+def parabolic_sar(
+    high: ArrayLike,
+    low: ArrayLike,
+    start: Number = 0.02,
+    increment: Number = 0.02,
+    max_af: Number = 0.2,
+) -> pd.DataFrame:
+    """Parabolic SAR (Stop And Reverse).
+
+    In an uptrend: ``SAR = PriorSAR + AF * (EP - PriorSAR)``. In a downtrend
+    the sign flips: ``SAR = PriorSAR - AF * (PriorSAR - EP)``. ``EP`` (Extreme
+    Point) is the highest high seen since the last reversal in an uptrend, or
+    the lowest low in a downtrend. ``AF`` (Acceleration Factor) starts at
+    ``start``, grows by ``increment`` every time a new EP is recorded, and is
+    capped at ``max_af`` — the longer a trend runs unbroken, the faster SAR
+    accelerates toward price. SAR is additionally clamped so it never sits
+    above the prior two bars' lows in an uptrend, nor below the prior two
+    bars' highs in a downtrend; a reversal fires the moment price crosses the
+    (clamped) SAR, at which point SAR jumps to the old EP, AF resets to
+    ``start``, and a fresh EP starts tracking the new direction.
+
+    Parameters
+    ----------
+    high, low:
+        Price series of equal length.
+    start:
+        Initial acceleration factor.
+    increment:
+        How much the acceleration factor grows each time a new extreme point
+        is recorded.
+    max_af:
+        Acceleration factor ceiling.
+
+    Returns
+    -------
+    pandas.DataFrame
+        ``PSAR_{start}_{increment}_{max_af}`` — the dot; ``PSARd_...`` —
+        direction, ``1.0`` uptrend / ``-1.0`` downtrend; ``PSARl_...`` /
+        ``PSARs_...`` — the dot masked to long-only and short-only bars,
+        ready to plot in two colours (the same convention as
+        :func:`supertrend`).
+
+    Notes
+    -----
+    There is no "prior SAR" for the very first bar, so bars 0 and 1 are
+    ``NaN``; the initial trend direction for bar 1 is bootstrapped by
+    comparing bar 1's midpoint (``(high + low) / 2``) against bar 0's, since
+    this function takes no ``close`` to compare instead.
+
+    Like :func:`supertrend`, this is a trailing stop with no opinion about
+    trend strength, and whipsaws in a range as the acceleration factor keeps
+    resetting to ``start``. Unlike SuperTrend it actively accelerates the
+    longer a trend runs, which tightens it aggressively into extended moves —
+    useful when riding a trend, a liability if it means giving back less room
+    than the market's ordinary noise.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> out = zeonta.parabolic_sar([2] * 30, [1] * 30)
+    >>> float(out['PSARd_0.02_0.02_0.2'].iloc[-1])
+    1.0
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-overlays/parabolic-sar
+    """
+    af0 = validate_multiplier(start, "start")
+    step = validate_multiplier(increment, "increment")
+    af_max = validate_multiplier(max_af, "max_af")
+
+    require_aligned_index(high=high, low=low)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    size = require_same_length(high=high_values, low=low_values)
+
+    sar = np.full(size, np.nan, dtype="float64")
+    direction = np.full(size, np.nan, dtype="float64")
+
+    if size >= 2:
+        trend_up = bool(high_values[1] + low_values[1] >= high_values[0] + low_values[0])
+        extreme = high_values[1] if trend_up else low_values[1]
+        af = af0
+        sar[1] = low_values[0] if trend_up else high_values[0]
+        direction[1] = 1.0 if trend_up else -1.0
+
+        for i in range(2, size):
+            prior_sar = sar[i - 1]
+            if trend_up:
+                candidate = prior_sar + af * (extreme - prior_sar)
+                candidate = min(candidate, low_values[i - 1], low_values[i - 2])
+                if low_values[i] < candidate:
+                    trend_up = False
+                    candidate = extreme
+                    extreme = low_values[i]
+                    af = af0
+                elif high_values[i] > extreme:
+                    extreme = high_values[i]
+                    af = min(af + step, af_max)
+            else:
+                candidate = prior_sar - af * (prior_sar - extreme)
+                candidate = max(candidate, high_values[i - 1], high_values[i - 2])
+                if high_values[i] > candidate:
+                    trend_up = True
+                    candidate = extreme
+                    extreme = high_values[i]
+                    af = af0
+                elif low_values[i] < extreme:
+                    extreme = low_values[i]
+                    af = min(af + step, af_max)
+
+            sar[i] = candidate
+            direction[i] = 1.0 if trend_up else -1.0
+
+    long_line = np.where(direction > 0, sar, np.nan)
+    short_line = np.where(direction < 0, sar, np.nan)
+
+    suffix = f"{af0}_{step}_{af_max}"
+    order = [f"PSAR_{suffix}", f"PSARd_{suffix}", f"PSARl_{suffix}", f"PSARs_{suffix}"]
+    return wrap_frame(
+        dict(zip(order, (sar, direction, long_line, short_line), strict=True)),
+        common_index(high, low),
+        order=order,
     )

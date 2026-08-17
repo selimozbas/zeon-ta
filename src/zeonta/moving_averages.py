@@ -1,6 +1,8 @@
-"""Moving averages: SMA, EMA, crossovers and the EMA ribbon.
+"""Moving averages: SMA, EMA, crossovers, the EMA ribbon, and KAMA.
 
-Formulas follow the TA 101 *Moving Averages* module.
+SMA, EMA, the crossover signals and the ribbon follow the TA 101 *Moving
+Averages* module. KAMA is outside that curriculum; see its own ``References``
+section for its source.
 """
 
 from __future__ import annotations
@@ -18,12 +20,13 @@ from ._core import (
     ema_values,
     indicator,
     rolling_mean,
+    rolling_sum,
     validate_length,
     wrap_frame,
     wrap_series,
 )
 
-__all__ = ["ema", "ema_ribbon", "ma_cross", "sma"]
+__all__ = ["ema", "ema_ribbon", "kama", "ma_cross", "sma"]
 
 
 @indicator(
@@ -232,3 +235,98 @@ def ema_ribbon(
     values = as_array(close, "close")
     columns = {f"EMA_{length}": ema_values(values, length) for length in checked}
     return wrap_frame(columns, common_index(close), order=list(columns))
+
+
+@indicator(
+    category="moving_averages",
+    summary="Adapts its own smoothing to how efficiently price is trending.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-overlays/kaufmans-adaptive-moving-average-kama"
+    ),
+    outputs=("KAMA",),
+)
+def kama(close: ArrayLike, length: int = 10, fast: int = 2, slow: int = 30) -> pd.Series:
+    """Kaufman's Adaptive Moving Average.
+
+    The Efficiency Ratio compares net movement to total movement over the
+    window: ``ER = |Close - Close[n ago]| / Sum(|Close[i] - Close[i-1]|, n)``,
+    ``1`` for a bar that trended in a straight line, near ``0`` for one that
+    churned in place. That ratio blends two EMA smoothing constants into one
+    that adapts bar by bar:
+    ``SC = (ER * (2/(fast+1) - 2/(slow+1)) + 2/(slow+1))^2``;
+    ``KAMA[i] = KAMA[i-1] + SC * (Close[i] - KAMA[i-1])``.
+
+    Unlike :func:`sma` or :func:`ema`, KAMA has no single fixed speed: it
+    tracks price closely while the trend is clean and flattens out on its own
+    when price is choppy, without you having to pick a different length for
+    each regime.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Efficiency Ratio look-back.
+    fast, slow:
+        Periods for the fastest and slowest EMA smoothing constants blended
+        by the Efficiency Ratio. ``fast`` must be smaller than ``slow``.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``KAMA_{length}_{fast}_{slow}``. Seeded with ``Close`` at the
+        first bar where the Efficiency Ratio becomes computable (bar
+        ``length``), so the first ``length`` bars are ``NaN``.
+
+    Notes
+    -----
+    With ``length=1`` the Efficiency Ratio is always exactly ``1`` (a
+    single-bar move is, trivially, "perfectly efficient"), which collapses
+    the smoothing constant to the fixed value ``(2 / (fast + 1)) ** 2`` and
+    turns KAMA into an ordinary constant-alpha recursion — a useful sanity
+    check on the formula.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> round(float(zeonta.kama(list(range(1, 30)), length=5).iloc[-1]), 4)
+    27.75
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-overlays/kaufmans-adaptive-moving-average-kama
+    """
+    length = validate_length(length)
+    fast = validate_length(fast, "fast")
+    slow = validate_length(slow, "slow")
+    if fast >= slow:
+        raise ValueError(f"'fast' must be smaller than 'slow', got fast={fast}, slow={slow}")
+
+    values = as_array(close, "close")
+    size = values.shape[0]
+
+    abs_change = np.abs(np.diff(values, prepend=np.nan))
+    volatility = np.full(size, np.nan, dtype="float64")
+    volatility[1:] = rolling_sum(abs_change[1:], length)
+
+    net_change = np.full(size, np.nan, dtype="float64")
+    if size > length:
+        net_change[length:] = np.abs(values[length:] - values[:-length])
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        efficiency = net_change / volatility
+    # A perfectly flat window has no movement at all, efficient or not.
+    efficiency = np.where(volatility == 0.0, 0.0, efficiency)
+
+    fast_sc = 2.0 / (fast + 1.0)
+    slow_sc = 2.0 / (slow + 1.0)
+    smoothing = (efficiency * (fast_sc - slow_sc) + slow_sc) ** 2
+
+    result = np.full(size, np.nan, dtype="float64")
+    if size > length:
+        result[length] = values[length]
+        for i in range(length + 1, size):
+            result[i] = result[i - 1] + smoothing[i] * (values[i] - result[i - 1])
+
+    return wrap_series(result, common_index(close), f"KAMA_{length}_{fast}_{slow}")

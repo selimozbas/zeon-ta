@@ -1,6 +1,8 @@
-"""Momentum oscillators: RSI, Stochastic, MACD and CCI.
+"""Momentum oscillators: RSI, Stochastic, MACD, CCI, Momentum and ROC.
 
-Formulas follow the TA 101 *Oscillators* module.
+RSI, Stochastic, MACD and CCI follow the TA 101 *Oscillators* module.
+Momentum and ROC are outside that curriculum; see each function's own
+``References`` section for its source.
 """
 
 from __future__ import annotations
@@ -26,7 +28,15 @@ from ._core import (
     wrap_series,
 )
 
-__all__ = ["cci", "macd", "rsi", "stoch"]
+__all__ = ["cci", "macd", "momentum", "roc", "rsi", "stoch"]
+
+
+def _shift(values: np.ndarray, length: int) -> np.ndarray:
+    """*values* shifted forward by *length* bars, padded with ``NaN``."""
+    shifted = np.full(values.shape[0], np.nan, dtype="float64")
+    if values.shape[0] > length:
+        shifted[length:] = values[:-length]
+    return shifted
 
 
 @indicator(
@@ -298,3 +308,96 @@ def cci(
     result = np.where(np.isfinite(average), result, np.nan)
 
     return wrap_series(result, common_index(high, low, close), f"CCI_{length}")
+
+
+@indicator(
+    category="oscillators",
+    summary="Raw price change over n bars.",
+    reference="https://en.wikipedia.org/wiki/Momentum_(technical_analysis)",
+    outputs=("MOM",),
+)
+def momentum(close: ArrayLike, length: int = 10) -> pd.Series:
+    """Momentum.
+
+    ``MOM = Close - Close[n bars ago]`` — the plain, unnormalised price
+    change; :func:`roc` expresses the same comparison as a percentage instead.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        How many bars back to compare against.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``MOM_{length}``, in the same units as ``close``. The first
+        ``length`` bars are ``NaN``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> float(zeonta.momentum([10, 11, 12, 15], length=3).iloc[-1])
+    5.0
+
+    References
+    ----------
+    https://en.wikipedia.org/wiki/Momentum_(technical_analysis)
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+    previous = _shift(values, length)
+
+    return wrap_series(values - previous, common_index(close), f"MOM_{length}")
+
+
+@indicator(
+    category="oscillators",
+    summary="Percentage price change over n bars — the normalised sibling of momentum.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/rate-of-change-roc"
+    ),
+    outputs=("ROC",),
+)
+def roc(close: ArrayLike, length: int = 12) -> pd.Series:
+    """Rate of Change.
+
+    ``ROC = (Close - Close[n bars ago]) / Close[n bars ago] * 100``.
+    Expressing the change as a percentage (rather than :func:`momentum`'s raw
+    price difference) makes it comparable across symbols and price levels.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        How many bars back to compare against.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``ROC_{length}``. The first ``length`` bars are ``NaN``; a bar
+        whose reference close was exactly ``0`` is also ``NaN``, since the
+        percentage change is undefined there.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> float(zeonta.roc([10, 11, 12, 15], length=3).iloc[-1])
+    50.0
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/rate-of-change-roc
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+    previous = _shift(values, length)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = (values - previous) / previous * 100.0
+    result = np.where(previous == 0.0, np.nan, result)
+
+    return wrap_series(result, common_index(close), f"ROC_{length}")

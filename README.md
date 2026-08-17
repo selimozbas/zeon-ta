@@ -10,8 +10,10 @@ Technical analysis indicators for Python that are actually maintained — no C
 extension to compile, no abandoned API. NumPy and pandas are the only
 dependencies.
 
-Formulas are implemented from the [TA 101](https://ta.cognicode.org) curriculum,
-and every function's docstring links back to the lesson it came from.
+Most formulas are implemented from the [TA 101](https://ta.cognicode.org)
+curriculum; a few common indicators outside that curriculum (OBV, CMF, MFI,
+ROC, Momentum, KAMA, Parabolic SAR) are included too. Every function's
+docstring links back to its specific source, TA 101 or otherwise.
 
 ## Why another TA library
 
@@ -82,6 +84,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | --- | --- | --- |
 | `ema` | Exponential Moving Average (EMA) | [docs](docs/en/indicators/ema.md) |
 | `ema_ribbon` | EMA Ribbon | [docs](docs/en/indicators/ema_ribbon.md) |
+| `kama` | Kaufman's Adaptive Moving Average (KAMA) | [docs](docs/en/indicators/kama.md) |
 | `ma_cross` | Moving Average Crossovers | [docs](docs/en/indicators/ma_cross.md) |
 | `sma` | Simple Moving Average (SMA) | [docs](docs/en/indicators/sma.md) |
 
@@ -91,8 +94,18 @@ the cloud that projects past the last bar, rather than discarding it.
 | --- | --- | --- |
 | `cci` | Commodity Channel Index (CCI) | [docs](docs/en/indicators/cci.md) |
 | `macd` | MACD (Moving Average Convergence Divergence) | [docs](docs/en/indicators/macd.md) |
+| `momentum` | Momentum | [docs](docs/en/indicators/momentum.md) |
+| `roc` | Rate of Change (ROC) | [docs](docs/en/indicators/roc.md) |
 | `rsi` | Relative Strength Index (RSI) | [docs](docs/en/indicators/rsi.md) |
 | `stoch` | Stochastic Oscillator | [docs](docs/en/indicators/stoch.md) |
+
+### Volume
+
+| Indicator | What it does | Docs |
+| --- | --- | --- |
+| `cmf` | Chaikin Money Flow (CMF) | [docs](docs/en/indicators/cmf.md) |
+| `mfi` | Money Flow Index (MFI) | [docs](docs/en/indicators/mfi.md) |
+| `obv` | On-Balance Volume (OBV) | [docs](docs/en/indicators/obv.md) |
 
 ### Volatility
 
@@ -111,6 +124,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | `adx` | ADX / DMI | [docs](docs/en/indicators/adx.md) |
 | `donchian` | Donchian Channels | [docs](docs/en/indicators/donchian.md) |
 | `ichimoku` | Ichimoku | [docs](docs/en/indicators/ichimoku.md) |
+| `parabolic_sar` | Parabolic SAR | [docs](docs/en/indicators/parabolic_sar.md) |
 | `supertrend` | SuperTrend | [docs](docs/en/indicators/supertrend.md) |
 
 ### Advanced Tools

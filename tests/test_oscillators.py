@@ -110,3 +110,39 @@ def test_cci_is_zero_on_a_flat_market() -> None:
 def test_cci_rejects_non_positive_constant() -> None:
     with pytest.raises(ValueError, match="'constant' must be > 0"):
         zeonta.cci([2.0] * 25, [1.0] * 25, [1.5] * 25, constant=0.0)
+
+
+def test_momentum_is_the_raw_n_bar_difference() -> None:
+    result = zeonta.momentum([10, 11, 12, 15], length=3)
+    assert np.isnan(result.iloc[:3]).all()
+    np.testing.assert_allclose(result.iloc[3], 5.0)
+
+
+def test_momentum_is_negative_in_a_downtrend() -> None:
+    assert zeonta.momentum(list(range(30, 0, -1)), length=5).iloc[-1] < 0
+
+
+def test_momentum_is_zero_on_a_flat_series() -> None:
+    np.testing.assert_allclose(zeonta.momentum([5.0] * 20, length=5).dropna().to_numpy(), 0.0)
+
+
+def test_roc_matches_the_hand_computed_percentage() -> None:
+    # close 3 bars ago = 10, current = 15 -> (15-10)/10*100 = 50
+    result = zeonta.roc([10, 11, 12, 15], length=3)
+    np.testing.assert_allclose(result.iloc[3], 50.0)
+
+
+def test_roc_and_momentum_agree_on_direction() -> None:
+    prices = list(np.linspace(10, 40, 50))
+    momentum = zeonta.momentum(prices, length=9)
+    roc = zeonta.roc(prices, length=9)
+    np.testing.assert_allclose(np.sign(momentum.dropna()), np.sign(roc.dropna()))
+
+
+def test_roc_is_undefined_when_the_reference_close_is_zero() -> None:
+    result = zeonta.roc([0, 5, 10, 20], length=1)
+    assert np.isnan(result.iloc[1])
+
+
+def test_roc_is_zero_on_a_flat_series() -> None:
+    np.testing.assert_allclose(zeonta.roc([5.0] * 20, length=5).dropna().to_numpy(), 0.0)

@@ -175,3 +175,78 @@ def test_donchian_brackets_price(ohlcv: pd.DataFrame) -> None:
 def test_donchian_middle_is_the_channel_midpoint() -> None:
     out = zeonta.donchian([3, 4, 5], [1, 2, 3], length=2)
     np.testing.assert_allclose(out.iloc[-1].to_numpy(), [2.0, 3.5, 5.0])
+
+
+def _psar(frame: pd.DataFrame, **kwargs: object) -> pd.DataFrame:
+    return zeonta.parabolic_sar(frame["high"], frame["low"], **kwargs)
+
+
+def test_psar_never_flips_when_price_only_ever_rises() -> None:
+    high = np.linspace(10, 200, 250) + 1
+    low = np.linspace(10, 200, 250) - 1
+    out = zeonta.parabolic_sar(high, low)
+    direction = out["PSARd_0.02_0.02_0.2"].dropna()
+    assert (direction == 1.0).all()
+
+
+def test_psar_stays_below_the_low_on_continuation_bars_in_an_uptrend(
+    ohlcv: pd.DataFrame,
+) -> None:
+    """The reversal bar itself is exempt: SAR there is set to the old extreme
+    point, which is not guaranteed to respect the reversal bar's own low —
+    a documented quirk of the classic algorithm, not a bug."""
+    out = _psar(ohlcv)
+    line = out["PSAR_0.02_0.02_0.2"].to_numpy()
+    direction = out["PSARd_0.02_0.02_0.2"].to_numpy()
+    low = ohlcv["low"].to_numpy()
+    for i in range(2, len(direction)):
+        if direction[i] == 1.0 and direction[i - 1] == 1.0:
+            assert line[i] <= low[i] + 1e-9, f"bar {i}"
+
+
+def test_psar_stays_above_the_high_on_continuation_bars_in_a_downtrend(
+    ohlcv: pd.DataFrame,
+) -> None:
+    out = _psar(ohlcv)
+    line = out["PSAR_0.02_0.02_0.2"].to_numpy()
+    direction = out["PSARd_0.02_0.02_0.2"].to_numpy()
+    high = ohlcv["high"].to_numpy()
+    for i in range(2, len(direction)):
+        if direction[i] == -1.0 and direction[i - 1] == -1.0:
+            assert line[i] >= high[i] - 1e-9, f"bar {i}"
+
+
+def test_psar_direction_is_only_ever_plus_or_minus_one(ohlcv: pd.DataFrame) -> None:
+    direction = _psar(ohlcv)["PSARd_0.02_0.02_0.2"].dropna()
+    assert set(direction.unique()) <= {1.0, -1.0}
+
+
+def test_psar_long_and_short_columns_partition_the_line(ohlcv: pd.DataFrame) -> None:
+    out = _psar(ohlcv)
+    long_line = out["PSARl_0.02_0.02_0.2"]
+    short_line = out["PSARs_0.02_0.02_0.2"]
+    assert not (long_line.notna() & short_line.notna()).any()
+    combined = long_line.fillna(short_line)
+    np.testing.assert_allclose(combined, out["PSAR_0.02_0.02_0.2"], equal_nan=True)
+
+
+def test_psar_first_bar_has_no_prior_bar_to_seed_from(ohlcv: pd.DataFrame) -> None:
+    out = _psar(ohlcv)
+    assert out.iloc[0].isna().all()
+
+
+def test_psar_higher_start_af_flips_less_often(ohlcv: pd.DataFrame) -> None:
+    """A larger starting acceleration factor pulls SAR toward price faster,
+    so it should cross (and therefore flip) more readily — check the two
+    extremes rather than assuming monotonicity in between."""
+
+    def flips(start: float) -> int:
+        direction = _psar(ohlcv, start=start, increment=start)[f"PSARd_{start}_{start}_0.2"]
+        return int((direction.diff() != 0).sum())
+
+    assert flips(0.2) > flips(0.01)
+
+
+def test_psar_rejects_non_positive_start() -> None:
+    with pytest.raises(ValueError, match="'start' must be > 0"):
+        zeonta.parabolic_sar([2.0] * 10, [1.0] * 10, start=0.0)

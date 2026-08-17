@@ -15,8 +15,11 @@ Two equivalent ways to call anything::
     zeonta.rsi(df['close'], length=14)   # functional
     df.zta.rsi(length=14)                # accessor, same code underneath
 
-Formulas are taken from the TA 101 curriculum at https://ta.cognicode.org —
-each function's docstring links to the lesson it implements.
+Most indicators implement a formula from the TA 101 curriculum at
+https://ta.cognicode.org. A handful of common indicators outside that
+curriculum (OBV, CMF, MFI, ROC, Momentum, KAMA, Parabolic SAR) are also
+included; every function's docstring links to the specific source — TA 101 or
+otherwise — its formula was taken from.
 """
 
 from __future__ import annotations
@@ -37,10 +40,11 @@ from .advanced import (
     vwap,
 )
 from .foundations import candles, relative_volume, sr_levels, support_resistance, trend_channel
-from .moving_averages import ema, ema_ribbon, ma_cross, sma
-from .oscillators import cci, macd, rsi, stoch
-from .trend import adx, donchian, ichimoku, supertrend
+from .moving_averages import ema, ema_ribbon, kama, ma_cross, sma
+from .oscillators import cci, macd, momentum, roc, rsi, stoch
+from .trend import adx, donchian, ichimoku, parabolic_sar, supertrend
 from .volatility import atr, bbands, keltner, squeeze, true_range
+from .volume import cmf, mfi, obv
 
 try:
     # Single source of truth: read back the version hatchling wrote into the
@@ -60,6 +64,7 @@ __all__ = [
     "bbands",
     "candles",
     "cci",
+    "cmf",
     "divergence",
     "donchian",
     "ema",
@@ -67,12 +72,18 @@ __all__ = [
     "fib_retracement",
     "get_spec",
     "ichimoku",
+    "kama",
     "keltner",
     "list_indicators",
     "ma_cross",
     "macd",
+    "mfi",
+    "momentum",
+    "obv",
+    "parabolic_sar",
     "pivot_points",
     "relative_volume",
+    "roc",
     "rsi",
     "sma",
     "squeeze",
@@ -91,16 +102,17 @@ def list_indicators() -> pd.DataFrame:
 
     Columns: ``name``, ``category``, ``summary``, ``inputs`` (required OHLCV
     series), ``params`` (tunable parameters with their defaults), ``outputs``
-    (base column names) and ``lesson`` (link to the source formula).
+    (base column names) and ``source`` (link to the formula's origin — a TA 101
+    lesson for most indicators, an external reference for the rest).
 
     Examples
     --------
     >>> import zeonta
     >>> table = zeonta.list_indicators()
-    >>> len(table) >= 24
+    >>> len(table) >= 30
     True
     >>> sorted(table['category'].unique())
-    ['advanced', 'foundations', 'moving_averages', 'oscillators', 'trend', 'volatility']
+    ['advanced', 'foundations', 'moving_averages', 'oscillators', 'trend', 'volatility', 'volume']
     """
     return pd.DataFrame(
         [
@@ -111,7 +123,7 @@ def list_indicators() -> pd.DataFrame:
                 "inputs": ", ".join(spec.inputs),
                 "params": ", ".join(f"{key}={value!r}" for key, value in spec.params.items()),
                 "outputs": ", ".join(spec.outputs),
-                "lesson": spec.url,
+                "source": spec.url,
             }
             for spec in iter_specs()
         ]

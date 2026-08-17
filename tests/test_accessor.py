@@ -41,7 +41,7 @@ def test_accessor_reports_a_missing_column_usefully() -> None:
 
 def test_accessor_rejects_unknown_indicators(ohlcv: pd.DataFrame) -> None:
     with pytest.raises(AttributeError, match="unknown indicator"):
-        ohlcv.zta.parabolic_sar()
+        ohlcv.zta.triple_witching_hour()
 
 
 def test_accessor_is_discoverable(ohlcv: pd.DataFrame) -> None:

@@ -87,6 +87,7 @@ CATEGORY_TITLES = {
     "foundations": ("Foundations", "Temeller"),
     "moving_averages": ("Moving Averages", "Hareketli Ortalamalar"),
     "oscillators": ("Oscillators", "Osilatörler"),
+    "volume": ("Volume", "Hacim"),
     "volatility": ("Volatility", "Oynaklık"),
     "trend": ("Trend Systems", "Trend Sistemleri"),
     "advanced": ("Advanced Tools", "İleri Seviye Araçlar"),
@@ -212,11 +213,14 @@ def render_index(lang: str) -> str:
     other = "tr" if lang == "en" else "en"
     heading = "Indicator Reference" if lang == "en" else "İndikatör Referansı"
     intro = (
-        "Every indicator in `zeon-ta`, grouped by curriculum module. Formulas come from "
-        "[TA 101](https://ta.cognicode.org)."
+        "Every indicator in `zeon-ta`, grouped by module. Most formulas come from "
+        "[TA 101](https://ta.cognicode.org); a few common indicators outside that "
+        "curriculum are included too, each linking to its own external source."
         if lang == "en"
-        else "`zeon-ta` içindeki tüm indikatörler, müfredat modüllerine göre gruplanmıştır. "
-        "Formüller [TA 101](https://ta.cognicode.org) kaynağından alınmıştır."
+        else "`zeon-ta` içindeki tüm indikatörler, modüllere göre gruplanmıştır. Formüllerin "
+        "çoğu [TA 101](https://ta.cognicode.org) kaynağından alınmıştır; bu müfredatın "
+        "dışındaki birkaç yaygın indikatör de eklenmiştir, her biri kendi dış kaynağına "
+        "bağlantı verir."
     )
     header = "| Indicator | Summary |" if lang == "en" else "| İndikatör | Özet |"
     lines = [f"# {heading}", "", f"[{labels['other_lang']}](../{other}/index.md)", "", intro, ""]
@@ -245,8 +249,10 @@ Technical analysis indicators for Python that are actually maintained — no C
 extension to compile, no abandoned API. NumPy and pandas are the only
 dependencies.
 
-Formulas are implemented from the [TA 101](https://ta.cognicode.org) curriculum,
-and every function's docstring links back to the lesson it came from.
+Most formulas are implemented from the [TA 101](https://ta.cognicode.org)
+curriculum; a few common indicators outside that curriculum (OBV, CMF, MFI,
+ROC, Momentum, KAMA, Parabolic SAR) are included too. Every function's
+docstring links back to its specific source, TA 101 or otherwise.
 
 ## Why another TA library
 
@@ -333,8 +339,10 @@ MIT — see [LICENSE](LICENSE).
 Python için gerçekten bakımı yapılan teknik analiz indikatörleri — derlenecek C
 eklentisi yok, terk edilmiş API yok. Tek bağımlılık NumPy ve pandas.
 
-Formüller [TA 101](https://ta.cognicode.org) müfredatından uygulanmıştır ve her
-fonksiyonun docstring'i alındığı derse geri bağlantı verir.
+Formüllerin çoğu [TA 101](https://ta.cognicode.org) müfredatından
+uygulanmıştır; bu müfredatın dışındaki birkaç yaygın indikatör de eklenmiştir
+(OBV, CMF, MFI, ROC, Momentum, KAMA, Parabolic SAR). Her fonksiyonun docstring'i
+kendi kaynağına — TA 101 veya başka bir kaynağa — geri bağlantı verir.
 
 ## Neden bir TA kütüphanesi daha
 

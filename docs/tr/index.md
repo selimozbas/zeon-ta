@@ -2,7 +2,7 @@
 
 [English](../en/index.md)
 
-`zeon-ta` içindeki tüm indikatörler, müfredat modüllerine göre gruplanmıştır. Formüller [TA 101](https://ta.cognicode.org) kaynağından alınmıştır.
+`zeon-ta` içindeki tüm indikatörler, modüllere göre gruplanmıştır. Formüllerin çoğu [TA 101](https://ta.cognicode.org) kaynağından alınmıştır; bu müfredatın dışındaki birkaç yaygın indikatör de eklenmiştir, her biri kendi dış kaynağına bağlantı verir.
 
 ## Temeller
 
@@ -19,6 +19,7 @@
 | --- | --- |
 | [`ema`](indicators/ema.md) | Üssel Hareketli Ortalama (EMA) |
 | [`ema_ribbon`](indicators/ema_ribbon.md) | EMA Şeridi |
+| [`kama`](indicators/kama.md) | Kaufman Uyarlanabilir Hareketli Ortalama (KAMA) |
 | [`ma_cross`](indicators/ma_cross.md) | Hareketli Ortalama Kesişimleri |
 | [`sma`](indicators/sma.md) | Basit Hareketli Ortalama (SMA) |
 
@@ -28,8 +29,18 @@
 | --- | --- |
 | [`cci`](indicators/cci.md) | Emtia Kanal Endeksi (CCI) |
 | [`macd`](indicators/macd.md) | MACD (Hareketli Ortalama Yakınsama Iraksama) |
+| [`momentum`](indicators/momentum.md) | Momentum |
+| [`roc`](indicators/roc.md) | Değişim Oranı (ROC) |
 | [`rsi`](indicators/rsi.md) | Göreceli Güç Endeksi (RSI) |
 | [`stoch`](indicators/stoch.md) | Stokastik Osilatör |
+
+## Hacim
+
+| İndikatör | Özet |
+| --- | --- |
+| [`cmf`](indicators/cmf.md) | Chaikin Para Akışı (CMF) |
+| [`mfi`](indicators/mfi.md) | Para Akışı Endeksi (MFI) |
+| [`obv`](indicators/obv.md) | Denge Hacmi (OBV) |
 
 ## Oynaklık
 
@@ -48,6 +59,7 @@
 | [`adx`](indicators/adx.md) | ADX / DMI |
 | [`donchian`](indicators/donchian.md) | Donchian Kanalları |
 | [`ichimoku`](indicators/ichimoku.md) | Ichimoku |
+| [`parabolic_sar`](indicators/parabolic_sar.md) | Parabolik SAR |
 | [`supertrend`](indicators/supertrend.md) | SuperTrend |
 
 ## İleri Seviye Araçlar

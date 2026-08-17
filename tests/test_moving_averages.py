@@ -108,3 +108,61 @@ def test_non_integer_length_is_rejected() -> None:
 def test_index_is_carried_through(ohlcv: pd.DataFrame) -> None:
     result = zeonta.sma(ohlcv["close"], length=10)
     pd.testing.assert_index_equal(result.index, ohlcv.index)
+
+
+def test_kama_seeds_with_close_at_the_first_computable_bar() -> None:
+    values = [10.0, 12.0, 11.0, 15.0, 14.0, 20.0]
+    result = zeonta.kama(values, length=3, fast=2, slow=30)
+    assert np.isnan(result.iloc[:3]).all()
+    np.testing.assert_allclose(result.iloc[3], values[3])
+
+
+def test_kama_length_one_collapses_to_a_constant_alpha_recursion() -> None:
+    """With a 1-bar window the Efficiency Ratio is always exactly 1, which
+    pins the smoothing constant to (2/(fast+1))**2 for every bar — a
+    hand-computable case that exercises the adaptive formula end to end."""
+    values = [10.0, 12.0, 11.0, 15.0, 14.0, 20.0, 18.0, 25.0]
+    result = zeonta.kama(values, length=1, fast=2, slow=30)
+    alpha = (2.0 / 3.0) ** 2  # fast=2 -> fast_sc = 2/3, squared per the formula
+
+    expected = [np.nan, values[1]]
+    for value in values[2:]:
+        expected.append(expected[-1] + alpha * (value - expected[-1]))
+
+    np.testing.assert_allclose(result.to_numpy(), expected)
+
+
+def test_kama_tracks_a_clean_trend_faster_than_a_choppy_one() -> None:
+    """A high Efficiency Ratio should make KAMA move faster toward price."""
+    trending = list(np.linspace(0, 50, 40))
+    choppy = list(np.tile([25.0, 24.0], 20))
+
+    trend_speed = abs(zeonta.kama(trending, length=10).diff().iloc[-1])
+    chop_speed = abs(zeonta.kama(choppy, length=10).diff().iloc[-1])
+    assert trend_speed > chop_speed
+
+
+def test_kama_settles_into_a_fixed_steady_state_lag_on_a_straight_ramp() -> None:
+    """ER = 1 the whole way pins SC at fast_sc**2 = (2/3)**2 = 4/9 every bar.
+
+    A constant-alpha recursion tracking a straight ramp of slope m settles
+    into a fixed lag of ``(1 - alpha) / alpha * m`` behind price — it never
+    fully catches up, no matter how many bars follow. With alpha=4/9 and a
+    unit slope that lag is exactly 1.25, which is what distinguishes this
+    from a naive "eventually equals close" expectation.
+    """
+    values = list(np.arange(1.0, 200.0))
+    result = zeonta.kama(values, length=10, fast=2, slow=30)
+    alpha = (2.0 / 3.0) ** 2
+    expected_lag = (1 - alpha) / alpha
+    np.testing.assert_allclose(values[-1] - result.iloc[-1], expected_lag, atol=1e-6)
+
+
+def test_kama_rejects_fast_not_smaller_than_slow() -> None:
+    with pytest.raises(ValueError, match="'fast' must be smaller than 'slow'"):
+        zeonta.kama(list(range(20)), length=5, fast=30, slow=30)
+
+
+def test_kama_on_a_flat_series_has_zero_efficiency_and_matches_the_flat_price() -> None:
+    result = zeonta.kama([7.0] * 20, length=5)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 7.0)

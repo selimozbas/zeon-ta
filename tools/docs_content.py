@@ -1273,4 +1273,369 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.divergence(df["high"], df["low"], df["close"], left=5, right=5).sum(),
         ],
     },
+    "momentum": {
+        "title_en": "Momentum",
+        "title_tr": "Momentum",
+        "formula_en": "Momentum = Close - Close (n periods ago)",
+        "formula_tr": "Momentum = Kapanış - Kapanış (n periyot önce)",
+        "about_en": (
+            "The plainest possible momentum reading: how much has price moved, in its own units, "
+            "over the last n bars? No smoothing, no normalisation — just today's close minus the "
+            "close from n bars back."
+        ),
+        "about_tr": (
+            "Mümkün olan en yalın momentum okuması: fiyat son n barda kendi biriminde ne kadar "
+            "hareket etti? Yumuşatma yok, normalizasyon yok — sadece bugünün kapanışı eksi n bar "
+            "önceki kapanış."
+        ),
+        "reading_en": (
+            "Above zero means price is higher than it was n bars ago (rising momentum); below zero "
+            "means it is lower. The line's own slope — is momentum itself accelerating or fading — "
+            "is usually more informative than the zero crossing alone."
+        ),
+        "reading_tr": (
+            "Sıfırın üstü, fiyatın n bar önceye göre daha yüksek olduğunu (yükselen momentum) "
+            "gösterir; sıfırın altı ise daha düşük olduğunu. Çizginin kendi eğimi — momentumun "
+            "hızlanıp hızlanmadığı ya da zayıflayıp zayıflamadığı — genelde tek başına sıfır "
+            "kesişiminden daha bilgilendiricidir."
+        ),
+        "pitfalls_en": (
+            "Being expressed in raw price units means a Momentum reading of 2 means nothing without "
+            "knowing the instrument's price level — never compare it across symbols. Use "
+            "[roc](roc.md) instead when you need a percentage that is comparable across symbols or "
+            "over a long history where the price level itself has changed a lot."
+        ),
+        "pitfalls_tr": (
+            "Ham fiyat biriminde ifade edilmesi, enstrümanın fiyat seviyesini bilmeden 2'lik bir "
+            "Momentum okumasının hiçbir anlam taşımadığı demektir — semboller arasında asla "
+            "karşılaştırmayın. Semboller arasında ya da fiyat seviyesinin kendisinin çok değiştiği "
+            "uzun bir geçmişte karşılaştırılabilir bir yüzde gerektiğinde [roc](roc.md) kullanın."
+        ),
+        "example": [
+            lambda df: zeonta.momentum(df["close"], length=10).tail(3),
+        ],
+    },
+    "roc": {
+        "title_en": "Rate of Change (ROC)",
+        "title_tr": "Değişim Oranı (ROC)",
+        "formula_en": "ROC = [(Close - Close n periods ago) / (Close n periods ago)] x 100",
+        "formula_tr": "ROC = [(Kapanış - n periyot önceki Kapanış) / n periyot önceki Kapanış] x 100",
+        "about_en": (
+            "The normalised sibling of [momentum](momentum.md): the same n-bars-back comparison, "
+            "expressed as a percentage instead of a raw price difference. That one change makes it "
+            "comparable across symbols and across price levels of the same symbol over time."
+        ),
+        "about_tr": (
+            "[momentum](momentum.md)'un normalize edilmiş kardeşi: aynı n-bar-önce karşılaştırması, "
+            "ham fiyat farkı yerine yüzde olarak ifade edilir. Bu tek değişiklik, onu semboller "
+            "arasında ve aynı sembolün zaman içindeki farklı fiyat seviyeleri arasında "
+            "karşılaştırılabilir kılar."
+        ),
+        "reading_en": (
+            'ROC oscillates around zero the same way Momentum does, but a reading of "+5" always '
+            "means the same thing — a 5% rise over the window — whether the symbol trades at $10 or "
+            "$10,000. Sharp spikes away from zero mark unusually fast moves relative to the "
+            "instrument's own recent pace."
+        ),
+        "reading_tr": (
+            'ROC, tıpkı Momentum gibi sıfır etrafında salınır; ancak "+5" okuması her zaman aynı '
+            "şeyi ifade eder — pencere boyunca %5'lik bir yükseliş — sembol 10 dolardan da işlem "
+            "görse 10.000 dolardan da. Sıfırdan sert sapmalar, enstrümanın kendi son dönem hızına "
+            "göre olağandışı hızlı hareketleri işaret eder."
+        ),
+        "pitfalls_en": (
+            "ROC divides by the price n bars ago, so it is undefined (returned as `NaN`) on any bar "
+            "whose reference close happened to be exactly zero — a real possibility on instruments "
+            "quoted as a spread or a rate rather than a price. It also inherits Momentum's whipsaw "
+            "behaviour in a range: a fast oscillation with no persistent trend behind it."
+        ),
+        "pitfalls_tr": (
+            "ROC, n bar önceki fiyata böler; bu yüzden referans kapanışın tam olarak sıfır olduğu "
+            "herhangi bir barda tanımsızdır (`NaN` döner) — fiyat yerine bir spread ya da oran "
+            "olarak kote edilen enstrümanlarda gerçek bir olasılıktır. Ayrıca Momentum'un yatay "
+            "banttaki testere davranışını da devralır: arkasında kalıcı bir trend olmayan hızlı bir "
+            "salınım."
+        ),
+        "example": [
+            lambda df: zeonta.roc(df["close"], length=12).tail(3),
+        ],
+    },
+    "kama": {
+        "title_en": "Kaufman's Adaptive Moving Average (KAMA)",
+        "title_tr": "Kaufman Uyarlanabilir Hareketli Ortalama (KAMA)",
+        "formula_en": (
+            "Efficiency Ratio ER = |Close - Close (n periods ago)| / Sum(|Close - Prior Close|, n); "
+            "Smoothing Constant SC = [ER x (fastest SC - slowest SC) + slowest SC]^2, where fastest "
+            "SC = 2/(fast+1) and slowest SC = 2/(slow+1); KAMA = Prior KAMA + SC x (Close - Prior KAMA)"
+        ),
+        "formula_tr": (
+            "Verimlilik Oranı ER = |Kapanış - n periyot önceki Kapanış| / Toplam(|Kapanış - Önceki "
+            "Kapanış|, n); Yumuşatma Sabiti SC = [ER x (en hızlı SC - en yavaş SC) + en yavaş SC]^2, "
+            "burada en hızlı SC = 2/(hızlı+1) ve en yavaş SC = 2/(yavaş+1); KAMA = Önceki KAMA + SC "
+            "x (Kapanış - Önceki KAMA)"
+        ),
+        "about_en": (
+            "Every fixed-length moving average is a compromise: short enough to catch real moves, "
+            "long enough to ignore noise, and wrong for whichever regime it wasn't tuned for. KAMA "
+            "sidesteps the trade-off by measuring, bar by bar, how efficiently price is trending "
+            "(the Efficiency Ratio) and using that to slide its own speed between a fast and a slow "
+            "EMA automatically."
+        ),
+        "about_tr": (
+            "Sabit uzunluklu her hareketli ortalama bir uzlaşmadır: gerçek hareketleri yakalayacak "
+            "kadar kısa, gürültüyü göz ardı edecek kadar uzun ve ayarlanmadığı rejim için yanlış. "
+            "KAMA bu ödünleşmeyi, fiyatın ne kadar verimli trend yaptığını (Verimlilik Oranı) bar "
+            "bar ölçüp kendi hızını hızlı ile yavaş bir EMA arasında otomatik olarak kaydırarak aşar."
+        ),
+        "reading_en": (
+            "Read it exactly like any other moving average — trend direction, support/resistance, "
+            "crossovers — but trust it more through a regime change: it tightens onto price by "
+            "itself when a clean trend starts and flattens out by itself when the market goes "
+            "choppy, without you re-tuning a length."
+        ),
+        "reading_tr": (
+            "Tam olarak diğer hareketli ortalamalar gibi okuyun — trend yönü, destek/direnç, "
+            "kesişimler — ama bir rejim değişimi sırasında ona daha çok güvenin: temiz bir trend "
+            "başladığında kendiliğinden fiyata yapışır, piyasa dalgalandığında ise siz bir uzunluk "
+            "yeniden ayarlamadan kendiliğinden düzleşir."
+        ),
+        "pitfalls_en": (
+            "KAMA is still reactive, not predictive — it adapts to a regime change after price has "
+            "already started moving differently, the same lag every moving average has, just with a "
+            "self-adjusting length. The Efficiency Ratio itself is noisy on short windows, so very "
+            "small `length` values can make KAMA's speed jump around almost as much as price does."
+        ),
+        "pitfalls_tr": (
+            "KAMA yine de tepkiseldir, öngörücü değil — bir rejim değişimine, fiyat zaten farklı "
+            "hareket etmeye başladıktan sonra uyum sağlar; bu, her hareketli ortalamanın taşıdığı "
+            "aynı gecikmedir, sadece kendini ayarlayan bir uzunlukla. Verimlilik Oranı'nın kendisi "
+            "kısa pencerelerde gürültülüdür, bu yüzden çok küçük `length` değerleri KAMA'nın hızının "
+            "neredeyse fiyat kadar sıçramasına yol açabilir."
+        ),
+        "example": [
+            lambda df: zeonta.kama(df["close"], length=10, fast=2, slow=30).tail(3),
+        ],
+    },
+    "parabolic_sar": {
+        "title_en": "Parabolic SAR",
+        "title_tr": "Parabolik SAR",
+        "formula_en": (
+            "Rising: Current SAR = Prior SAR + Prior AF x (Prior EP - Prior SAR); Falling: Current "
+            "SAR = Prior SAR - Prior AF x (Prior SAR - Prior EP); AF starts at 0.02, increases by "
+            "0.02 with each new extreme point, capped at 0.20; SAR cannot move above the prior two "
+            "periods' lows in an uptrend, nor below the prior two periods' highs in a downtrend"
+        ),
+        "formula_tr": (
+            "Yükselirken: Mevcut SAR = Önceki SAR + Önceki AF x (Önceki EP - Önceki SAR); Düşerken: "
+            "Mevcut SAR = Önceki SAR - Önceki AF x (Önceki SAR - Önceki EP); AF 0,02'den başlar, her "
+            "yeni uç noktada 0,02 artar, 0,20'de tavanlanır; SAR yükseliş trendinde önceki iki "
+            "periyodun diplerinin üzerine çıkamaz, düşüş trendinde önceki iki periyodun tepelerinin "
+            "altına inemez"
+        ),
+        "about_en": (
+            "A series of dots that sit under price in an uptrend and above it in a downtrend, one "
+            'step closer to price every bar. "Parabolic" describes the shape of that approach: the '
+            "acceleration factor grows every time a new high (or low) prints, so the dots curve in "
+            "toward price faster and faster the longer a trend runs."
+        ),
+        "about_tr": (
+            "Yükseliş trendinde fiyatın altında, düşüş trendinde üstünde duran, her barda fiyata bir "
+            'adım daha yaklaşan bir dizi nokta. "Parabolik" adı bu yaklaşmanın şeklini tarif eder: '
+            "hızlanma faktörü her yeni tepe (ya da dip) oluştuğunda büyür, bu yüzden noktalar trend "
+            "ne kadar uzun sürerse fiyata o kadar hızlanarak yaklaşır."
+        ),
+        "reading_en": (
+            "Most traders use it exactly as its name suggests: a stop that trails price and flips "
+            'sides ("stop and reverse") the moment price crosses it. `PSARd` gives the regime '
+            "directly (`1.0` long-biased, `-1.0` short-biased); `PSARl`/`PSARs` are the dots "
+            "pre-split for two-colour plotting, matching [supertrend](supertrend.md)'s convention."
+        ),
+        "reading_tr": (
+            "Çoğu yatırımcı onu tam olarak adının önerdiği gibi kullanır: fiyatı takip eden ve "
+            'fiyat onu geçtiği anda taraf değiştiren ("dur ve ters dön") bir stop. `PSARd` rejimi '
+            "doğrudan verir (`1.0` uzun yönlü, `-1.0` kısa yönlü); `PSARl`/`PSARs`, iki renkli "
+            "çizim için önceden ayrılmış noktalardır ve [supertrend](supertrend.md)'in kuralıyla "
+            "aynıdır."
+        ),
+        "pitfalls_en": (
+            "The accelerating AF is a double-edged sword: it rides a strong trend tightly, but it "
+            "also means SAR gives back less and less room the longer a trend runs, so a normal "
+            "pullback late in a trend can trigger a reversal that a wider stop would have survived. "
+            "Like [supertrend](supertrend.md), it whipsaws repeatedly in a range and carries no "
+            "opinion about trend strength — pair it with a filter such as [adx](adx.md)."
+        ),
+        "pitfalls_tr": (
+            "Hızlanan AF iki tarafı da keskin bir bıçaktır: güçlü bir trende sıkı sıkıya tutunur, "
+            "ama bu aynı zamanda trend ne kadar uzun sürerse SAR'ın o kadar az alan bırakması "
+            "demektir; bu yüzden trendin geç bir aşamasındaki normal bir geri çekilme, daha geniş "
+            "bir stopun atlatacağı bir dönüşü tetikleyebilir. [supertrend](supertrend.md) gibi, "
+            "yatay bantta tekrar tekrar testere yapar ve trend gücü hakkında bir görüşü yoktur — "
+            "[adx](adx.md) gibi bir filtreyle birlikte kullanın."
+        ),
+        "example": [
+            lambda df: zeonta.parabolic_sar(df["high"], df["low"]).tail(3),
+        ],
+    },
+    "obv": {
+        "title_en": "On-Balance Volume (OBV)",
+        "title_tr": "Denge Hacmi (OBV)",
+        "formula_en": (
+            "If Close > Prior Close: OBV = Prior OBV + Volume; if Close < Prior Close: OBV = Prior "
+            "OBV - Volume; if Close = Prior Close: OBV = Prior OBV (unchanged)"
+        ),
+        "formula_tr": (
+            "Kapanış > Önceki Kapanış ise: OBV = Önceki OBV + Hacim; Kapanış < Önceki Kapanış ise: "
+            "OBV = Önceki OBV - Hacim; Kapanış = Önceki Kapanış ise: OBV = Önceki OBV (değişmez)"
+        ),
+        "about_en": (
+            "The oldest and simplest way to combine volume with direction: add the bar's volume when "
+            "price closed up, subtract it when price closed down, and run a cumulative total. The "
+            "idea behind it — volume leads price — is what [divergence](divergence.md) between OBV "
+            "and price is built to catch."
+        ),
+        "about_tr": (
+            "Hacmi yönle birleştirmenin en eski ve en basit yolu: fiyat yukarı kapandığında barın "
+            "hacmini ekle, aşağı kapandığında çıkar ve kümülatif bir toplam tut. Arkasındaki fikir — "
+            "hacim fiyatı öncüler — OBV ile fiyat arasındaki [divergence](divergence.md)'in yakalamak "
+            "üzere kurulduğu şeydir."
+        ),
+        "reading_en": (
+            "The absolute level means nothing (it depends entirely on where the running total "
+            "happened to start); what matters is its slope and whether that slope agrees with "
+            "price's. OBV rising while price is flat or falling is read as accumulation building "
+            "under the surface — the classic bullish divergence."
+        ),
+        "reading_tr": (
+            "Mutlak seviyenin hiçbir anlamı yoktur (tamamen kümülatif toplamın nereden başladığına "
+            "bağlıdır); önemli olan eğimi ve bu eğimin fiyatın eğimiyle uyuşup uyuşmadığıdır. Fiyat "
+            "yatay ya da düşerken OBV'nin yükselmesi, yüzeyin altında birikim oluştuğu şeklinde "
+            "okunur — klasik boğa uyumsuzluğu."
+        ),
+        "pitfalls_en": (
+            "OBV treats every bar's entire volume as either fully bullish or fully bearish based on "
+            "the close alone, ignoring how the bar actually traded intrabar — a bar that opened low, "
+            "spiked high, and drifted back down to close marginally up still counts as 100% buying "
+            "volume. [cmf](cmf.md) uses the bar's full range instead and is less crude on this point."
+        ),
+        "pitfalls_tr": (
+            "OBV, barın gerçekte gün içinde nasıl işlem gördüğünü göz ardı ederek her barın tüm "
+            "hacmini yalnızca kapanışa bakarak ya tamamen boğa ya da tamamen ayı sayar — düşükten "
+            "açılıp yükseğe fırlayan ve marjinal bir yükselişle kapanan bir bar bile %100 alım hacmi "
+            "sayılır. [cmf](cmf.md) bunun yerine barın tüm aralığını kullanır ve bu noktada daha az "
+            "kabadır."
+        ),
+        "example": [
+            lambda df: zeonta.obv(df["close"], df["volume"]).tail(3),
+        ],
+    },
+    "cmf": {
+        "title_en": "Chaikin Money Flow (CMF)",
+        "title_tr": "Chaikin Para Akışı (CMF)",
+        "formula_en": (
+            "Money Flow Multiplier = ((Close - Low) - (High - Close)) / (High - Low); Money Flow "
+            "Volume = Money Flow Multiplier x Volume; CMF = Sum(Money Flow Volume, n) / Sum(Volume, n)"
+        ),
+        "formula_tr": (
+            "Para Akışı Çarpanı = ((Kapanış - Düşük) - (Yüksek - Kapanış)) / (Yüksek - Düşük); Para "
+            "Akışı Hacmi = Para Akışı Çarpanı x Hacim; CMF = Toplam(Para Akışı Hacmi, n) / "
+            "Toplam(Hacim, n)"
+        ),
+        "about_en": (
+            "[obv](obv.md)'s more careful cousin: instead of asking only whether the close was up or "
+            "down, CMF asks *where inside the bar's full range* the close landed, and weights that "
+            "position by volume. A close pinned to the high of the range scores close to +1; a close "
+            "pinned to the low scores close to -1."
+        ),
+        "about_tr": (
+            "[obv](obv.md)'nin daha özenli kuzeni: yalnızca kapanışın yukarı mı aşağı mı olduğunu "
+            "sormak yerine, CMF kapanışın *barın tüm aralığının neresine* düştüğünü sorar ve bu "
+            "konumu hacimle ağırlıklandırır. Aralığın tepesine yapışan bir kapanış +1'e yakın puan "
+            "alır; dibine yapışan bir kapanış -1'e yakın puan alır."
+        ),
+        "reading_en": (
+            "Sustained readings above zero over the window mean volume has concentrated on bars that "
+            "closed strong — buying pressure. Traders often use the zero line itself as a trend "
+            'filter ("only take longs while CMF is positive") rather than trading specific levels.'
+        ),
+        "reading_tr": (
+            "Pencere boyunca sürekli sıfırın üstünde kalan okumalar, hacmin güçlü kapanan barlarda "
+            "yoğunlaştığı — alım baskısı — anlamına gelir. Yatırımcılar genelde belirli seviyelerde "
+            "işlem yapmak yerine sıfır çizgisinin kendisini bir trend filtresi olarak kullanır "
+            '("yalnızca CMF pozitifken uzun pozisyon al" gibi).'
+        ),
+        "pitfalls_en": (
+            "A bar with a very narrow high-low range makes the Money Flow Multiplier's denominator "
+            "tiny, so ordinary volume on a quiet bar can swing CMF sharply even though nothing much "
+            "happened — this implementation defines that degenerate case as `0` rather than letting "
+            "it blow up, but a run of narrow-range bars can still make CMF noisier than the price "
+            "action underneath it would suggest."
+        ),
+        "pitfalls_tr": (
+            "Çok dar bir yüksek-düşük aralığına sahip bir bar, Para Akışı Çarpanı'nın paydasını "
+            "küçültür; bu yüzden sakin bir bardaki sıradan hacim, aslında pek bir şey olmamasına "
+            "rağmen CMF'yi sert sallayabilir — bu uygulama, patlamasına izin vermek yerine bu "
+            "dejenere durumu `0` olarak tanımlar, ama art arda gelen dar aralıklı barlar CMF'yi "
+            "altındaki fiyat hareketinin önerdiğinden daha gürültülü hâle getirebilir."
+        ),
+        "example": [
+            lambda df: zeonta.cmf(df["high"], df["low"], df["close"], df["volume"], length=20).tail(
+                3
+            ),
+        ],
+    },
+    "mfi": {
+        "title_en": "Money Flow Index (MFI)",
+        "title_tr": "Para Akışı Endeksi (MFI)",
+        "formula_en": (
+            "Typical Price = (High + Low + Close) / 3; Raw Money Flow = Typical Price x Volume; "
+            "Money Flow Ratio = Sum(Positive Money Flow, n) / Sum(Negative Money Flow, n); MFI = "
+            "100 - 100 / (1 + Money Flow Ratio)"
+        ),
+        "formula_tr": (
+            "Tipik Fiyat = (Yüksek + Düşük + Kapanış) / 3; Ham Para Akışı = Tipik Fiyat x Hacim; "
+            "Para Akışı Oranı = Toplam(Pozitif Para Akışı, n) / Toplam(Negatif Para Akışı, n); MFI = "
+            "100 - 100 / (1 + Para Akışı Oranı)"
+        ),
+        "about_en": (
+            "Take [rsi](rsi.md)'s exact machinery — gains and losses summed over a window, squeezed "
+            'onto a 0-100 scale — and replace "price change" with "typical price times volume". '
+            "The result answers a question RSI cannot: was this move backed by real participation, "
+            "or did it happen on thin volume?"
+        ),
+        "about_tr": (
+            "[rsi](rsi.md)'nin tam mekanizmasını alın — bir pencere boyunca toplanan kazanç ve "
+            'kayıplar, 0-100 ölçeğine sıkıştırılır — ve "fiyat değişimi"ni "tipik fiyat çarpı '
+            "hacim\" ile değiştirin. Sonuç, RSI'nin cevaplayamayacağı bir soruyu cevaplar: bu hareket "
+            "gerçek bir katılımla mı destekleniyordu, yoksa ince bir hacimde mi gerçekleşti?"
+        ),
+        "reading_en": (
+            'Read the 0-100 scale exactly like RSI — above 80 conventionally "overbought", below '
+            '20 "oversold" — but treat an MFI reading that disagrees with RSI as the more '
+            "informative signal: it means the volume behind the move doesn't match its price action."
+        ),
+        "reading_tr": (
+            '0-100 ölçeğini tam olarak RSI gibi okuyun — geleneksel olarak 80\'in üstü "aşırı alım", '
+            '20\'nin altı "aşırı satım" — ama RSI ile uyuşmayan bir MFI okumasını daha '
+            "bilgilendirici sinyal olarak değerlendirin: bu, hareketin arkasındaki hacmin fiyat "
+            "hareketiyle uyuşmadığı anlamına gelir."
+        ),
+        "pitfalls_en": (
+            "Unlike RSI's Wilder-smoothed averages, MFI sums positive and negative flow with a plain "
+            "(unsmoothed) rolling window, so it can be noisier bar to bar than RSI at the same "
+            'length. It also inherits RSI\'s core caution: "overbought" is a description of '
+            "momentum, not an instruction to sell — a strong trend can hold MFI above 80 for weeks."
+        ),
+        "pitfalls_tr": (
+            "RSI'nin Wilder-yumuşatılmış ortalamalarının aksine, MFI pozitif ve negatif akışı sade "
+            "(yumuşatılmamış) bir kayan pencereyle toplar; bu yüzden aynı uzunlukta RSI'den bar bara "
+            'daha gürültülü olabilir. Ayrıca RSI\'nin temel uyarısını da devralır: "aşırı alım" bir '
+            "satış talimatı değil, momentumun bir tarifidir — güçlü bir trend MFI'yi haftalarca "
+            "80'in üstünde tutabilir."
+        ),
+        "example": [
+            lambda df: zeonta.mfi(df["high"], df["low"], df["close"], df["volume"], length=14).tail(
+                3
+            ),
+        ],
+    },
 }

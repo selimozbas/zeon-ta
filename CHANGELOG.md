@@ -6,6 +6,37 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-17
+
+### Added
+
+Seven indicators outside the TA 101 curriculum, each documenting its own
+external source rather than a TA 101 lesson (`IndicatorSpec.reference`, a new
+field alongside `lesson` — exactly one is set per indicator):
+
+- **New `volume` category** — `obv` (On-Balance Volume), `cmf` (Chaikin Money
+  Flow), `mfi` (Money Flow Index). These combine volume with price direction
+  or position, distinct from `relative_volume` (volume size alone) and `vwap`
+  (volume-weighted price).
+- **Oscillators** — `momentum` (raw n-bar price difference) and `roc` (the
+  same comparison expressed as a percentage).
+- **Moving averages** — `kama` (Kaufman's Adaptive Moving Average), which
+  blends a fast and slow EMA constant by an Efficiency Ratio measured each bar,
+  so it tracks tightly through a clean trend and flattens on its own in a
+  choppy one.
+- **Trend systems** — `parabolic_sar`, a trailing stop-and-reverse system
+  whose acceleration factor grows with every new extreme point, following the
+  same one-pass recursive-state pattern as `supertrend` and `adx`.
+
+Registered indicators: 25 -> 32. `list_indicators()`'s `lesson` column is
+renamed `source` to reflect that it now links to either kind of reference.
+
+### Changed
+
+- `IndicatorSpec` and the `@indicator` decorator: `lesson` is now optional and
+  `reference` (a full external URL) was added; registration requires exactly
+  one of the two, enforced by `IndicatorSpec.__post_init__`.
+
 ## [0.1.1] - 2026-08-17
 
 ### Fixed
@@ -72,6 +103,7 @@ modules — as 25 registered indicator functions.
   `kc_multiplier` makes squeezes *more* frequent. The TA 101 quiz for that
   lesson asserts the opposite; the formula wins.
 
-[Unreleased]: https://github.com/selimozbas/zeon-ta/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/selimozbas/zeon-ta/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/selimozbas/zeon-ta/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/selimozbas/zeon-ta/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/selimozbas/zeon-ta/releases/tag/v0.1.0

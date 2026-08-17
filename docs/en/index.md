@@ -2,7 +2,7 @@
 
 [Türkçe](../tr/index.md)
 
-Every indicator in `zeon-ta`, grouped by curriculum module. Formulas come from [TA 101](https://ta.cognicode.org).
+Every indicator in `zeon-ta`, grouped by module. Most formulas come from [TA 101](https://ta.cognicode.org); a few common indicators outside that curriculum are included too, each linking to its own external source.
 
 ## Foundations
 
@@ -19,6 +19,7 @@ Every indicator in `zeon-ta`, grouped by curriculum module. Formulas come from [
 | --- | --- |
 | [`ema`](indicators/ema.md) | Exponential Moving Average (EMA) |
 | [`ema_ribbon`](indicators/ema_ribbon.md) | EMA Ribbon |
+| [`kama`](indicators/kama.md) | Kaufman's Adaptive Moving Average (KAMA) |
 | [`ma_cross`](indicators/ma_cross.md) | Moving Average Crossovers |
 | [`sma`](indicators/sma.md) | Simple Moving Average (SMA) |
 
@@ -28,8 +29,18 @@ Every indicator in `zeon-ta`, grouped by curriculum module. Formulas come from [
 | --- | --- |
 | [`cci`](indicators/cci.md) | Commodity Channel Index (CCI) |
 | [`macd`](indicators/macd.md) | MACD (Moving Average Convergence Divergence) |
+| [`momentum`](indicators/momentum.md) | Momentum |
+| [`roc`](indicators/roc.md) | Rate of Change (ROC) |
 | [`rsi`](indicators/rsi.md) | Relative Strength Index (RSI) |
 | [`stoch`](indicators/stoch.md) | Stochastic Oscillator |
+
+## Volume
+
+| Indicator | Summary |
+| --- | --- |
+| [`cmf`](indicators/cmf.md) | Chaikin Money Flow (CMF) |
+| [`mfi`](indicators/mfi.md) | Money Flow Index (MFI) |
+| [`obv`](indicators/obv.md) | On-Balance Volume (OBV) |
 
 ## Volatility
 
@@ -48,6 +59,7 @@ Every indicator in `zeon-ta`, grouped by curriculum module. Formulas come from [
 | [`adx`](indicators/adx.md) | ADX / DMI |
 | [`donchian`](indicators/donchian.md) | Donchian Channels |
 | [`ichimoku`](indicators/ichimoku.md) | Ichimoku |
+| [`parabolic_sar`](indicators/parabolic_sar.md) | Parabolic SAR |
 | [`supertrend`](indicators/supertrend.md) | SuperTrend |
 
 ## Advanced Tools

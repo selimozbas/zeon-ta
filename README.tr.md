@@ -9,8 +9,10 @@
 Python için gerçekten bakımı yapılan teknik analiz indikatörleri — derlenecek C
 eklentisi yok, terk edilmiş API yok. Tek bağımlılık NumPy ve pandas.
 
-Formüller [TA 101](https://ta.cognicode.org) müfredatından uygulanmıştır ve her
-fonksiyonun docstring'i alındığı derse geri bağlantı verir.
+Formüllerin çoğu [TA 101](https://ta.cognicode.org) müfredatından
+uygulanmıştır; bu müfredatın dışındaki birkaç yaygın indikatör de eklenmiştir
+(OBV, CMF, MFI, ROC, Momentum, KAMA, Parabolic SAR). Her fonksiyonun docstring'i
+kendi kaynağına — TA 101 veya başka bir kaynağa — geri bağlantı verir.
 
 ## Neden bir TA kütüphanesi daha
 
@@ -83,6 +85,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | --- | --- | --- |
 | `ema` | Üssel Hareketli Ortalama (EMA) | [doküman](docs/tr/indicators/ema.md) |
 | `ema_ribbon` | EMA Şeridi | [doküman](docs/tr/indicators/ema_ribbon.md) |
+| `kama` | Kaufman Uyarlanabilir Hareketli Ortalama (KAMA) | [doküman](docs/tr/indicators/kama.md) |
 | `ma_cross` | Hareketli Ortalama Kesişimleri | [doküman](docs/tr/indicators/ma_cross.md) |
 | `sma` | Basit Hareketli Ortalama (SMA) | [doküman](docs/tr/indicators/sma.md) |
 
@@ -92,8 +95,18 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | --- | --- | --- |
 | `cci` | Emtia Kanal Endeksi (CCI) | [doküman](docs/tr/indicators/cci.md) |
 | `macd` | MACD (Hareketli Ortalama Yakınsama Iraksama) | [doküman](docs/tr/indicators/macd.md) |
+| `momentum` | Momentum | [doküman](docs/tr/indicators/momentum.md) |
+| `roc` | Değişim Oranı (ROC) | [doküman](docs/tr/indicators/roc.md) |
 | `rsi` | Göreceli Güç Endeksi (RSI) | [doküman](docs/tr/indicators/rsi.md) |
 | `stoch` | Stokastik Osilatör | [doküman](docs/tr/indicators/stoch.md) |
+
+### Hacim
+
+| İndikatör | Ne yapar | Doküman |
+| --- | --- | --- |
+| `cmf` | Chaikin Para Akışı (CMF) | [doküman](docs/tr/indicators/cmf.md) |
+| `mfi` | Para Akışı Endeksi (MFI) | [doküman](docs/tr/indicators/mfi.md) |
+| `obv` | Denge Hacmi (OBV) | [doküman](docs/tr/indicators/obv.md) |
 
 ### Oynaklık
 
@@ -112,6 +125,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `adx` | ADX / DMI | [doküman](docs/tr/indicators/adx.md) |
 | `donchian` | Donchian Kanalları | [doküman](docs/tr/indicators/donchian.md) |
 | `ichimoku` | Ichimoku | [doküman](docs/tr/indicators/ichimoku.md) |
+| `parabolic_sar` | Parabolik SAR | [doküman](docs/tr/indicators/parabolic_sar.md) |
 | `supertrend` | SuperTrend | [doküman](docs/tr/indicators/supertrend.md) |
 
 ### İleri Seviye Araçlar

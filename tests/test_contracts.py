@@ -16,7 +16,13 @@ from zeonta._core import IndicatorSpec, iter_specs
 
 
 def test_registry_covers_every_curriculum_lesson() -> None:
-    lessons = {spec.lesson for spec in iter_specs()}
+    """The 24 TA 101 lessons must all be implemented — no more, no fewer.
+
+    Indicators outside that curriculum (OBV, CMF, MFI, ROC, Momentum, KAMA,
+    Parabolic SAR) carry ``reference`` instead of ``lesson`` and are excluded
+    from this set on purpose; see ``test_non_curriculum_indicators_have_a_reference``.
+    """
+    lessons = {spec.lesson for spec in iter_specs() if spec.lesson is not None}
     assert lessons == {
         "candlesticks",
         "support-resistance",
@@ -43,6 +49,17 @@ def test_registry_covers_every_curriculum_lesson() -> None:
         "pivot-points",
         "divergences",
     }
+
+
+def test_non_curriculum_indicators_have_a_reference() -> None:
+    expected = {"obv", "cmf", "mfi", "roc", "momentum", "kama", "parabolic_sar"}
+    with_reference = {spec.name for spec in iter_specs() if spec.lesson is None}
+    assert with_reference == expected
+    for spec in iter_specs():
+        if spec.lesson is None:
+            assert spec.reference is not None
+            assert spec.reference.startswith("https://")
+            assert spec.url == spec.reference
 
 
 def test_length_is_preserved(spec: IndicatorSpec, ohlcv: pd.DataFrame) -> None:
@@ -125,7 +142,10 @@ def test_list_indicators_matches_registry() -> None:
     table = zeonta.list_indicators()
     assert list(table["name"]) == [spec.name for spec in iter_specs()]
     assert not table["summary"].str.strip().eq("").any()
-    assert table["lesson"].str.startswith("https://ta.cognicode.org/learn/").all()
+    assert table["source"].str.startswith("https://").all()
+    for spec in iter_specs():
+        row = table.loc[table["name"] == spec.name, "source"].iloc[0]
+        assert row == spec.url, spec.name
 
 
 def test_public_api_is_exported() -> None:

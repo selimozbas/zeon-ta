@@ -1,4 +1,4 @@
-"""Advanced tools: VWAP, Fibonacci retracement, pivot points, divergences, Hurst exponent."""
+"""Advanced tools: VWAP, Fibonacci, pivot points, divergences, Hurst exponent, OU half-life."""
 
 from __future__ import annotations
 
@@ -26,7 +26,14 @@ from ._core import (
 from .foundations import _pivot_flags
 from .oscillators import rsi
 
-__all__ = ["divergence", "fib_retracement", "hurst_exponent", "pivot_points", "vwap"]
+__all__ = [
+    "divergence",
+    "fib_retracement",
+    "hurst_exponent",
+    "ou_half_life",
+    "pivot_points",
+    "vwap",
+]
 
 #: Retracement ratios. 0.5 is not a Fibonacci number but is included by convention.
 FIB_RATIOS: tuple[float, ...] = (0.236, 0.382, 0.5, 0.618, 0.786)
@@ -572,3 +579,207 @@ def hurst_exponent(close: ArrayLike, window: int = 100) -> pd.Series:
             result[i - 1] = slope
 
     return wrap_series(result, common_index(close), f"HURST_{window}")
+
+
+@indicator(
+    category="advanced",
+    summary="Ornstein-Uhlenbeck half-life: bars until a mean-reverting series closes half its gap.",
+    reference="https://en.wikipedia.org/wiki/Ornstein%E2%80%93Uhlenbeck_process",
+    outputs=("OUHL",),
+)
+def ou_half_life(close: ArrayLike, window: int = 100) -> pd.Series:
+    """Ornstein-Uhlenbeck Half-Life of Mean Reversion.
+
+    Fits the discretised Ornstein-Uhlenbeck process to a rolling *window*
+    of price by ordinary least squares: regress each bar's change,
+    ``Close[t] - Close[t-1]``, against the *prior* close, ``Close[t-1]``::
+
+        Close[t] - Close[t-1] = lambda * Close[t-1] + c + error
+
+    ``lambda`` (the fitted slope) is the discrete-time mean-reversion
+    speed: negative means the series pulls back toward its own recent
+    level, positive or zero means it does not (a trend or a random walk).
+    Half-life converts that speed into bars::
+
+        OUHL = -ln(2) / lambda            (lambda < 0)
+        OUHL = NaN                        (lambda >= 0, no mean reversion)
+
+    This is the number of bars for the gap between price and its
+    implied long-run level to close by half, under the fitted process —
+    the standard way this method gets used to pick a *lookback length*
+    for a mean-reversion strategy, rather than as a signal on its own.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    window:
+        Bars per rolling regression. Must be >= 3 (an OLS fit through 2
+        points is exact and uninformative).
+
+    Returns
+    -------
+    pandas.Series
+        Named ``OUHL_{window}``. The first ``window`` bars are ``NaN`` —
+        the regression needs ``window`` consecutive bar-to-bar changes,
+        one more price bar than that. Also ``NaN`` wherever the fitted
+        ``lambda`` is >= 0.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import zeonta
+    >>> rng = np.random.default_rng(0)
+    >>> noise = rng.normal(scale=1.0, size=150)
+    >>> mean_reverting = 100.0 + np.convolve(noise, [0.6**k for k in range(20)])[:150]
+    >>> result = zeonta.ou_half_life(mean_reverting, window=100)
+    >>> bool(result.iloc[-1] > 0)
+    True
+
+    References
+    ----------
+    https://en.wikipedia.org/wiki/Ornstein%E2%80%93Uhlenbeck_process
+    """
+    window = validate_length(window, "window", minimum=3)
+    values = as_array(close, "close")
+    size = values.shape[0]
+
+    result = np.full(size, np.nan, dtype="float64")
+    if size < window + 1:
+        return wrap_series(result, common_index(close), f"OUHL_{window}")
+
+    y_lag = values[:-1]
+    dy = values[1:] - values[:-1]
+
+    x_windows = sliding_window_view(y_lag, window)
+    y_windows = sliding_window_view(dy, window)
+    sum_x = x_windows.sum(axis=1)
+    sum_y = y_windows.sum(axis=1)
+    sum_xy = (x_windows * y_windows).sum(axis=1)
+    sum_xx = (x_windows * x_windows).sum(axis=1)
+
+    denominator = window * sum_xx - sum_x * sum_x
+    with np.errstate(divide="ignore", invalid="ignore"):
+        lam = np.where(denominator != 0.0, (window * sum_xy - sum_x * sum_y) / denominator, np.nan)
+        half_life = np.where(lam < 0.0, -np.log(2.0) / lam, np.nan)
+
+    result[window:] = half_life
+    return wrap_series(result, common_index(close), f"OUHL_{window}")
+
+
+def _dfa_fluctuation(profile: np.ndarray, box_size: int) -> float:
+    """Pooled RMS residual of *profile* detrended box-by-box at *box_size*.
+
+    Vectorised, batch-OLS equivalent of fitting a separate least-squares
+    line to every non-overlapping box of length ``box_size`` and pooling
+    every box's squared residuals into one RMS — checked against a
+    straightforward per-box ``np.polyfit`` loop while this was written.
+    """
+    n_boxes = profile.shape[0] // box_size
+    used = profile[: n_boxes * box_size].reshape(n_boxes, box_size)
+    x = np.arange(box_size, dtype="float64")
+    sum_x = x.sum()
+    sum_xx = (x * x).sum()
+    sum_y = used.sum(axis=1)
+    sum_xy = used @ x
+    denominator = box_size * sum_xx - sum_x * sum_x
+    slope = (box_size * sum_xy - sum_x * sum_y) / denominator
+    intercept = (sum_y - slope * sum_x) / box_size
+    trend = intercept[:, None] + slope[:, None] * x[None, :]
+    residual = used - trend
+    return float(np.sqrt(np.mean(residual * residual)))
+
+
+@indicator(
+    category="advanced",
+    summary="Detrended Fluctuation Analysis: a scaling exponent for persistence, robust to trends.",
+    reference="https://doi.org/10.1103/PhysRevE.49.1685",
+    outputs=("DFA",),
+)
+def dfa(close: ArrayLike, window: int = 100) -> pd.Series:
+    """Detrended Fluctuation Analysis (Peng et al., 1994).
+
+    Estimates the same kind of scaling exponent :func:`hurst_exponent`
+    does, from the same input — a rolling window of *log returns*, not
+    raw price — by a different, later method designed specifically to
+    stay reliable on *non-stationary* data, where :func:`hurst_exponent`'s
+    classical R/S analysis can be biased. DFA integrates the return
+    window into its own profile as its first step::
+
+        profile[k] = cumsum(log_returns_window - mean(log_returns_window))[k]
+
+    For each of several box sizes ``n``: split ``profile`` into
+    non-overlapping boxes of length ``n``, fit and remove a local linear
+    trend from each box (the "detrended" step — the reason DFA tolerates
+    non-stationarity that R/S does not), and pool every box's squared
+    residual into one RMS fluctuation, ``F(n)``. The DFA exponent is the
+    slope of ``log(F(n))`` regressed against ``log(n)``.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    window:
+        Rolling look-back, in log returns. Must be >= 32, so at least two
+        box sizes (4 and 8 bars) fit within ``window // 4``.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``DFA_{window}``.
+
+    Notes
+    -----
+    Reads the same way as :func:`hurst_exponent`: ``alpha ~= 0.5`` is an
+    uncorrelated random walk, ``alpha > 0.5`` persistent/trending,
+    ``alpha < 0.5`` anti-persistent/mean-reverting — but this is a
+    *different, later* estimator (1994 vs. R/S's 1951) applied to the same
+    kind of input, not a second opinion computed the same way. Like
+    `hurst_exponent`, this is a per-bar rolling regression over several
+    box sizes rather than a single vectorised pass — measure it on your
+    own data before a large history (see `BENCHMARKS.md`).
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import zeonta
+    >>> rng = np.random.default_rng(0)
+    >>> walk = 100.0 * np.cumprod(1.0 + rng.normal(scale=0.01, size=150))
+    >>> result = zeonta.dfa(walk, window=100)
+    >>> bool(0.0 < result.iloc[-1] < 1.5)
+    True
+
+    References
+    ----------
+    https://doi.org/10.1103/PhysRevE.49.1685
+    """
+    window = validate_length(window, "window", minimum=32)
+    values = as_array(close, "close")
+    size = values.shape[0]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        log_returns = np.diff(np.log(values), prepend=np.nan)
+
+    box_sizes: list[int] = []
+    box = 4
+    while box <= window // 4:
+        box_sizes.append(box)
+        box *= 2
+
+    result = np.full(size, np.nan, dtype="float64")
+    for i in range(window, size + 1):
+        segment = log_returns[i - window : i]
+        if not np.all(np.isfinite(segment)):
+            continue
+        profile = np.cumsum(segment - segment.mean())
+        log_boxes = []
+        log_f = []
+        for box_size in box_sizes:
+            fluctuation = _dfa_fluctuation(profile, box_size)
+            if fluctuation > 0.0:
+                log_boxes.append(np.log(box_size))
+                log_f.append(np.log(fluctuation))
+        if len(log_boxes) >= 2:
+            slope, _ = np.polyfit(log_boxes, log_f, 1)
+            result[i - 1] = slope
+
+    return wrap_series(result, common_index(close), f"DFA_{window}")

@@ -183,9 +183,11 @@ the cloud that projects past the last bar, rather than discarding it.
 
 | Indicator | What it does | Docs |
 | --- | --- | --- |
+| `dfa` | Detrended Fluctuation Analysis (DFA) | [docs](docs/en/indicators/dfa.md) |
 | `divergence` | Divergences | [docs](docs/en/indicators/divergence.md) |
 | `fib_retracement` | Fibonacci Retracement | [docs](docs/en/indicators/fib_retracement.md) |
 | `hurst_exponent` | Hurst Exponent (Rescaled Range Analysis) | [docs](docs/en/indicators/hurst_exponent.md) |
+| `ou_half_life` | Ornstein-Uhlenbeck Half-Life of Mean Reversion | [docs](docs/en/indicators/ou_half_life.md) |
 | `pivot_points` | Pivot Points | [docs](docs/en/indicators/pivot_points.md) |
 | `vwap` | VWAP (Volume-Weighted Average Price) | [docs](docs/en/indicators/vwap.md) |
 

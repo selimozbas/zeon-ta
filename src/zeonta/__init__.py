@@ -33,9 +33,11 @@ from ._core import IndicatorSpec, get_spec, iter_specs
 from .advanced import (
     FIB_EXTENSIONS,
     FIB_RATIOS,
+    dfa,
     divergence,
     fib_retracement,
     hurst_exponent,
+    ou_half_life,
     pivot_points,
     vwap,
 )
@@ -115,6 +117,7 @@ __all__ = [
     "cmf",
     "coppock_curve",
     "dema",
+    "dfa",
     "divergence",
     "donchian",
     "dpo",
@@ -139,6 +142,7 @@ __all__ = [
     "mfi",
     "momentum",
     "obv",
+    "ou_half_life",
     "parabolic_sar",
     "pivot_points",
     "ppo",

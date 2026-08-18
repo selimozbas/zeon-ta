@@ -100,6 +100,8 @@ def test_indicators_with_a_reference() -> None:
         "hurst_exponent",
         "wavelet_denoise",
         "wavelet_variance",
+        "ou_half_life",
+        "dfa",
     }
     with_reference = {spec.name for spec in iter_specs() if spec.reference is not None}
     assert with_reference == expected

@@ -265,3 +265,96 @@ def test_hurst_exponent_short_input_is_all_nan_not_an_error() -> None:
 def test_hurst_exponent_rejects_a_window_too_small_for_two_lags() -> None:
     with pytest.raises(ValueError, match="must be >="):
         zeonta.hurst_exponent(list(range(1, 50)), window=16)
+
+
+def test_ou_half_life_matches_an_independent_polyfit_regression() -> None:
+    prices = [100.0, 102.0, 99.0, 101.0, 98.0, 103.0]
+    result = zeonta.ou_half_life(prices, window=5)
+
+    values = np.array(prices)
+    slope, _ = np.polyfit(values[:-1], values[1:] - values[:-1], 1)
+    expected = -np.log(2.0) / slope
+    assert slope < 0.0, "test fixture must be mean-reverting for this assertion to be meaningful"
+    np.testing.assert_allclose(result.iloc[-1], expected)
+    assert result.iloc[:-1].isna().all()
+
+
+def test_ou_half_life_is_nan_for_a_pure_trend_lambda_non_negative() -> None:
+    """A deterministic linear trend has a constant bar-to-bar change that
+    does not covary with the prior level at all - the fitted lambda is
+    exactly 0, which by convention (no mean reversion detected) is NaN,
+    not a spurious near-infinite half-life."""
+    result = zeonta.ou_half_life(list(range(1, 60)), window=20)
+    assert result.isna().all()
+
+
+def test_ou_half_life_is_nan_on_a_perfectly_flat_series() -> None:
+    result = zeonta.ou_half_life([50.0] * 20, window=10)
+    assert result.isna().all()
+
+
+def test_ou_half_life_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.ou_half_life([1.0, 2.0, 3.0], window=100)
+    assert len(result) == 3
+    assert result.isna().all()
+
+
+def test_ou_half_life_warmup_is_exactly_window_bars() -> None:
+    result = zeonta.ou_half_life(list(range(1, 60)), window=20)
+    assert result.iloc[:20].isna().all()
+
+
+def test_ou_half_life_rejects_window_below_three() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.ou_half_life(list(range(1, 20)), window=2)
+
+
+def test_dfa_is_higher_for_persistent_than_anti_persistent_returns() -> None:
+    """Same construction as the equivalent hurst_exponent test: same noise,
+    opposite-sign AR(1) return autocorrelation must rank the same way for
+    DFA's exponent as it does for R/S's, since both estimate the same
+    persistence concept."""
+    rng = np.random.default_rng(4)
+    n = 400
+    noise = rng.normal(scale=0.01, size=n)
+
+    persistent_returns = np.zeros(n)
+    antipersistent_returns = np.zeros(n)
+    for i in range(1, n):
+        persistent_returns[i] = 0.4 * persistent_returns[i - 1] + noise[i]
+        antipersistent_returns[i] = -0.4 * antipersistent_returns[i - 1] + noise[i]
+
+    persistent_price = 100.0 * np.cumprod(1 + persistent_returns)
+    antipersistent_price = 100.0 * np.cumprod(1 + antipersistent_returns)
+
+    d_persistent = zeonta.dfa(persistent_price, window=100).dropna().iloc[-1]
+    d_antipersistent = zeonta.dfa(antipersistent_price, window=100).dropna().iloc[-1]
+    assert d_persistent > d_antipersistent
+
+
+def test_dfa_is_nan_on_a_perfectly_flat_series() -> None:
+    """Zero log returns everywhere means every box's fluctuation is exactly
+    zero, so no box size yields a usable log(F(n)) - must be NaN, not a
+    crash or a divide-by-zero warning (covered generically by the
+    registry-wide constant-input contract test, pinned down here too)."""
+    result = zeonta.dfa([100.0] * 80, window=32)
+    assert result.isna().all()
+
+
+def test_dfa_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.dfa([1.0, 2.0, 3.0], window=100)
+    assert len(result) == 3
+    assert result.isna().all()
+
+
+def test_dfa_warmup_is_exactly_window_bars() -> None:
+    rng = np.random.default_rng(1)
+    prices = 100.0 + np.cumsum(rng.normal(size=80))
+    result = zeonta.dfa(prices, window=32)
+    assert result.iloc[:32].isna().all()
+    assert result.iloc[32:].notna().all()
+
+
+def test_dfa_rejects_a_window_too_small_for_two_box_sizes() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.dfa(list(range(1, 50)), window=16)

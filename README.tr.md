@@ -189,9 +189,11 @@ düşen kısmını atmak yerine ek olarak döndürür.
 
 | İndikatör | Ne yapar | Doküman |
 | --- | --- | --- |
+| `dfa` | Trendi Arındırılmış Dalgalanma Analizi (DFA) | [doküman](docs/tr/indicators/dfa.md) |
 | `divergence` | Uyumsuzluklar | [doküman](docs/tr/indicators/divergence.md) |
 | `fib_retracement` | Fibonacci Geri Çekilmesi | [doküman](docs/tr/indicators/fib_retracement.md) |
 | `hurst_exponent` | Hurst Üsteli (Yeniden Ölçeklenmiş Aralık Analizi) | [doküman](docs/tr/indicators/hurst_exponent.md) |
+| `ou_half_life` | Ortalamaya Dönüşün Ornstein-Uhlenbeck Yarı Ömrü | [doküman](docs/tr/indicators/ou_half_life.md) |
 | `pivot_points` | Pivot Noktaları | [doküman](docs/tr/indicators/pivot_points.md) |
 | `vwap` | VWAP (Hacim Ağırlıklı Ortalama Fiyat) | [doküman](docs/tr/indicators/vwap.md) |
 

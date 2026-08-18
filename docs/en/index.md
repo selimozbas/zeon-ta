@@ -96,8 +96,10 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 
 | Indicator | Summary |
 | --- | --- |
+| [`dfa`](indicators/dfa.md) | Detrended Fluctuation Analysis (DFA) |
 | [`divergence`](indicators/divergence.md) | Divergences |
 | [`fib_retracement`](indicators/fib_retracement.md) | Fibonacci Retracement |
 | [`hurst_exponent`](indicators/hurst_exponent.md) | Hurst Exponent (Rescaled Range Analysis) |
+| [`ou_half_life`](indicators/ou_half_life.md) | Ornstein-Uhlenbeck Half-Life of Mean Reversion |
 | [`pivot_points`](indicators/pivot_points.md) | Pivot Points |
 | [`vwap`](indicators/vwap.md) | VWAP (Volume-Weighted Average Price) |

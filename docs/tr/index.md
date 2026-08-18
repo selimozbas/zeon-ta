@@ -96,8 +96,10 @@
 
 | İndikatör | Özet |
 | --- | --- |
+| [`dfa`](indicators/dfa.md) | Trendi Arındırılmış Dalgalanma Analizi (DFA) |
 | [`divergence`](indicators/divergence.md) | Uyumsuzluklar |
 | [`fib_retracement`](indicators/fib_retracement.md) | Fibonacci Geri Çekilmesi |
 | [`hurst_exponent`](indicators/hurst_exponent.md) | Hurst Üsteli (Yeniden Ölçeklenmiş Aralık Analizi) |
+| [`ou_half_life`](indicators/ou_half_life.md) | Ortalamaya Dönüşün Ornstein-Uhlenbeck Yarı Ömrü |
 | [`pivot_points`](indicators/pivot_points.md) | Pivot Noktaları |
 | [`vwap`](indicators/vwap.md) | VWAP (Hacim Ağırlıklı Ortalama Fiyat) |

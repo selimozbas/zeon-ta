@@ -17,6 +17,33 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Advanced** — `ou_half_life` and `dfa`, the first two of a batch of
+  newer, academically-sourced indicators (`hepsi` — "all of them" — was
+  requested from five proposed candidates; Sample/Approximate Entropy and
+  EMD follow separately).
+
+  - `ou_half_life`: fits the discretised Ornstein-Uhlenbeck process to a
+    rolling window by OLS (`Close[t]-Close[t-1]` regressed against
+    `Close[t-1]`) and converts the fitted mean-reversion speed into a
+    half-life in bars (`-ln(2)/lambda`) — the standard way this method is
+    used, per two independent sources, to pick a *lookback length* for a
+    mean-reversion strategy rather than as a signal read on its own. `NaN`
+    when the fitted `lambda` is `>= 0` (no mean reversion detected), by
+    documented convention, rather than a misleading negative half-life.
+  - `dfa`: Detrended Fluctuation Analysis (Peng et al., 1994), a second,
+    later estimator for the same persistence question `hurst_exponent`'s
+    classical R/S analysis asks — applied to the *same* rolling window of
+    log returns as `hurst_exponent` for direct comparability (an
+    intermediate version applied it to raw price and produced clearly
+    wrong values, ~1.5, for an ordinary random walk; caught by sanity
+    checking against the known theoretical value before finalizing) —
+    but explicitly detrends each box locally first, which is why DFA
+    tolerates non-stationarity inside the window that R/S cannot.
+    Verified vectorised per-box detrending against a straightforward
+    per-box `np.polyfit` loop before relying on it.
+
+  Registered indicators: 63 -> 65.
+
 - **`zeonta.cross_asset.wavelet_lead_lag`** — a Morlet Cross-Wavelet
   Transform between *two independent* price series, answering which one
   is leading the other (and by roughly how much) at a chosen Fourier

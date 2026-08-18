@@ -3376,4 +3376,163 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.wavelet_variance(df["close"]).tail(3),
         ],
     },
+    "ou_half_life": {
+        "title_en": "Ornstein-Uhlenbeck Half-Life of Mean Reversion",
+        "title_tr": "Ortalamaya Dönüşün Ornstein-Uhlenbeck Yarı Ömrü",
+        "formula_en": (
+            "Regress Close[t]-Close[t-1] against Close[t-1] over a rolling window "
+            "(OLS); lambda = fitted slope; "
+            "OUHL = -ln(2)/lambda if lambda < 0, else NaN"
+        ),
+        "formula_tr": (
+            "Yuvarlanan bir pencere üzerinde Close[t]-Close[t-1]'i Close[t-1]'e karşı "
+            "regresyona sok (OLS); lambda = uyumlanan eğim; "
+            "OUHL = -ln(2)/lambda (lambda < 0 ise), aksi halde NaN"
+        ),
+        "about_en": (
+            "The Ornstein-Uhlenbeck process is the standard continuous-time model "
+            "for a mean-reverting series in quantitative finance; fitting it to price "
+            "and converting the fitted mean-reversion speed into a half-life — how "
+            "many bars until the gap between price and its own implied long-run level "
+            "closes by half — is a widely used way to pick a *lookback length* for a "
+            "mean-reversion strategy, rather than a signal read on its own. Unlike "
+            "hurst_exponent, which asks whether a series is persistent or "
+            "anti-persistent in general, this asks a narrower, more actionable "
+            "question of a series already assumed to mean-revert: how fast."
+        ),
+        "about_tr": (
+            "Ornstein-Uhlenbeck süreci, kantitatif finansta ortalamaya dönen bir seri "
+            "için standart sürekli-zamanlı modeldir; bunu fiyata uyumlayıp uyumlanan "
+            "ortalamaya-dönüş hızını bir yarı ömre çevirmek — fiyat ile kendi ima "
+            "ettiği uzun vadeli seviyesi arasındaki farkın yarısının kaç barda "
+            "kapanacağı — bir ortalamaya-dönüş stratejisi için *geriye bakış "
+            "uzunluğu* seçmenin yaygın kullanılan bir yoludur, tek başına bir sinyal "
+            "okuması değil. Bir serinin genel olarak kalıcı mı yoksa kalıcı-olmayan "
+            "mı olduğunu soran hurst_exponent'in aksine, bu, zaten ortalamaya "
+            "döndüğü varsayılan bir seriye daha dar, daha eyleme dönüştürülebilir bir "
+            "soru sorar: ne kadar hızlı."
+        ),
+        "reading_en": (
+            "A short half-life (a handful of bars) means reversion happens fast — a "
+            "mean-reversion entry can expect to be closed out soon. A long half-life "
+            "means reversion is slow, if it is even reliably happening at all; `NaN` "
+            "means the fitted `lambda` was >= 0 over that window — no mean reversion "
+            "was detected there, so the whole premise of a mean-reversion trade does "
+            "not currently hold. Traders commonly use the half-life value itself as "
+            "the lookback/holding-period parameter for another indicator or strategy, "
+            "rather than trading on it directly."
+        ),
+        "reading_tr": (
+            "Kısa bir yarı ömür (birkaç bar) dönüşün hızlı olduğu anlamına gelir — bir "
+            "ortalamaya-dönüş girişinin yakında kapanması beklenebilir. Uzun bir yarı "
+            "ömür, dönüşün yavaş olduğu, hatta güvenilir şekilde gerçekleşip "
+            "gerçekleşmediğinin bile belirsiz olduğu anlamına gelir; `NaN`, o "
+            "pencerede uyumlanan `lambda`'nın >= 0 olduğu anlamına gelir — orada "
+            "ortalamaya dönüş tespit edilmedi, yani ortalamaya-dönüş işleminin tüm "
+            "önermesi şu anda geçerli değil. Yatırımcılar genellikle yarı ömür "
+            "değerinin kendisini doğrudan işlem yapmak yerine başka bir indikatör ya "
+            "da stratejinin geriye-bakış/tutma-süresi parametresi olarak kullanır."
+        ),
+        "pitfalls_en": (
+            "The fit assumes the series' mean-reversion behaviour is roughly stable "
+            "over the whole rolling window — a regime change partway through the "
+            "window (the series stops or starts mean-reverting) biases the estimate "
+            "toward whichever behaviour dominates the window, not a clean split. And "
+            "like `hurst_exponent`, this is one specific, standard estimation method "
+            "(OLS on the discretised process), not the only one in the literature."
+        ),
+        "pitfalls_tr": (
+            "Bu uyum, serinin ortalamaya-dönüş davranışının tüm yuvarlanan pencere "
+            "boyunca kabaca sabit kaldığını varsayar — pencerenin ortasında bir rejim "
+            "değişikliği (seri ortalamaya dönmeyi durdurur ya da başlar) tahmini, "
+            "temiz bir ayrım yerine pencerede baskın olan davranışa doğru yanlı hale "
+            "getirir. Ve `hurst_exponent` gibi, bu da literatürdeki tek yöntem değil, "
+            "belirli, standart bir tahmin yöntemidir (ayrıklaştırılmış süreç "
+            "üzerinde OLS)."
+        ),
+        "example": [
+            lambda df: zeonta.ou_half_life(df["close"]).tail(3),
+        ],
+    },
+    "dfa": {
+        "title_en": "Detrended Fluctuation Analysis (DFA)",
+        "title_tr": "Trendi Arındırılmış Dalgalanma Analizi (DFA)",
+        "formula_en": (
+            "profile = cumsum(log_returns_window - mean(log_returns_window)); "
+            "for each box size n: split profile into non-overlapping n-length boxes, "
+            "detrend each with a local linear fit, pool squared residuals into "
+            "F(n) = sqrt(mean(residual^2)); "
+            "DFA = slope of log(F(n)) regressed against log(n)"
+        ),
+        "formula_tr": (
+            "profile = cumsum(log_getiri_penceresi - ortalama(log_getiri_penceresi)); "
+            "her kutu boyutu n için: profile'ı n uzunluğunda örtüşmeyen kutulara böl, "
+            "her birini yerel bir doğrusal uyumla arındır, kare artıkları "
+            "F(n) = sqrt(ortalama(artık^2))'de topla; "
+            "DFA = log(F(n))'nin log(n)'e karşı regresyonunun eğimi"
+        ),
+        "about_en": (
+            "Peng et al. (1994) developed DFA to detect long-range correlations in "
+            "DNA sequences without being fooled by the sequence's own local trends — "
+            "the same non-stationarity problem a price series has. It estimates the "
+            "same underlying quantity hurst_exponent's classical (1951) R/S analysis "
+            "does, from the same rolling window of log returns, but by explicitly "
+            "removing a local linear trend from every box before measuring "
+            "fluctuation, rather than assuming the window is already trend-free."
+        ),
+        "about_tr": (
+            "Peng ve ark. (1994), DNA dizilerindeki uzun-menzilli korelasyonları, "
+            "dizinin kendi yerel trendlerine kanmadan tespit etmek için DFA'yı "
+            "geliştirdi — bu, bir fiyat serisinin sahip olduğu aynı "
+            "durağan-olmama sorunudur. hurst_exponent'in klasik (1951) R/S "
+            "analizinin tahmin ettiği aynı temel niceliği, aynı yuvarlanan log "
+            "getiri penceresinden tahmin eder, ama pencerenin zaten trendden "
+            "arındırılmış olduğunu varsaymak yerine, dalgalanmayı ölçmeden önce "
+            "her kutudan açıkça yerel bir doğrusal trendi çıkararak."
+        ),
+        "reading_en": (
+            "Same scale as hurst_exponent: ``alpha ~= 0.5`` random walk, "
+            "``alpha > 0.5`` persistent/trending, ``alpha < 0.5`` "
+            "anti-persistent/mean-reverting. Because DFA explicitly detrends each "
+            "box, it stays reliable through a genuine trend or regime shift inside "
+            "the window where R/S analysis can be pulled off by that trend alone — "
+            "the two indicators are worth comparing on the same series precisely "
+            "when they might disagree."
+        ),
+        "reading_tr": (
+            "hurst_exponent ile aynı ölçek: ``alpha ~= 0,5`` rastgele yürüyüş, "
+            "``alpha > 0,5`` kalıcı/trend, ``alpha < 0,5`` "
+            "kalıcı-olmayan/ortalamaya dönüş. DFA her kutuyu açıkça arındırdığı "
+            "için, pencere içindeki gerçek bir trend ya da rejim değişikliğinde "
+            "güvenilir kalır — R/S analizinin yalnızca o trend tarafından "
+            "yanıltılabileceği bir durum. İki indikatörü aynı seride "
+            "karşılaştırmak, tam olarak aralarında görüş ayrılığı olabilecek "
+            "anlarda değerlidir."
+        ),
+        "pitfalls_en": (
+            "This is DFA1 (linear local detrending) — higher-order variants (DFA2, "
+            "DFA3, quadratic/cubic local fits) exist and can differ on the same "
+            "data, so treat this as one specific, standard order of the method, the "
+            "same caveat hurst_exponent's own docstring gives for R/S versus other "
+            "Hurst estimators. Like hurst_exponent, this is a per-bar rolling "
+            "regression over several box sizes, not a single vectorised pass — "
+            "measure it on your own data before a large history (see "
+            "`BENCHMARKS.md`)."
+        ),
+        "pitfalls_tr": (
+            "Bu DFA1'dir (doğrusal yerel arındırma) — daha yüksek dereceli "
+            "varyantlar da vardır (DFA2, DFA3, ikinci/üçüncü dereceden yerel "
+            "uyumlar) ve aynı veride farklı sonuç verebilirler; bu yüzden bunu "
+            "yöntemin belirli, standart bir derecesi olarak ele alın — "
+            "hurst_exponent'in kendi docstring'inin R/S'e karşı diğer Hurst "
+            "tahmin edicileri için verdiği aynı uyarı. hurst_exponent gibi, bu da "
+            "birden fazla kutu boyutu üzerinden her barda yuvarlanan bir "
+            "regresyondur, tek bir vektörleştirilmiş geçiş değil — büyük bir "
+            "geçmiş üzerinde kullanmadan önce kendi verinizde ölçün (bkz. "
+            "`BENCHMARKS.md`)."
+        ),
+        "example": [
+            lambda df: zeonta.dfa(df["close"]).tail(3),
+        ],
+    },
 }

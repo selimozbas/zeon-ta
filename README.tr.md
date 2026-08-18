@@ -7,13 +7,11 @@
 **English: [README.md](README.md)**
 
 Python için teknik analiz — RSI'dan causal bir cross-wavelet lead-lag
-dönüşümüne kadar. Daha kolay kurulan bir TA-Lib/Tulip Indicators kopyası
-değil. Standart indikatör setinin yanında zeon-ta, bu kütüphanelerin hiç
-eklemediği, onlardan daha yeni ve akademik kaynaklı araçlar da içerir —
-Ehlers'in döngü-analizi filtreleri, Hurst üsteli, dalgacık tabanlı gürültü
-giderme ve çok ölçekli oynaklık, varlıklar-arası bir lead-lag dönüşümü —
-her biri bir halk anlatısı formülüne değil, geldiği belirli makaleye
-dayanır.
+dönüşümüne kadar. Standart indikatör setinin yanında zeon-ta, daha yeni ve
+akademik kaynaklı araçlar da içerir — Ehlers'in döngü-analizi filtreleri,
+Hurst üsteli, dalgacık tabanlı gürültü giderme ve çok ölçekli oynaklık,
+varlıklar-arası bir lead-lag dönüşümü — her biri bir halk anlatısı
+formülüne değil, geldiği belirli makaleye dayanır.
 
 Formüller, mevcut olduğunda standart ve yaygın olarak yayımlanmış teknik
 analiz tanımlarını izler. Bir formülün kaynağı kendi akademik makalesi
@@ -30,8 +28,8 @@ söyler.
   reddedilir (her iki durumda da [CHANGELOG.md](CHANGELOG.md)'de
   belgelenir).
 - **Derleme adımı yok.** Her bağımlılık önceden derlenmiş wheel olarak gelir,
-  bu yüzden `pip install` her yerde sorunsuz çalışır — TA-Lib'in başa dert
-  olduğu ARM Mac'ler ve ince konteynerler dâhil.
+  bu yüzden `pip install` her yerde sorunsuz çalışır — ARM Mac'ler ve ince
+  konteynerler dâhil.
 - **Tek sözleşme, tüm indikatörler.** `Series`, dizi ya da liste verin; index'iniz
   korunmuş ve girdinizle aynı uzunlukta pandas nesnesi alın. Isınma barları
   kırpılmaz, `NaN` kalır; böylece geriye dönük testin altından hiçbir şey sessizce

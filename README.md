@@ -5,12 +5,11 @@
 [![License](https://img.shields.io/github/license/selimozbas/zeon-ta)](LICENSE)
 
 Technical analysis for Python, from RSI to a causal cross-wavelet lead-lag
-transform — not a TA-Lib/Tulip Indicators clone with a friendlier install.
-Alongside the standard indicator set, zeon-ta implements newer,
-academically-sourced tools those libraries predate and have never added —
-Ehlers' cycle-analysis filters, the Hurst exponent, wavelet-based denoising
-and multi-scale volatility, a cross-asset lead-lag transform — each one
-traced to the specific paper it comes from, not to a folklore formula.
+transform. Alongside the standard indicator set, zeon-ta implements newer,
+academically-sourced tools — Ehlers' cycle-analysis filters, the Hurst
+exponent, wavelet-based denoising and multi-scale volatility, a
+cross-asset lead-lag transform — each one traced to the specific paper it
+comes from, not to a folklore formula.
 
 Formulas follow standard, widely published technical-analysis definitions
 where one exists. Where a formula's own academic paper is the source
@@ -26,8 +25,7 @@ why.
   agreed-on formula across sources is declined outright rather than
   guessed at (documented in [CHANGELOG.md](CHANGELOG.md) either way).
 - **No build step.** Every dependency ships prebuilt wheels, so `pip install`
-  just works — everywhere, including on ARM Macs and in slim containers
-  where TA-Lib is a fight.
+  just works — everywhere, including on ARM Macs and in slim containers.
 - **One contract, every indicator.** Pass a `Series`, an array or a list; get
   pandas back with your index intact and the same length as your input. Warm-up
   bars are `NaN`, never trimmed, so nothing silently shifts under a backtest.

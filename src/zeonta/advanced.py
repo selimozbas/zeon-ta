@@ -1,4 +1,4 @@
-"""Advanced tools: VWAP, Fibonacci retracement, pivot points and divergences."""
+"""Advanced tools: VWAP, Fibonacci retracement, pivot points, divergences, Hurst exponent."""
 
 from __future__ import annotations
 
@@ -21,11 +21,12 @@ from ._core import (
     validate_length,
     validate_multiplier,
     wrap_frame,
+    wrap_series,
 )
 from .foundations import _pivot_flags
 from .oscillators import rsi
 
-__all__ = ["divergence", "fib_retracement", "pivot_points", "vwap"]
+__all__ = ["divergence", "fib_retracement", "hurst_exponent", "pivot_points", "vwap"]
 
 #: Retracement ratios. 0.5 is not a Fibonacci number but is included by convention.
 FIB_RATIOS: tuple[float, ...] = (0.236, 0.382, 0.5, 0.618, 0.786)
@@ -456,3 +457,118 @@ def divergence(
         common_index(high, low, close),
         order=order,
     )
+
+
+def _rescaled_range(segment: np.ndarray, lag: int) -> float | None:
+    """Mean R/S ratio over ``segment`` split into non-overlapping chunks of *lag*.
+
+    ``None`` when no chunk has a non-zero standard deviation (the ratio is
+    undefined there, e.g. every chunk is a flat run).
+    """
+    chunk_count = segment.shape[0] // lag
+    ratios = []
+    for c in range(chunk_count):
+        chunk = segment[c * lag : (c + 1) * lag]
+        deviations = np.cumsum(chunk - chunk.mean())
+        spread = chunk.std()
+        if spread > 0.0:
+            ratios.append((deviations.max() - deviations.min()) / spread)
+    return float(np.mean(ratios)) if ratios else None
+
+
+@indicator(
+    category="advanced",
+    summary="How persistent recent price moves are: trending, mean-reverting, or a random walk.",
+    reference="https://en.wikipedia.org/wiki/Hurst_exponent",
+    outputs=("HURST",),
+)
+def hurst_exponent(close: ArrayLike, window: int = 100) -> pd.Series:
+    """Hurst Exponent via Rescaled Range (R/S) analysis.
+
+    For each rolling window of log returns, R/S is computed at several
+    sub-period lengths (powers of two from 8 up to half the window): split
+    the window into non-overlapping chunks of that length, take the
+    range of each chunk's cumulative mean-adjusted deviation divided by
+    its standard deviation, and average across chunks. The Hurst exponent
+    is the slope of ``log(R/S)`` regressed against ``log(lag)`` — the rate
+    the rescaled range grows as the sample gets longer.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    window:
+        Rolling look-back, in bars. Must be >= 32 (enough for at least two
+        lag values — 8 and 16 — to regress against).
+
+    Returns
+    -------
+    pandas.Series
+        Named ``HURST_{window}``. Conventionally read as: ``H ≈ 0.5`` a
+        random walk with no memory; ``H > 0.5`` trending/persistent (a move
+        tends to be followed by more of the same); ``H < 0.5``
+        mean-reverting/anti-persistent (a move tends to be followed by a
+        reversal). ``NaN`` wherever every chunk of every lag happens to be
+        perfectly flat (no lag produces a usable R/S ratio).
+
+    Notes
+    -----
+    R/S analysis is the classical (1951) estimator and the one most widely
+    cross-referenced; other methods (DFA, the generalized Hurst exponent)
+    exist and do not always agree with R/S on the same data — this is an
+    estimate from one specific, standard method, not a settled physical
+    constant of the series. The choice of lag values (powers of two from 8)
+    is this implementation's own, reasoned choice; no source surveyed
+    states one canonical lag set.
+
+    Unlike every other indicator in this library, this one is not O(n):
+    every bar re-runs a small regression over several lag values, each
+    re-scanning its own window. On 10,000 bars this takes on the order of a
+    second rather than the low milliseconds typical elsewhere (see
+    ``BENCHMARKS.md``) — expected, not a bug, given what the computation
+    actually does.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> import numpy as np
+    >>> rng = np.random.default_rng(0)
+    >>> walk = 100.0 + np.cumsum(rng.normal(size=200))
+    >>> result = zeonta.hurst_exponent(walk, window=64)
+    >>> bool(0.0 <= result.dropna().iloc[-1] <= 1.5)
+    True
+
+    References
+    ----------
+    https://en.wikipedia.org/wiki/Hurst_exponent
+    """
+    window = validate_length(window, minimum=32)
+    values = as_array(close, "close")
+    size = values.shape[0]
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        log_returns = np.diff(np.log(values), prepend=np.nan)
+
+    lags = []
+    lag = 8
+    while lag <= window // 2:
+        lags.append(lag)
+        lag *= 2
+
+    result = np.full(size, np.nan, dtype="float64")
+    for i in range(window, size + 1):
+        segment = log_returns[i - window : i]
+        if not np.all(np.isfinite(segment)):
+            continue
+        log_lags = []
+        log_rs = []
+        for n in lags:
+            rs = _rescaled_range(segment, n)
+            if rs is not None:
+                log_lags.append(np.log(n))
+                log_rs.append(np.log(rs))
+        if len(log_lags) >= 2:
+            slope, _ = np.polyfit(log_lags, log_rs, 1)
+            result[i - 1] = slope
+
+    return wrap_series(result, common_index(close), f"HURST_{window}")

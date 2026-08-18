@@ -21,10 +21,12 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`ema`](indicators/ema.md) | Exponential Moving Average (EMA) |
 | [`ema_ribbon`](indicators/ema_ribbon.md) | EMA Ribbon |
 | [`hma`](indicators/hma.md) | Hull Moving Average (HMA) |
+| [`instantaneous_trendline`](indicators/instantaneous_trendline.md) | Instantaneous Trendline (Ehlers) |
 | [`kama`](indicators/kama.md) | Kaufman's Adaptive Moving Average (KAMA) |
 | [`ma_cross`](indicators/ma_cross.md) | Moving Average Crossovers |
 | [`sma`](indicators/sma.md) | Simple Moving Average (SMA) |
 | [`smma`](indicators/smma.md) | Smoothed Moving Average (SMMA) |
+| [`super_smoother`](indicators/super_smoother.md) | Super Smoother Filter (Ehlers) |
 | [`t3`](indicators/t3.md) | T3 Moving Average (Tillson) |
 | [`tema`](indicators/tema.md) | Triple Exponential Moving Average (TEMA) |
 | [`wma`](indicators/wma.md) | Weighted Moving Average (WMA) |
@@ -38,6 +40,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`coppock_curve`](indicators/coppock_curve.md) | Coppock Curve |
 | [`dpo`](indicators/dpo.md) | Detrended Price Oscillator (DPO) |
 | [`elder_ray`](indicators/elder_ray.md) | Elder Ray (Bull Power / Bear Power) |
+| [`fisher_transform`](indicators/fisher_transform.md) | Fisher Transform (Ehlers) |
 | [`macd`](indicators/macd.md) | MACD (Moving Average Convergence Divergence) |
 | [`momentum`](indicators/momentum.md) | Momentum |
 | [`ppo`](indicators/ppo.md) | Percentage Price Oscillator (PPO) |
@@ -93,5 +96,6 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | --- | --- |
 | [`divergence`](indicators/divergence.md) | Divergences |
 | [`fib_retracement`](indicators/fib_retracement.md) | Fibonacci Retracement |
+| [`hurst_exponent`](indicators/hurst_exponent.md) | Hurst Exponent (Rescaled Range Analysis) |
 | [`pivot_points`](indicators/pivot_points.md) | Pivot Points |
 | [`vwap`](indicators/vwap.md) | VWAP (Volume-Weighted Average Price) |

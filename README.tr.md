@@ -102,10 +102,12 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `ema` | Üssel Hareketli Ortalama (EMA) | [doküman](docs/tr/indicators/ema.md) |
 | `ema_ribbon` | EMA Şeridi | [doküman](docs/tr/indicators/ema_ribbon.md) |
 | `hma` | Hull Hareketli Ortalaması (HMA) | [doküman](docs/tr/indicators/hma.md) |
+| `instantaneous_trendline` | Anlık Trend Çizgisi (Ehlers) | [doküman](docs/tr/indicators/instantaneous_trendline.md) |
 | `kama` | Kaufman Uyarlanabilir Hareketli Ortalama (KAMA) | [doküman](docs/tr/indicators/kama.md) |
 | `ma_cross` | Hareketli Ortalama Kesişimleri | [doküman](docs/tr/indicators/ma_cross.md) |
 | `sma` | Basit Hareketli Ortalama (SMA) | [doküman](docs/tr/indicators/sma.md) |
 | `smma` | Düzeltilmiş Hareketli Ortalama (SMMA) | [doküman](docs/tr/indicators/smma.md) |
+| `super_smoother` | Super Smoother Filtresi (Ehlers) | [doküman](docs/tr/indicators/super_smoother.md) |
 | `t3` | T3 Hareketli Ortalaması (Tillson) | [doküman](docs/tr/indicators/t3.md) |
 | `tema` | Üçlü Üssel Hareketli Ortalama (TEMA) | [doküman](docs/tr/indicators/tema.md) |
 | `wma` | Ağırlıklı Hareketli Ortalama (WMA) | [doküman](docs/tr/indicators/wma.md) |
@@ -119,6 +121,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `coppock_curve` | Coppock Eğrisi | [doküman](docs/tr/indicators/coppock_curve.md) |
 | `dpo` | Trendi Arındırılmış Fiyat Osilatörü (DPO) | [doküman](docs/tr/indicators/dpo.md) |
 | `elder_ray` | Elder Ray (Boğa Gücü / Ayı Gücü) | [doküman](docs/tr/indicators/elder_ray.md) |
+| `fisher_transform` | Fisher Dönüşümü (Ehlers) | [doküman](docs/tr/indicators/fisher_transform.md) |
 | `macd` | MACD (Hareketli Ortalama Yakınsama Iraksama) | [doküman](docs/tr/indicators/macd.md) |
 | `momentum` | Momentum | [doküman](docs/tr/indicators/momentum.md) |
 | `ppo` | Yüzde Fiyat Osilatörü (PPO) | [doküman](docs/tr/indicators/ppo.md) |
@@ -174,6 +177,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | --- | --- | --- |
 | `divergence` | Uyumsuzluklar | [doküman](docs/tr/indicators/divergence.md) |
 | `fib_retracement` | Fibonacci Geri Çekilmesi | [doküman](docs/tr/indicators/fib_retracement.md) |
+| `hurst_exponent` | Hurst Üsteli (Yeniden Ölçeklenmiş Aralık Analizi) | [doküman](docs/tr/indicators/hurst_exponent.md) |
 | `pivot_points` | Pivot Noktaları | [doküman](docs/tr/indicators/pivot_points.md) |
 | `vwap` | VWAP (Hacim Ağırlıklı Ortalama Fiyat) | [doküman](docs/tr/indicators/vwap.md) |
 

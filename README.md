@@ -98,10 +98,12 @@ the cloud that projects past the last bar, rather than discarding it.
 | `ema` | Exponential Moving Average (EMA) | [docs](docs/en/indicators/ema.md) |
 | `ema_ribbon` | EMA Ribbon | [docs](docs/en/indicators/ema_ribbon.md) |
 | `hma` | Hull Moving Average (HMA) | [docs](docs/en/indicators/hma.md) |
+| `instantaneous_trendline` | Instantaneous Trendline (Ehlers) | [docs](docs/en/indicators/instantaneous_trendline.md) |
 | `kama` | Kaufman's Adaptive Moving Average (KAMA) | [docs](docs/en/indicators/kama.md) |
 | `ma_cross` | Moving Average Crossovers | [docs](docs/en/indicators/ma_cross.md) |
 | `sma` | Simple Moving Average (SMA) | [docs](docs/en/indicators/sma.md) |
 | `smma` | Smoothed Moving Average (SMMA) | [docs](docs/en/indicators/smma.md) |
+| `super_smoother` | Super Smoother Filter (Ehlers) | [docs](docs/en/indicators/super_smoother.md) |
 | `t3` | T3 Moving Average (Tillson) | [docs](docs/en/indicators/t3.md) |
 | `tema` | Triple Exponential Moving Average (TEMA) | [docs](docs/en/indicators/tema.md) |
 | `wma` | Weighted Moving Average (WMA) | [docs](docs/en/indicators/wma.md) |
@@ -115,6 +117,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | `coppock_curve` | Coppock Curve | [docs](docs/en/indicators/coppock_curve.md) |
 | `dpo` | Detrended Price Oscillator (DPO) | [docs](docs/en/indicators/dpo.md) |
 | `elder_ray` | Elder Ray (Bull Power / Bear Power) | [docs](docs/en/indicators/elder_ray.md) |
+| `fisher_transform` | Fisher Transform (Ehlers) | [docs](docs/en/indicators/fisher_transform.md) |
 | `macd` | MACD (Moving Average Convergence Divergence) | [docs](docs/en/indicators/macd.md) |
 | `momentum` | Momentum | [docs](docs/en/indicators/momentum.md) |
 | `ppo` | Percentage Price Oscillator (PPO) | [docs](docs/en/indicators/ppo.md) |
@@ -170,6 +173,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | --- | --- | --- |
 | `divergence` | Divergences | [docs](docs/en/indicators/divergence.md) |
 | `fib_retracement` | Fibonacci Retracement | [docs](docs/en/indicators/fib_retracement.md) |
+| `hurst_exponent` | Hurst Exponent (Rescaled Range Analysis) | [docs](docs/en/indicators/hurst_exponent.md) |
 | `pivot_points` | Pivot Points | [docs](docs/en/indicators/pivot_points.md) |
 | `vwap` | VWAP (Volume-Weighted Average Price) | [docs](docs/en/indicators/vwap.md) |
 

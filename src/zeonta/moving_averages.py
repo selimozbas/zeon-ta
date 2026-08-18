@@ -34,10 +34,12 @@ __all__ = [
     "ema",
     "ema_ribbon",
     "hma",
+    "instantaneous_trendline",
     "kama",
     "ma_cross",
     "sma",
     "smma",
+    "super_smoother",
     "t3",
     "tema",
     "wma",
@@ -670,3 +672,167 @@ def t3(close: ArrayLike, length: int = 5, volume_factor: Number = 0.7) -> pd.Ser
     result = gd(gd(gd(values)))
 
     return wrap_series(result, common_index(close), f"T3_{length}_{volume_factor}")
+
+
+@indicator(
+    category="moving_averages",
+    summary="Ehlers' 2-pole low-pass filter: less lag than an EMA of the same critical period.",
+    reference="https://www.mesasoftware.com/papers/EhlersSuperSmoother.pdf",
+    outputs=("SSF",),
+)
+def super_smoother(close: ArrayLike, length: int = 20) -> pd.Series:
+    """Super Smoother Filter (Ehlers).
+
+    A 2-pole digital low-pass filter designed to remove aliasing noise
+    (the jitter an ordinary moving average lets through) with far less lag
+    than an EMA of the same critical period::
+
+        a1 = exp(-1.414 * pi / n);  b1 = 2 * a1 * cos(1.414 * pi / n)
+        c2 = b1;  c3 = -a1^2;  c1 = 1 - c2 - c3
+        SSF[t] = c1 * (Close[t] + Close[t-1]) / 2 + c2 * SSF[t-1] + c3 * SSF[t-2]
+
+    The first two bars are seeded directly from price (Ehlers' own
+    bootstrap), since the recursion has no prior filtered values yet.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        The filter's critical period — the wavelength that separates what
+        gets kept from what gets filtered out. Must be >= 1.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``SSF_{length}``.
+
+    Notes
+    -----
+    ``cos()``'s argument must be in radians here; at least one popular
+    reference implementation keeps Ehlers' original EasyLanguage constant
+    (``180``, meant for a degrees-based ``Cos()``) unconverted when porting
+    to a radians-based language, which silently produces a different
+    filter. This implementation follows the radians-consistent form
+    (``cos(1.414 * pi / n)``), confirmed against an independent Python
+    reference implementation.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> zeonta.super_smoother([10.0, 11.0, 12.0, 11.5, 12.5], length=3).tolist()
+    [10.0, 11.0, 11.557155807187828, 11.780916493912489, 12.01394985765405]
+
+    References
+    ----------
+    https://www.mesasoftware.com/papers/EhlersSuperSmoother.pdf
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+    size = values.shape[0]
+
+    a1 = np.exp(-1.414 * np.pi / length)
+    b1 = 2.0 * a1 * np.cos(1.414 * np.pi / length)
+    c2 = b1
+    c3 = -a1 * a1
+    c1 = 1.0 - c2 - c3
+
+    result = np.full(size, np.nan, dtype="float64")
+    prev_price = np.nan
+    f1 = np.nan
+    f2 = np.nan
+
+    for i in range(size):
+        price = values[i]
+        if not np.isfinite(price):
+            # Hold the last filtered value through a gap rather than
+            # poisoning the recursion, the same convention ema_values() uses.
+            result[i] = f1
+            continue
+        if not (np.isfinite(f1) and np.isfinite(f2) and np.isfinite(prev_price)):
+            filtered = price
+        else:
+            filtered = c1 * (price + prev_price) / 2.0 + c2 * f1 + c3 * f2
+        result[i] = filtered
+        f2 = f1
+        f1 = filtered
+        prev_price = price
+
+    return wrap_series(result, common_index(close), f"SSF_{length}")
+
+
+@indicator(
+    category="moving_averages",
+    summary="Ehlers' Instantaneous Trendline: a filter tuned to track the trend, not the cycle.",
+    reference=(
+        "https://www.tradingview.com/support/solutions/43000589152-instantaneous-trendline/"
+    ),
+    outputs=("ITREND",),
+)
+def instantaneous_trendline(close: ArrayLike, alpha: Number = 0.07) -> pd.Series:
+    """Instantaneous Trendline (Ehlers).
+
+    ::
+
+        IT[t] = (a - a^2/4) * Close[t] + 0.5*a^2 * Close[t-1]
+                - (a - 0.75*a^2) * Close[t-2]
+                + 2*(1-a) * IT[t-1] - (1-a)^2 * IT[t-2]
+
+    where ``a`` is ``alpha``. Ehlers designed this specifically to
+    track the *trend* component of price while rejecting the *cyclic*
+    component — unlike an EMA of comparable responsiveness, which passes
+    both through together. The first three bars, with no filtered history
+    yet, are seeded as ``(Close[t] + 2*Close[t-1] + Close[t-2]) / 4``.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    alpha:
+        Smoothing factor; must be in ``(0, 1)``. Ehlers' own default is
+        ``0.07``, roughly comparable to a 28-bar EMA (``alpha = 2/(n+1)``
+        at ``n≈27.6``), though this indicator is parameterised by ``alpha``
+        directly rather than by a bar count.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``ITREND_{alpha}``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> zeonta.instantaneous_trendline([10.0, 11.0, 12.0, 11.5, 12.5], alpha=0.5).tolist()
+    [nan, nan, 11.0, 11.625, 11.875]
+
+    References
+    ----------
+    https://www.tradingview.com/support/solutions/43000589152-instantaneous-trendline/
+    """
+    alpha = validate_multiplier(alpha, "alpha", minimum=0.0)
+    if alpha >= 1.0:
+        raise ValueError(f"'alpha' must be < 1, got {alpha}")
+    values = as_array(close, "close")
+    size = values.shape[0]
+
+    result = np.full(size, np.nan, dtype="float64")
+    for i in range(2, size):
+        window = values[i - 2 : i + 1]
+        if not np.all(np.isfinite(window)):
+            continue
+        seeded = (values[i] + 2.0 * values[i - 1] + values[i - 2]) / 4.0
+        # Ehlers' own bootstrap covers bars 0-6 (indices < 7); a gap that
+        # disrupts the recursive state later on falls back to the same
+        # seed rather than reading NaN into the filter.
+        if i < 7 or not (np.isfinite(result[i - 1]) and np.isfinite(result[i - 2])):
+            result[i] = seeded
+        else:
+            result[i] = (
+                (alpha - alpha * alpha / 4.0) * values[i]
+                + 0.5 * alpha * alpha * values[i - 1]
+                - (alpha - 0.75 * alpha * alpha) * values[i - 2]
+                + 2.0 * (1.0 - alpha) * result[i - 1]
+                - (1.0 - alpha) * (1.0 - alpha) * result[i - 2]
+            )
+
+    return wrap_series(result, common_index(close), f"ITREND_{alpha}")

@@ -2973,4 +2973,243 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.linreg(df["close"]).tail(3),
         ],
     },
+    "fisher_transform": {
+        "title_en": "Fisher Transform (Ehlers)",
+        "title_tr": "Fisher Dönüşümü (Ehlers)",
+        "formula_en": (
+            "Position = (Price - LowestPrice(n)) / (HighestPrice(n) - LowestPrice(n)) - 0.5; "
+            "Value1 = 0.33 x 2 x Position + 0.67 x Value1[t-1], clamped to +/-0.999; "
+            "Fish = 0.5 x ln((1 + Value1) / (1 - Value1)) + 0.5 x Fish[t-1]"
+        ),
+        "formula_tr": (
+            "Konum = (Fiyat - EnDüşükFiyat(n)) / (EnYüksekFiyat(n) - EnDüşükFiyat(n)) - 0,5; "
+            "Value1 = 0,33 x 2 x Konum + 0,67 x Value1[t-1], +/-0,999'a sınırlanır; "
+            "Fish = 0,5 x ln((1 + Value1) / (1 - Value1)) + 0,5 x Fish[t-1]"
+        ),
+        "about_en": (
+            "Ordinary price data has a roughly uniform-to-bimodal distribution, not the Gaussian "
+            "(bell-curve) one most statistical tools quietly assume. Ehlers' insight was to "
+            "reshape a normalised price into something close to Gaussian — under that reshaping, "
+            "large deviations become genuinely rare events instead of routine noise, which is "
+            "exactly what makes the transform's turning points sharper and more decisive than an "
+            "oscillator built directly from price."
+        ),
+        "about_tr": (
+            "Sıradan fiyat verisi, çoğu istatistiksel aracın sessizce varsaydığı Gauss (çan "
+            "eğrisi) dağılımı değil, kabaca tekdüze-ile-iki-modlu arası bir dağılıma sahiptir. "
+            "Ehlers'in içgörüsü, normalize edilmiş bir fiyatı Gauss'a yakın bir şeye dönüştürmekti "
+            "— bu dönüşüm altında büyük sapmalar sıradan gürültü yerine gerçekten nadir olaylar "
+            "hâline gelir; bu da dönüşümün dönüş noktalarını doğrudan fiyattan kurulmuş bir "
+            "osilatörden daha keskin ve kararlı yapan şeydir."
+        ),
+        "reading_en": (
+            "Read ``FISHERT``/``FISHERTs`` as a crossover pair the same way `macd`'s line and "
+            "signal are read: the sharpness Ehlers built into this transform means the crossovers "
+            "tend to occur right at genuine turning points rather than lagging behind them the "
+            "way a rounded indicator like `macd` does."
+        ),
+        "reading_tr": (
+            "``FISHERT``/``FISHERTs``'i, `macd`'nin çizgisi ve sinyalinin okunduğu gibi bir "
+            "kesişim çifti olarak okuyun: Ehlers'in bu dönüşüme kattığı keskinlik, kesişimlerin "
+            "`macd` gibi yuvarlatılmış bir indikatörün gerisinde kalması yerine gerçek dönüş "
+            "noktalarında meydana gelme eğiliminde olması anlamına gelir."
+        ),
+        "pitfalls_en": (
+            "The sharp, decisive turns are a direct consequence of amplifying values near the "
+            "edge of the recent range — on a genuinely choppy, range-bound market this can mean "
+            "more frequent, less meaningful crossovers rather than fewer, cleaner ones."
+        ),
+        "pitfalls_tr": (
+            "Keskin, kararlı dönüşler, yakın aralığın kenarına yakın değerleri güçlendirmenin "
+            "doğrudan bir sonucudur — gerçekten dalgalı, aralıkta sıkışmış bir piyasada bu, daha "
+            "az ve daha temiz kesişimler yerine daha sık ve daha az anlamlı kesişimler anlamına "
+            "gelebilir."
+        ),
+        "example": [
+            lambda df: zeonta.fisher_transform(df["high"], df["low"]).tail(3),
+        ],
+    },
+    "super_smoother": {
+        "title_en": "Super Smoother Filter (Ehlers)",
+        "title_tr": "Super Smoother Filtresi (Ehlers)",
+        "formula_en": (
+            "a1 = exp(-1.414 x pi / n); b1 = 2 x a1 x cos(1.414 x pi / n); "
+            "c2 = b1; c3 = -a1^2; c1 = 1 - c2 - c3; "
+            "SSF = c1 x (Close + Close[t-1]) / 2 + c2 x SSF[t-1] + c3 x SSF[t-2]"
+        ),
+        "formula_tr": (
+            "a1 = exp(-1,414 x pi / n); b1 = 2 x a1 x cos(1,414 x pi / n); "
+            "c2 = b1; c3 = -a1^2; c1 = 1 - c2 - c3; "
+            "SSF = c1 x (Kapanış + Kapanış[t-1]) / 2 + c2 x SSF[t-1] + c3 x SSF[t-2]"
+        ),
+        "about_en": (
+            "A 2-pole digital low-pass filter, drawn from Ehlers' background in aerospace analog "
+            "filter design rather than the classic finance literature: it removes the "
+            "high-frequency jitter an ordinary moving average lets straight through, with "
+            "meaningfully less lag than an EMA of the same critical period. Where `t3` cuts lag by "
+            "cascading DEMA-style corrections, this cuts it by an entirely different route — "
+            "genuine digital signal processing filter design."
+        ),
+        "about_tr": (
+            "İki kutuplu bir dijital alçak geçiren filtre; klasik finans literatüründen değil, "
+            "Ehlers'in havacılık analog filtre tasarımı geçmişinden geliyor: sıradan bir hareketli "
+            "ortalamanın doğrudan geçirdiği yüksek frekanslı titremeyi kaldırır, aynı kritik "
+            "periyottaki bir EMA'dan anlamlı ölçüde daha az gecikmeyle. `t3` gecikmeyi DEMA-tarzı "
+            "düzeltmeleri zincirleyerek azaltırken, bu tamamen farklı bir yoldan azaltır — gerçek "
+            "bir dijital sinyal işleme filtre tasarımı."
+        ),
+        "reading_en": (
+            "Read it exactly like any other moving average — trend direction, dynamic support and "
+            "resistance, a baseline for a crossover system — but expect it to hug price noticeably "
+            "more tightly, with less of the whipsaw jitter a plain `sma`/`ema` of the same length "
+            "would show on choppy data."
+        ),
+        "reading_tr": (
+            "Diğer herhangi bir hareketli ortalama gibi okuyun — trend yönü, dinamik destek ve "
+            "direnç, bir kesişim sistemi için taban çizgisi — ama fiyata belirgin biçimde daha "
+            "sıkı yapışmasını, dalgalı veride aynı uzunluktaki düz bir `sma`/`ema`'nın "
+            "göstereceği çalkantılı titremenin daha azını bekleyin."
+        ),
+        "pitfalls_en": (
+            "``cos()``'s argument must be in radians; at least one popular open-source reference "
+            "implementation keeps Ehlers' original EasyLanguage constant (``180``, meant for a "
+            "degrees-based ``Cos()``) unconverted when porting to a radians-based language, which "
+            "silently produces a different (wrong) filter — confirmed by inspecting that "
+            "implementation's own source directly. This implementation uses the radians-consistent "
+            "form throughout."
+        ),
+        "pitfalls_tr": (
+            "``cos()``'un argümanı radyan cinsinden olmalıdır; popüler açık kaynaklı bir referans "
+            "uygulama, Ehlers'in orijinal EasyLanguage sabitini (derece tabanlı bir ``Cos()`` için "
+            "tasarlanmış ``180``) radyan tabanlı bir dile taşırken dönüştürmeden bırakmış — bu "
+            "sessizce farklı (yanlış) bir filtre üretir; bu, o uygulamanın kaynak kodu doğrudan "
+            "incelenerek doğrulanmıştır. Bu uygulama baştan sona radyan-tutarlı biçimi kullanır."
+        ),
+        "example": [
+            lambda df: zeonta.super_smoother(df["close"]).tail(3),
+        ],
+    },
+    "instantaneous_trendline": {
+        "title_en": "Instantaneous Trendline (Ehlers)",
+        "title_tr": "Anlık Trend Çizgisi (Ehlers)",
+        "formula_en": (
+            "IT = (a - a^2/4) x Close + 0.5 x a^2 x Close[t-1] - (a - 0.75 x a^2) x Close[t-2] "
+            "+ 2 x (1-a) x IT[t-1] - (1-a)^2 x IT[t-2]"
+        ),
+        "formula_tr": (
+            "IT = (a - a^2/4) x Kapanış + 0,5 x a^2 x Kapanış[t-1] - (a - 0,75 x a^2) x Kapanış[t-2] "
+            "+ 2 x (1-a) x IT[t-1] - (1-a)^2 x IT[t-2]"
+        ),
+        "about_en": (
+            "Ehlers designed this second-order filter specifically to track the *trend* component "
+            "of price while rejecting the *cyclic* component — an ordinary moving average passes "
+            "both through together, which is why it lags: part of that lag is spent smoothing out "
+            "a cycle that was never trend in the first place. `super_smoother` is a general-purpose "
+            "low-pass filter; this one is purpose-built to isolate trend specifically."
+        ),
+        "about_tr": (
+            "Ehlers bu ikinci dereceden filtreyi, fiyatın *döngüsel* bileşenini reddederken "
+            "*trend* bileşenini takip etmek için özel olarak tasarladı — sıradan bir hareketli "
+            "ortalama ikisini birlikte geçirir, gecikmesinin nedeni de budur: o gecikmenin bir "
+            "kısmı, hiçbir zaman trend olmamış bir döngüyü düzleştirmeye harcanır. "
+            "`super_smoother` genel amaçlı bir alçak geçiren filtreyken, bu özellikle trendi "
+            "izole etmek için tasarlanmıştır."
+        ),
+        "reading_en": (
+            "Read it as a smoothed trend line, similar in spirit to `super_smoother` or an EMA, "
+            "but expect the reading to be genuinely flatter through a cyclical, range-bound stretch "
+            "since that is precisely the component this filter is designed to reject."
+        ),
+        "reading_tr": (
+            "`super_smoother`'a ya da bir EMA'ya benzer ruhta, yumuşatılmış bir trend çizgisi "
+            "olarak okuyun; ama döngüsel, aralıkta sıkışmış bir dönem boyunca okumanın gerçekten "
+            "daha düz olmasını bekleyin — çünkü bu filtrenin reddetmek üzere tasarlandığı bileşen "
+            "tam olarak budur."
+        ),
+        "pitfalls_en": (
+            "Parameterised by ``alpha`` directly (Ehlers' own default is ``0.07``) rather than by "
+            "a bar-count length the way most of this library's other filters are — a length-based "
+            "wrapper is a natural extension some platforms add, but the primary source itself uses "
+            "``alpha``, so that is what this implementation exposes."
+        ),
+        "pitfalls_tr": (
+            "Bu kütüphanedeki diğer çoğu filtrenin aksine bar-sayısı bir uzunluk yerine doğrudan "
+            "``alpha`` ile parametrelenir (Ehlers'in kendi varsayılanı ``0.07``'dir) — uzunluk "
+            "tabanlı bir sarmalayıcı bazı platformların eklediği doğal bir genişletme olsa da, "
+            "birincil kaynağın kendisi ``alpha`` kullanır, bu yüzden bu uygulama da onu sunar."
+        ),
+        "example": [
+            lambda df: zeonta.instantaneous_trendline(df["close"]).tail(3),
+        ],
+    },
+    "hurst_exponent": {
+        "title_en": "Hurst Exponent (Rescaled Range Analysis)",
+        "title_tr": "Hurst Üsteli (Yeniden Ölçeklenmiş Aralık Analizi)",
+        "formula_en": (
+            "For each lag n: split the window's log returns into chunks of size n; "
+            "R/S(n) = mean over chunks of range(cumulative mean-adjusted deviation) / "
+            "std-dev(chunk); H = slope of log(R/S) regressed against log(n)"
+        ),
+        "formula_tr": (
+            "Her bir gecikme n için: pencerenin logaritmik getirilerini n boyutunda parçalara "
+            "bölün; R/S(n) = parçalar üzerinden ortalama(kümülatif ortalama-düzeltilmiş sapmanın "
+            "aralığı) / parçanın standart sapması; H = log(R/S)'nin log(n)'e karşı "
+            "regresyonunun eğimi"
+        ),
+        "about_en": (
+            "Harold Hurst developed this while studying multi-year Nile River flood records in "
+            "the 1950s, long before it was applied to markets; Rescaled Range (R/S) analysis is "
+            "the classical estimator for it. Applied to a return series it measures *persistence* "
+            "— whether a move tends to be followed by more of the same (trending) or by a reversal "
+            "(mean-reverting) — a fundamentally different question from what any of this library's "
+            "other indicators ask, which all measure price/momentum directly rather than the "
+            "statistical character of the series generating it."
+        ),
+        "about_tr": (
+            "Harold Hurst bunu 1950'lerde, piyasalara uygulanmasından çok önce, Nil Nehri'nin "
+            "çok yıllık taşkın kayıtlarını incelerken geliştirdi; Yeniden Ölçeklenmiş Aralık (R/S) "
+            "analizi bunun için klasik tahmin edicidir. Bir getiri serisine uygulandığında "
+            "*kalıcılığı* ölçer — bir hareketin aynısının devamıyla mı (trend) yoksa bir "
+            "dönüşle mi (ortalamaya dönüş) takip edilme eğiliminde olduğunu — bu, kütüphanedeki "
+            "diğer tüm indikatörlerin sorduğundan temelden farklı bir sorudur; onların hepsi "
+            "seriyi üreten istatistiksel karakteri değil, doğrudan fiyat/momentumu ölçer."
+        ),
+        "reading_en": (
+            "``H ≈ 0.5``: a random walk with no memory — past moves say nothing about future ones. "
+            "``H > 0.5``: trending/persistent — a move tends to be followed by more of the same. "
+            "``H < 0.5``: mean-reverting/anti-persistent — a move tends to be followed by a "
+            "reversal. Many traders use this as a *regime filter*: lean on trend-following tools "
+            "when ``H`` is comfortably above 0.5, lean on oscillators/mean-reversion tools when it "
+            "sits below."
+        ),
+        "reading_tr": (
+            "``H ≈ 0,5``: hafızasız bir rastgele yürüyüş — geçmiş hareketler gelecek hakkında "
+            "hiçbir şey söylemez. ``H > 0,5``: trend/kalıcı — bir hareketin aynısının devamıyla "
+            "takip edilme eğilimi. ``H < 0,5``: ortalamaya dönüş/kalıcı-olmayan — bir hareketin "
+            "bir dönüşle takip edilme eğilimi. Birçok yatırımcı bunu bir *rejim filtresi* olarak "
+            "kullanır: ``H`` rahatça 0,5'in üzerindeyken trend takip eden araçlara, altındayken "
+            "osilatör/ortalamaya-dönüş araçlarına yaslanır."
+        ),
+        "pitfalls_en": (
+            "R/S analysis is the classical (1951) estimator, not the only one — other methods "
+            "(DFA, the generalized Hurst exponent) exist and do not always agree with R/S on the "
+            "same data, so treat this as an estimate from one specific, standard method rather "
+            "than a settled physical constant of the series. It is also, by a wide margin, the "
+            "slowest indicator in this library (see its own docstring and `BENCHMARKS.md`) — a "
+            "rolling regression over multiple lag values on every bar, not the single vectorised "
+            "pass every other indicator here uses."
+        ),
+        "pitfalls_tr": (
+            "R/S analizi klasik (1951) tahmin edicidir, tek yöntem değildir — başka yöntemler de "
+            "(DFA, genelleştirilmiş Hurst üsteli) vardır ve her zaman R/S ile aynı veride "
+            "hemfikir olmazlar; bu yüzden bunu serinin sabit bir fiziksel sabiti değil, belirli, "
+            "standart bir yöntemden gelen bir tahmin olarak ele alın. Ayrıca, açık farkla, bu "
+            "kütüphanedeki en yavaş indikatördür (kendi docstring'ine ve `BENCHMARKS.md`'ye "
+            "bakın) — burada diğer her indikatörün kullandığı tek geçişli vektörleştirme yerine, "
+            "her barda birden fazla gecikme değeri üzerinden yuvarlanan bir regresyon."
+        ),
+        "example": [
+            lambda df: zeonta.hurst_exponent(df["close"]).tail(3),
+        ],
+    },
 }

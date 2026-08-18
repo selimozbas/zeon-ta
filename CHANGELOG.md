@@ -26,6 +26,39 @@ traces to the same source `MavilimW` did. Ehlers' own paper documents the
 Inverse Fisher Transform applied to RSI, not CCI; that RSI version remains
 a candidate if requested specifically.
 
+**Ehlers cycle-analysis indicators**, requested by name after the Tillson T3
+batch: `fisher_transform` (normalizes price into a bounded range, then
+applies the inverse hyperbolic tangent transform to sharpen turning points
+into visible spikes — verified against Ehlers' original TASC article,
+"Using The Fisher Transform", *Stocks & Commodities* V. 20:11);
+`super_smoother` (a 2-pole IIR filter designed to track price with less lag
+*and* less noise than an EMA of comparable smoothness — its docstring
+documents a real degrees/radians bug found in a well-known third-party
+library's default implementation of the same filter, used here as
+independent confirmation the radians-consistent formula is correct);
+`instantaneous_trendline` (a 2nd-order recursive filter that estimates the
+dominant cycle's trend component with minimal lag, seeded by a simple
+weighted average for its first 7 bars per Ehlers' own convention).
+
+Also `hurst_exponent`: classical Rescaled Range (R/S) analysis over a
+rolling window, estimating whether a series' returns are trending
+(H > 0.5), mean-reverting (H < 0.5), or a random walk (H ≈ 0.5). Documented
+as one of several disagreeing Hurst-estimation methods (vs. DFA,
+generalized Hurst exponent) rather than a single settled value, and as the
+one indicator in the library that is not O(n) — its rolling multi-lag
+regression measures ~1.18s per 10k bars against low milliseconds for
+everything else (see [BENCHMARKS.md](BENCHMARKS.md)).
+
+A **Wavelet-De-noised Indicators** family (PyWavelets-based `Wavelet_RSI`/
+`Wavelet_MACD`) was proposed alongside these but deliberately not built: it
+would add the project's first dependency beyond NumPy + Pandas, which needs
+its own explicit decision rather than riding in with an unrelated indicator
+batch. A **Random Forest trend-prediction indicator** was also proposed and
+skipped for now, by choice, as out of scope for a formula-driven TA
+library.
+
+Registered indicators: 57 -> 61.
+
 Nine indicators, each citing the external source its formula was verified
 against, each verified against a second independent source as well (see each
 one's own docstring for the specific second source and any default-parameter

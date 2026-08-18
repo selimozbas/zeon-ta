@@ -39,6 +39,7 @@ __all__ = [
     "coppock_curve",
     "dpo",
     "elder_ray",
+    "fisher_transform",
     "macd",
     "momentum",
     "ppo",
@@ -1100,3 +1101,91 @@ def coppock_curve(
 
     suffix = f"{long}_{short}_{wma_length}"
     return wrap_series(result, common_index(close), f"COPC_{suffix}")
+
+
+@indicator(
+    category="oscillators",
+    summary="Ehlers' Fisher Transform: normalized price reshaped to sharpen its turning points.",
+    reference="https://www.mesasoftware.com/papers/UsingTheFisherTransform.pdf",
+    outputs=("FISHERT", "FISHERTs"),
+)
+def fisher_transform(high: ArrayLike, low: ArrayLike, length: int = 10) -> pd.DataFrame:
+    """Fisher Transform (Ehlers).
+
+    ``Price = (High + Low) / 2``; the price's position within its own
+    ``n``-bar range is normalised to roughly -1..1 and lightly smoothed
+    (``Value1[t] = 0.33 * 2 * (Position - 0.5) + 0.67 * Value1[t-1]``,
+    clamped to ±0.999 so the next step never divides by zero); then
+    ``Fish[t] = 0.5 * ln((1 + Value1[t]) / (1 - Value1[t])) + 0.5 * Fish[t-1]``.
+    Ordinary price data has a roughly uniform-to-bimodal distribution, not a
+    Gaussian one — the Fisher Transform reshapes it toward Gaussian, which
+    makes large deviations genuinely rare events instead of routine noise,
+    giving sharper, more clearly defined turning points than an oscillator
+    built directly from price.
+
+    Parameters
+    ----------
+    high, low:
+        Price series of equal length.
+    length:
+        Look-back window for the high-low range the price is normalised
+        against.
+
+    Returns
+    -------
+    pandas.DataFrame
+        ``FISHERT_{length}`` and ``FISHERTs_{length}`` — the transform
+        itself, and that same line delayed by one bar (Ehlers' own
+        "trigger" line, meant to be read as a crossover pair the same way
+        :func:`macd`'s signal line is).
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> high = [11.0, 12.0, 13.0, 12.5, 12.0, 11.5, 11.0, 12.0, 13.0, 14.0]
+    >>> low = [9.0, 10.0, 11.0, 10.5, 10.0, 9.5, 9.0, 10.0, 11.0, 12.0]
+    >>> float(zeonta.fisher_transform(high, low, length=5).iloc[-1, 0])
+    0.379269728917503
+
+    References
+    ----------
+    https://www.mesasoftware.com/papers/UsingTheFisherTransform.pdf
+    """
+    length = validate_length(length)
+    require_aligned_index(high=high, low=low)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    size = require_same_length(high=high_values, low=low_values)
+
+    price = (high_values + low_values) / 2.0
+    highest = rolling_max(price, length)
+    lowest = rolling_min(price, length)
+
+    fish = np.full(size, np.nan, dtype="float64")
+    start = length - 1
+    if size > start:
+        value1_prev = 0.0
+        fish_prev = 0.0
+        for i in range(start, size):
+            span = highest[i] - lowest[i]
+            if not (np.isfinite(price[i]) and np.isfinite(span)):
+                # A gap leaves the recursive state frozen rather than
+                # producing a value from missing data, the same convention
+                # kama() and parabolic_sar() use for their own state.
+                continue
+            position = 0.0 if span == 0.0 else (price[i] - lowest[i]) / span - 0.5
+            value1 = 0.33 * 2.0 * position + 0.67 * value1_prev
+            value1 = min(max(value1, -0.999), 0.999)
+            fish_value = 0.5 * np.log((1.0 + value1) / (1.0 - value1)) + 0.5 * fish_prev
+            fish[i] = fish_value
+            value1_prev = value1
+            fish_prev = fish_value
+
+    trigger = _shift(fish, 1)
+
+    order = [f"FISHERT_{length}", f"FISHERTs_{length}"]
+    return wrap_frame(
+        dict(zip(order, (fish, trigger), strict=True)),
+        common_index(high, low),
+        order=order,
+    )

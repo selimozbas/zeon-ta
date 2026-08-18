@@ -94,6 +94,10 @@ def test_indicators_with_a_reference() -> None:
         "ulcer_index",
         "linreg",
         "t3",
+        "fisher_transform",
+        "super_smoother",
+        "instantaneous_trendline",
+        "hurst_exponent",
     }
     with_reference = {spec.name for spec in iter_specs() if spec.reference is not None}
     assert with_reference == expected

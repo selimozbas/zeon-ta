@@ -21,10 +21,12 @@
 | [`ema`](indicators/ema.md) | Üssel Hareketli Ortalama (EMA) |
 | [`ema_ribbon`](indicators/ema_ribbon.md) | EMA Şeridi |
 | [`hma`](indicators/hma.md) | Hull Hareketli Ortalaması (HMA) |
+| [`instantaneous_trendline`](indicators/instantaneous_trendline.md) | Anlık Trend Çizgisi (Ehlers) |
 | [`kama`](indicators/kama.md) | Kaufman Uyarlanabilir Hareketli Ortalama (KAMA) |
 | [`ma_cross`](indicators/ma_cross.md) | Hareketli Ortalama Kesişimleri |
 | [`sma`](indicators/sma.md) | Basit Hareketli Ortalama (SMA) |
 | [`smma`](indicators/smma.md) | Düzeltilmiş Hareketli Ortalama (SMMA) |
+| [`super_smoother`](indicators/super_smoother.md) | Super Smoother Filtresi (Ehlers) |
 | [`t3`](indicators/t3.md) | T3 Hareketli Ortalaması (Tillson) |
 | [`tema`](indicators/tema.md) | Üçlü Üssel Hareketli Ortalama (TEMA) |
 | [`wma`](indicators/wma.md) | Ağırlıklı Hareketli Ortalama (WMA) |
@@ -38,6 +40,7 @@
 | [`coppock_curve`](indicators/coppock_curve.md) | Coppock Eğrisi |
 | [`dpo`](indicators/dpo.md) | Trendi Arındırılmış Fiyat Osilatörü (DPO) |
 | [`elder_ray`](indicators/elder_ray.md) | Elder Ray (Boğa Gücü / Ayı Gücü) |
+| [`fisher_transform`](indicators/fisher_transform.md) | Fisher Dönüşümü (Ehlers) |
 | [`macd`](indicators/macd.md) | MACD (Hareketli Ortalama Yakınsama Iraksama) |
 | [`momentum`](indicators/momentum.md) | Momentum |
 | [`ppo`](indicators/ppo.md) | Yüzde Fiyat Osilatörü (PPO) |
@@ -93,5 +96,6 @@
 | --- | --- |
 | [`divergence`](indicators/divergence.md) | Uyumsuzluklar |
 | [`fib_retracement`](indicators/fib_retracement.md) | Fibonacci Geri Çekilmesi |
+| [`hurst_exponent`](indicators/hurst_exponent.md) | Hurst Üsteli (Yeniden Ölçeklenmiş Aralık Analizi) |
 | [`pivot_points`](indicators/pivot_points.md) | Pivot Noktaları |
 | [`vwap`](indicators/vwap.md) | VWAP (Hacim Ağırlıklı Ortalama Fiyat) |

@@ -198,3 +198,70 @@ def test_no_divergence_flags_in_a_clean_trend() -> None:
     out = zeonta.divergence(prices, prices, prices, oscillator=prices, left=3, right=3)
     assert out["DIVREGBEAR_3_3"].sum() == 0
     assert out["DIVREGBULL_3_3"].sum() == 0
+
+
+def test_hurst_exponent_matches_an_independent_reimplementation() -> None:
+    """Recompute the same R/S regression a different way (no shared helper
+    function) to catch a bug either implementation alone would miss."""
+    rng = np.random.default_rng(3)
+    prices = 100.0 * np.cumprod(1 + rng.normal(scale=0.01, size=200))
+    result = zeonta.hurst_exponent(prices, window=64)
+
+    log_returns = np.diff(np.log(prices))
+    window = 64
+    segment = log_returns[-window:]
+    lags = [8, 16, 32]
+    log_lag, log_rs = [], []
+    for lag in lags:
+        chunks = window // lag
+        ratios = []
+        for c in range(chunks):
+            piece = segment[c * lag : (c + 1) * lag]
+            cum_dev = np.cumsum(piece - piece.mean())
+            ratios.append((cum_dev.max() - cum_dev.min()) / piece.std())
+        log_lag.append(np.log(lag))
+        log_rs.append(np.log(np.mean(ratios)))
+    expected_slope = np.polyfit(log_lag, log_rs, 1)[0]
+
+    np.testing.assert_allclose(result.iloc[-1], expected_slope)
+
+
+def test_hurst_exponent_is_higher_for_persistent_than_anti_persistent_returns() -> None:
+    """Same noise, opposite-sign AR(1) return autocorrelation: a positively
+    autocorrelated (trend-persistent) series must score higher than a
+    negatively autocorrelated (mean-reverting) one."""
+    rng = np.random.default_rng(4)
+    n = 400
+    noise = rng.normal(scale=0.01, size=n)
+
+    persistent_returns = np.zeros(n)
+    antipersistent_returns = np.zeros(n)
+    for i in range(1, n):
+        persistent_returns[i] = 0.4 * persistent_returns[i - 1] + noise[i]
+        antipersistent_returns[i] = -0.4 * antipersistent_returns[i - 1] + noise[i]
+
+    persistent_price = 100.0 * np.cumprod(1 + persistent_returns)
+    antipersistent_price = 100.0 * np.cumprod(1 + antipersistent_returns)
+
+    h_persistent = zeonta.hurst_exponent(persistent_price, window=100).dropna().iloc[-1]
+    h_antipersistent = zeonta.hurst_exponent(antipersistent_price, window=100).dropna().iloc[-1]
+    assert h_persistent > h_antipersistent
+
+
+def test_hurst_exponent_is_nan_on_a_perfectly_flat_series() -> None:
+    """Every chunk has zero standard deviation, so no lag produces a usable
+    R/S ratio - this must be NaN, not a crash or a divide-by-zero warning
+    (already covered by the registry-wide constant-input contract test)."""
+    result = zeonta.hurst_exponent([50.0] * 200, window=64)
+    assert result.isna().all()
+
+
+def test_hurst_exponent_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.hurst_exponent([1.0, 2.0, 3.0], window=100)
+    assert len(result) == 3
+    assert result.isna().all()
+
+
+def test_hurst_exponent_rejects_a_window_too_small_for_two_lags() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.hurst_exponent(list(range(1, 50)), window=16)

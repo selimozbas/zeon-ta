@@ -407,3 +407,60 @@ def test_t3_rejects_non_positive_length() -> None:
 def test_t3_rejects_non_positive_volume_factor() -> None:
     with pytest.raises(ValueError, match="must be >"):
         zeonta.t3([1.0, 2.0, 3.0], volume_factor=0.0)
+
+
+def test_super_smoother_seeds_the_first_two_bars_from_price() -> None:
+    values = [10.0, 11.0, 12.0, 11.5, 12.5]
+    result = zeonta.super_smoother(values, length=5)
+    np.testing.assert_allclose(result.iloc[:2].to_numpy(), values[:2])
+
+
+def test_super_smoother_is_exact_on_a_flat_series() -> None:
+    np.testing.assert_allclose(zeonta.super_smoother([7.0] * 20, length=5).to_numpy(), 7.0)
+
+
+def test_super_smoother_matches_the_hand_computed_coefficients() -> None:
+    values = np.array(list(np.linspace(10, 30, 20)))
+    length = 8
+    a1 = np.exp(-1.414 * np.pi / length)
+    b1 = 2.0 * a1 * np.cos(1.414 * np.pi / length)
+    c2, c3 = b1, -a1 * a1
+    c1 = 1.0 - c2 - c3
+    expected = np.empty_like(values)
+    expected[0], expected[1] = values[0], values[1]
+    for i in range(2, len(values)):
+        expected[i] = (
+            c1 * (values[i] + values[i - 1]) / 2.0 + c2 * expected[i - 1] + c3 * expected[i - 2]
+        )
+    result = zeonta.super_smoother(values, length=length)
+    np.testing.assert_allclose(result.to_numpy(), expected)
+
+
+def test_super_smoother_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.super_smoother([1.0, 2.0, 3.0], length=0)
+
+
+def test_instantaneous_trendline_seeds_the_first_seven_bars_from_the_weighted_average() -> None:
+    values = list(np.linspace(10, 30, 20))
+    result = zeonta.instantaneous_trendline(values, alpha=0.07)
+    for i in range(2, 7):
+        expected = (values[i] + 2.0 * values[i - 1] + values[i - 2]) / 4.0
+        np.testing.assert_allclose(result.iloc[i], expected)
+
+
+def test_instantaneous_trendline_warmup_is_exactly_two_bars() -> None:
+    result = zeonta.instantaneous_trendline(list(range(10)), alpha=0.5)
+    assert int(result.isna().sum()) == 2
+
+
+def test_instantaneous_trendline_is_exact_on_a_flat_series() -> None:
+    result = zeonta.instantaneous_trendline([7.0] * 20, alpha=0.5)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 7.0)
+
+
+def test_instantaneous_trendline_rejects_alpha_out_of_range() -> None:
+    with pytest.raises(ValueError, match="must be > 0"):
+        zeonta.instantaneous_trendline([1.0, 2.0, 3.0], alpha=0.0)
+    with pytest.raises(ValueError, match="must be < 1"):
+        zeonta.instantaneous_trendline([1.0, 2.0, 3.0], alpha=1.0)

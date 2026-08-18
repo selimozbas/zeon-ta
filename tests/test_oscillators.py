@@ -407,3 +407,35 @@ def test_coppock_curve_matches_the_hand_computed_wma_of_summed_roc() -> None:
 def test_coppock_curve_rejects_non_positive_length() -> None:
     with pytest.raises(ValueError, match="must be >="):
         zeonta.coppock_curve(list(range(30)), long=0)
+
+
+def test_fisher_transform_matches_the_hand_traced_recursion() -> None:
+    # length=3, so the first valid bar is index 2.
+    # bar2: price=[10,11,12] highest=12 lowest=10 -> position=(12-10)/2-0.5=0.5
+    #   value1 = 0.33*2*0.5 + 0.67*0 = 0.33
+    #   fish = 0.5*ln(1.33/0.67) + 0.5*0 = 0.5*ln(1.9850746...)
+    high = [10.0, 11.0, 12.0]
+    low = [10.0, 11.0, 12.0]
+    out = zeonta.fisher_transform(high, low, length=3)
+    expected_value1 = 0.33 * 2 * 0.5
+    expected_fish = 0.5 * np.log((1 + expected_value1) / (1 - expected_value1))
+    np.testing.assert_allclose(out["FISHERT_3"].iloc[-1], expected_fish)
+
+
+def test_fisher_transform_trigger_is_fish_shifted_by_one_bar() -> None:
+    high = list(np.linspace(10, 20, 30))
+    low = list(np.linspace(9, 19, 30))
+    out = zeonta.fisher_transform(high, low, length=5)
+    np.testing.assert_allclose(
+        out["FISHERTs_5"].to_numpy(), out["FISHERT_5"].shift(1).to_numpy(), equal_nan=True
+    )
+
+
+def test_fisher_transform_is_zero_on_a_flat_series() -> None:
+    out = zeonta.fisher_transform([10.0] * 20, [10.0] * 20, length=5)
+    np.testing.assert_allclose(out["FISHERT_5"].dropna().to_numpy(), 0.0)
+
+
+def test_fisher_transform_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.fisher_transform([1.0, 2.0], [0.5, 1.5], length=0)

@@ -1912,6 +1912,59 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.hma(df["close"], length=20).tail(3),
         ],
     },
+    "t3": {
+        "title_en": "T3 Moving Average (Tillson)",
+        "title_tr": "T3 Hareketli Ortalaması (Tillson)",
+        "formula_en": (
+            "GD(x, v) = (1 + v) x EMA(x, n) - v x EMA(EMA(x, n), n); T3 = GD(GD(GD(Close)))"
+        ),
+        "formula_tr": (
+            "GD(x, v) = (1 + v) x EMA(x, n) - v x EMA(EMA(x, n), n); T3 = GD(GD(GD(Kapanış)))"
+        ),
+        "about_en": (
+            'Tim Tillson\'s "Generalized DEMA" blends a plain EMA and a full `dema` by the '
+            "``volume_factor`` — at ``v=1`` GD is exactly `dema`'s own formula, so T3 is literally "
+            "`dema` cascaded through itself three times at that setting. Tillson's recommended "
+            "``v=0.7`` sits short of that, trading a little of `dema`/`tema`'s speed for "
+            "meaningfully less overshoot on a sharp reversal."
+        ),
+        "about_tr": (
+            "Tim Tillson'ın \"Genelleştirilmiş DEMA\"sı, ``volume_factor`` ile düz bir EMA'yı tam "
+            "bir `dema` ile harmanlar — ``v=1``'de GD tam olarak `dema`'nın kendi formülüdür, bu "
+            "yüzden T3, bu ayarda `dema`'nın kendi içinden üç kez zincirlenmiş hâlidir. "
+            "Tillson'ın önerdiği ``v=0.7``, bunun biraz gerisinde durur; `dema`/`tema`'nın "
+            "hızından biraz feragat edip keskin bir dönüşte anlamlı ölçüde daha az aşırı tepkiye "
+            "karşılık verir."
+        ),
+        "reading_en": (
+            "Read it like `dema`/`tema` — a fast-reacting trend line to hug price closely — but "
+            "expect fewer of the sharp overshoot spikes those two produce on a sudden reversal, "
+            "which is the entire reason Tillson built it."
+        ),
+        "reading_tr": (
+            "`dema`/`tema` gibi okuyun — fiyata yakından yapışan hızlı tepki veren bir trend "
+            "çizgisi — ama ani bir dönüşte bu ikisinin ürettiği keskin aşırı-tepki sivrilerinden "
+            "daha azını bekleyin; Tillson'ın onu inşa etmesinin tüm nedeni budur."
+        ),
+        "pitfalls_en": (
+            "Neither StockCharts nor Wikipedia document T3 — Tillson published it in *Technical "
+            "Analysis of Stocks & Commodities*, January 1998, not through either of those "
+            "channels. The default length here (5) follows an independently maintained reference "
+            "implementation (Stock Indicators for .NET/Python); no source surveyed states one "
+            "length as canonical the way Tillson's own 0.7 volume factor is agreed on everywhere."
+        ),
+        "pitfalls_tr": (
+            "Ne StockCharts ne de Wikipedia T3'ü belgeler — Tillson onu Ocak 1998'de *Technical "
+            "Analysis of Stocks & Commodities*'te yayımladı, bu iki kanaldan hiçbiri üzerinden "
+            "değil. Buradaki varsayılan uzunluk (5), bağımsız olarak sürdürülen bir referans "
+            "uygulamayı (Stock Indicators for .NET/Python) izler; hiçbir kaynak, Tillson'ın kendi "
+            "0.7 hacim faktörünün her yerde kabul görmesi gibi tek bir uzunluğu kanonik olarak "
+            "belirtmez."
+        ),
+        "example": [
+            lambda df: zeonta.t3(df["close"]).tail(3),
+        ],
+    },
     "williams_r": {
         "title_en": "Williams %R",
         "title_tr": "Williams %R",

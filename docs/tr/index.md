@@ -25,6 +25,7 @@
 | [`ma_cross`](indicators/ma_cross.md) | Hareketli Ortalama Kesişimleri |
 | [`sma`](indicators/sma.md) | Basit Hareketli Ortalama (SMA) |
 | [`smma`](indicators/smma.md) | Düzeltilmiş Hareketli Ortalama (SMMA) |
+| [`t3`](indicators/t3.md) | T3 Hareketli Ortalaması (Tillson) |
 | [`tema`](indicators/tema.md) | Üçlü Üssel Hareketli Ortalama (TEMA) |
 | [`wma`](indicators/wma.md) | Ağırlıklı Hareketli Ortalama (WMA) |
 

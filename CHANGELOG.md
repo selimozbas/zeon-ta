@@ -8,6 +8,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Moving averages** — `t3` (Tillson's T3): three cascaded "Generalized
+  DEMA" passes (`(1+v)*EMA - v*EMA(EMA)`, blending toward `dema` as `v`
+  grows), built to cut `dema`/`tema`'s overshoot on a sharp reversal.
+  Neither StockCharts nor Wikipedia document it — Tillson published it in
+  *TASC*, January 1998; the volume factor default (0.7) is Tillson's own
+  and agreed on everywhere, the length default (5) follows an
+  independently maintained reference implementation since no source states
+  one length as canonical. Registered indicators: 56 -> 57.
+
+Two names considered and declined for this project, for the record: a
+second **Parabolic SAR** (already implemented — see `0.1.0`) and
+**Inverse Fisher Transform on CCI**, which — like `MavilimW` before it —
+has no single authoritative formula: community adaptations disagree on the
+CCI scaling constant (`0.1*CCI` vs `0.1*CCI/4`), and the disagreement
+traces to the same source `MavilimW` did. Ehlers' own paper documents the
+Inverse Fisher Transform applied to RSI, not CCI; that RSI version remains
+a candidate if requested specifically.
+
 Nine indicators, each citing the external source its formula was verified
 against, each verified against a second independent source as well (see each
 one's own docstring for the specific second source and any default-parameter

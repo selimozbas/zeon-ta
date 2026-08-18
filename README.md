@@ -102,6 +102,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | `ma_cross` | Moving Average Crossovers | [docs](docs/en/indicators/ma_cross.md) |
 | `sma` | Simple Moving Average (SMA) | [docs](docs/en/indicators/sma.md) |
 | `smma` | Smoothed Moving Average (SMMA) | [docs](docs/en/indicators/smma.md) |
+| `t3` | T3 Moving Average (Tillson) | [docs](docs/en/indicators/t3.md) |
 | `tema` | Triple Exponential Moving Average (TEMA) | [docs](docs/en/indicators/tema.md) |
 | `wma` | Weighted Moving Average (WMA) | [docs](docs/en/indicators/wma.md) |
 

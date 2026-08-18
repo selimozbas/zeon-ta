@@ -368,3 +368,42 @@ def test_hma_has_less_steady_state_lag_than_wma() -> None:
 def test_hma_rejects_non_positive_length() -> None:
     with pytest.raises(ValueError, match="must be >="):
         zeonta.hma([1.0, 2.0, 3.0], length=0)
+
+
+def test_t3_matches_the_hand_computed_gd_cascade() -> None:
+    values = list(np.linspace(1, 50, 40))
+    result = zeonta.t3(values, length=4, volume_factor=0.7)
+
+    def gd(series: pd.Series, length: int, v: float) -> pd.Series:
+        e1 = zeonta.ema(series, length)
+        e2 = zeonta.ema(e1, length)
+        return (1.0 + v) * e1 - v * e2
+
+    expected = gd(gd(gd(pd.Series(values), 4, 0.7), 4, 0.7), 4, 0.7)
+    np.testing.assert_allclose(result.to_numpy(), expected.to_numpy(), equal_nan=True)
+
+
+def test_t3_at_volume_factor_1_is_dema_applied_three_times() -> None:
+    """GD(x, v=1) = 2*EMA(x) - EMA(EMA(x)), exactly dema()'s own formula, so
+    T3 at volume_factor=1 must equal dema() cascaded through itself twice
+    more."""
+    values = list(np.linspace(1, 50, 40))
+    result = zeonta.t3(values, length=4, volume_factor=1.0)
+    stage1 = zeonta.dema(values, length=4)
+    stage2 = zeonta.dema(stage1, length=4)
+    expected = zeonta.dema(stage2, length=4)
+    np.testing.assert_allclose(result.to_numpy(), expected.to_numpy(), equal_nan=True)
+
+
+def test_t3_is_exact_on_a_flat_series() -> None:
+    np.testing.assert_allclose(zeonta.t3([7.0] * 30, length=4).dropna().to_numpy(), 7.0)
+
+
+def test_t3_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.t3([1.0, 2.0, 3.0], length=0)
+
+
+def test_t3_rejects_non_positive_volume_factor() -> None:
+    with pytest.raises(ValueError, match="must be >"):
+        zeonta.t3([1.0, 2.0, 3.0], volume_factor=0.0)

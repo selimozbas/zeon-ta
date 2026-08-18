@@ -14,6 +14,7 @@ import pandas as pd
 
 from ._core import (
     ArrayLike,
+    Number,
     as_array,
     common_index,
     ema_values,
@@ -22,12 +23,25 @@ from ._core import (
     rolling_sum,
     rolling_wma,
     validate_length,
+    validate_multiplier,
     wilder_values,
     wrap_frame,
     wrap_series,
 )
 
-__all__ = ["dema", "ema", "ema_ribbon", "hma", "kama", "ma_cross", "sma", "smma", "tema", "wma"]
+__all__ = [
+    "dema",
+    "ema",
+    "ema_ribbon",
+    "hma",
+    "kama",
+    "ma_cross",
+    "sma",
+    "smma",
+    "t3",
+    "tema",
+    "wma",
+]
 
 
 @indicator(
@@ -590,3 +604,69 @@ def hma(close: ArrayLike, length: int = 20) -> pd.Series:
 
     raw = 2.0 * rolling_wma(values, half_length) - rolling_wma(values, length)
     return wrap_series(rolling_wma(raw, sqrt_length), common_index(close), f"HMA_{length}")
+
+
+@indicator(
+    category="moving_averages",
+    summary="Tillson's T3: cascaded generalized DEMA, smoother than DEMA/TEMA with less overshoot.",
+    reference="https://c.mql5.com/forextsd/forum/173/tillson_t3_better_mas_and_oscillators.pdf",
+    outputs=("T3",),
+)
+def t3(close: ArrayLike, length: int = 5, volume_factor: Number = 0.7) -> pd.Series:
+    """T3 Moving Average (Tillson).
+
+    ``GD(x, v) = (1 + v) * EMA(x, n) - v * EMA(EMA(x, n), n)`` — a
+    "Generalized DEMA" that blends a plain EMA and a full DEMA by the
+    ``volume_factor`` ``v`` (``v`` near ``0`` behaves like a plain EMA,
+    ``v=1`` gives :func:`dema` exactly). ``T3 = GD(GD(GD(Close)))`` — three
+    of these passes cascaded, six EMAs in total. Tim Tillson designed it
+    specifically to cut :func:`dema`/:func:`tema`'s tendency to overshoot on
+    a sharp reversal while staying nearly as responsive.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Period for each of the six underlying EMA passes.
+    volume_factor:
+        Blends toward a plain EMA (near ``0``) or a full DEMA (``1``) at
+        every stage. Tillson's own recommendation, used almost universally,
+        is ``0.7``.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``T3_{length}_{volume_factor}``.
+
+    Notes
+    -----
+    Neither StockCharts nor Wikipedia document T3 — Tillson published it in
+    *Technical Analysis of Stocks & Commodities*, January 1998, not through
+    either of those channels. The default length here (5) follows an
+    independently maintained reference implementation (Stock Indicators for
+    .NET/Python); no source surveyed states one length as canonical the way
+    Tillson's own 0.7 volume factor is agreed on everywhere.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> float(zeonta.t3(list(range(1, 40)), length=3, volume_factor=0.7).iloc[-1])
+    38.1
+
+    References
+    ----------
+    https://c.mql5.com/forextsd/forum/173/tillson_t3_better_mas_and_oscillators.pdf
+    """
+    length = validate_length(length)
+    volume_factor = validate_multiplier(volume_factor, "volume_factor")
+    values = as_array(close, "close")
+
+    def gd(series: np.ndarray) -> np.ndarray:
+        e1 = ema_values(series, length)
+        e2 = ema_values(e1, length)
+        return (1.0 + volume_factor) * e1 - volume_factor * e2
+
+    result = gd(gd(gd(values)))
+
+    return wrap_series(result, common_index(close), f"T3_{length}_{volume_factor}")

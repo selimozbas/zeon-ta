@@ -325,6 +325,17 @@ the cloud that projects past the last bar, rather than discarding it.
 
 {tables}
 
+### Cross-asset utilities (outside the registry)
+
+`zeonta.cross_asset.wavelet_lead_lag(close_a, close_b, period=20)` compares
+*two independent* price series — which one is leading the other, and by how
+much, at a chosen timescale — via a causal Morlet Cross-Wavelet Transform
+(Torrence & Compo, 1998). It isn't in `list_indicators()` or the `.zta`
+accessor: every registered indicator assumes one asset's own OHLCV columns,
+and a second, independent series doesn't fit that contract. Import and call
+it directly; see its own docstring for the full method and a documented
+lag-estimate caveat.
+
 ## Development
 
 ```bash
@@ -438,6 +449,17 @@ düşen kısmını atmak yerine ek olarak döndürür.
 ## İndikatörler
 
 {tables}
+
+### Varlıklar-arası araçlar (registry dışında)
+
+`zeonta.cross_asset.wavelet_lead_lag(close_a, close_b, period=20)`, *iki
+bağımsız* fiyat serisini karşılaştırır — seçilen bir zaman ölçeğinde
+hangisinin diğerine öncülük ettiğini ve ne kadar — causal bir Morlet
+Cross-Wavelet Dönüşümü ile (Torrence & Compo, 1998). `list_indicators()`'da
+veya `.zta` accessor'ında yer almaz: kayıtlı her indikatör tek bir varlığın
+kendi OHLCV kolonlarını varsayar, ikinci bağımsız bir seri bu sözleşmeye
+uymaz. Doğrudan import edip çağırın; tam yöntem ve belgelenmiş bir gecikme
+tahmini uyarısı için kendi docstring'ine bakın.
 
 ## Geliştirme
 

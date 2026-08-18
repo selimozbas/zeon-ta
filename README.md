@@ -180,6 +180,17 @@ the cloud that projects past the last bar, rather than discarding it.
 | `pivot_points` | Pivot Points | [docs](docs/en/indicators/pivot_points.md) |
 | `vwap` | VWAP (Volume-Weighted Average Price) | [docs](docs/en/indicators/vwap.md) |
 
+### Cross-asset utilities (outside the registry)
+
+`zeonta.cross_asset.wavelet_lead_lag(close_a, close_b, period=20)` compares
+*two independent* price series — which one is leading the other, and by how
+much, at a chosen timescale — via a causal Morlet Cross-Wavelet Transform
+(Torrence & Compo, 1998). It isn't in `list_indicators()` or the `.zta`
+accessor: every registered indicator assumes one asset's own OHLCV columns,
+and a second, independent series doesn't fit that contract. Import and call
+it directly; see its own docstring for the full method and a documented
+lag-estimate caveat.
+
 ## Development
 
 ```bash

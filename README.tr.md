@@ -184,6 +184,17 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `pivot_points` | Pivot Noktaları | [doküman](docs/tr/indicators/pivot_points.md) |
 | `vwap` | VWAP (Hacim Ağırlıklı Ortalama Fiyat) | [doküman](docs/tr/indicators/vwap.md) |
 
+### Varlıklar-arası araçlar (registry dışında)
+
+`zeonta.cross_asset.wavelet_lead_lag(close_a, close_b, period=20)`, *iki
+bağımsız* fiyat serisini karşılaştırır — seçilen bir zaman ölçeğinde
+hangisinin diğerine öncülük ettiğini ve ne kadar — causal bir Morlet
+Cross-Wavelet Dönüşümü ile (Torrence & Compo, 1998). `list_indicators()`'da
+veya `.zta` accessor'ında yer almaz: kayıtlı her indikatör tek bir varlığın
+kendi OHLCV kolonlarını varsayar, ikinci bağımsız bir seri bu sözleşmeye
+uymaz. Doğrudan import edip çağırın; tam yöntem ve belgelenmiş bir gecikme
+tahmini uyarısı için kendi docstring'ine bakın.
+
 ## Geliştirme
 
 ```bash

@@ -17,6 +17,50 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`zeonta.cross_asset.wavelet_lead_lag`** — a Morlet Cross-Wavelet
+  Transform between *two independent* price series, answering which one
+  is leading the other (and by roughly how much) at a chosen Fourier
+  period. Formula verified directly from Torrence & Compo's 1998 "A
+  Practical Guide to Wavelet Analysis" (read from the source PDF, the
+  standard reference for this technique): `W_XY(s) = W_X(s) * conj(W_Y(s))`,
+  power `= |W_XY|`, phase `= atan2(Im(W_XY), Re(W_XY))`. The lead/lag
+  *sign* convention was confirmed numerically against synthetic sine
+  pairs of known lag (not just asserted from the paper's prose) — see the
+  function's own test suite.
+
+  **Deliberately not part of the indicator registry.** Every registered
+  indicator assumes one asset's own OHLCV columns (`_split_signature` in
+  `registry.py` mechanically requires it); a second, independent price
+  series doesn't fit that contract, and stretching the registry to allow
+  it would touch the `.zta` accessor, the generic contract-test suite,
+  and the doc generator all at once for the sake of one function. It's
+  called directly (`zeonta.cross_asset.wavelet_lead_lag(...)`) instead,
+  with its own hand-written tests and its own README section — this is a
+  deliberate two-tier decision, not an oversight.
+
+  **Causal, like this library's other wavelet-based tools**, for the same
+  reason: the standard whole-series CWT convolves each point against a
+  wavelet kernel extending into the future. This implementation uses only
+  the *causal half* of the Morlet kernel instead, which has a real,
+  documented cost — a numerical check against synthetic lag pairs found
+  the causal kernel consistently *over-reports* the lag magnitude by
+  roughly 5-10%, though it never gets the direction (sign) wrong.
+  Verified with the same kind of prefix-vs-full-series test used for
+  `wavelet_denoise`/`wavelet_variance`.
+
+  Also declined, for the record: **Wavelet MACD**, proposed alongside
+  this — no single canonical formula exists (one paper denoises MACD's
+  DIF line with a specific Coiflet-5 wavelet; another uses genetic
+  algorithms to tune ordinary MACD's parameters instead; both are called
+  "Wavelet MACD" but do unrelated things), the same class of problem
+  `MavilimW` and `IFT-CCI` were declined for earlier. **Wavelet Coherence**
+  (a normalized 0-1 version of this same cross-wavelet idea) was also
+  considered and declined for now: Torrence & Compo's own paper states
+  raw coherence is trivially 1 at every point unless smoothed in time and
+  scale, and that smoothing methodology comes from a *later*, separate
+  paper (Torrence & Webster 1999 / Grinsted et al. 2004) not yet verified
+  against a primary source.
+
 - **Volatility** — `wavelet_variance`: multi-scale volatility via the
   Maximal Overlap DWT (MODWT) — splits the single blended number `atr()`
   or a rolling standard deviation gives into `level` per-scale bands

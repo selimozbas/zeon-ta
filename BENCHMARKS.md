@@ -1,8 +1,9 @@
 # Performance
 
-zeon-ta is pure NumPy/pandas — no C extension, no build step. This page
-answers the question that raises: is it actually fast enough? Numbers below
-are real, reproducible measurements, not estimates.
+zeon-ta is built on NumPy, pandas and PyWavelets — no build step, every
+dependency ships prebuilt wheels. This page answers the question that
+raises: is it actually fast enough? Numbers below are real, reproducible
+measurements, not estimates.
 
 ## Methodology
 

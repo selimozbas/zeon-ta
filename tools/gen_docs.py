@@ -245,9 +245,9 @@ README_INTRO = {
 [![Python](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
 [![License](https://img.shields.io/github/license/selimozbas/zeon-ta)](LICENSE)
 
-Technical analysis indicators for Python that are actually maintained — no C
-extension to compile, no abandoned API. NumPy and pandas are the only
-dependencies.
+Technical analysis indicators for Python that are actually maintained — no
+build step, no abandoned API. NumPy and pandas cover almost every indicator;
+PyWavelets is the one exception, needed only for `wavelet_denoise`.
 
 Formulas follow standard, widely published technical-analysis definitions. A
 few indicators additionally cite the specific external source their formula
@@ -255,8 +255,9 @@ was verified against in their own docstring.
 
 ## Why another TA library
 
-- **No build step.** Pure NumPy/pandas, so `pip install` just works — everywhere,
-  including on ARM Macs and in slim containers where TA-Lib is a fight.
+- **No build step.** Every dependency ships prebuilt wheels, so `pip install`
+  just works — everywhere, including on ARM Macs and in slim containers
+  where TA-Lib is a fight.
 - **One contract, every indicator.** Pass a `Series`, an array or a list; get
   pandas back with your index intact and the same length as your input. Warm-up
   bars are `NaN`, never trimmed, so nothing silently shifts under a backtest.
@@ -356,8 +357,9 @@ GPL-3.0-or-later — see [LICENSE](LICENSE).
 
 **English: [README.md](README.md)**
 
-Python için gerçekten bakımı yapılan teknik analiz indikatörleri — derlenecek C
-eklentisi yok, terk edilmiş API yok. Tek bağımlılık NumPy ve pandas.
+Python için gerçekten bakımı yapılan teknik analiz indikatörleri — derleme
+adımı yok, terk edilmiş API yok. NumPy ve pandas neredeyse her indikatörü
+kapsar; PyWavelets tek istisnadır, yalnızca `wavelet_denoise` için gerekir.
 
 Formüller, standart ve yaygın olarak yayımlanmış teknik analiz tanımlarını
 izler. Birkaç indikatör, formülünün doğrulandığı dış kaynağa kendi
@@ -365,9 +367,9 @@ docstring'inde ek olarak bağlantı verir.
 
 ## Neden bir TA kütüphanesi daha
 
-- **Derleme adımı yok.** Saf NumPy/pandas olduğu için `pip install` her yerde
-  sorunsuz çalışır — TA-Lib'in başa dert olduğu ARM Mac'ler ve ince
-  konteynerler dâhil.
+- **Derleme adımı yok.** Her bağımlılık önceden derlenmiş wheel olarak gelir,
+  bu yüzden `pip install` her yerde sorunsuz çalışır — TA-Lib'in başa dert
+  olduğu ARM Mac'ler ve ince konteynerler dâhil.
 - **Tek sözleşme, tüm indikatörler.** `Series`, dizi ya da liste verin; index'iniz
   korunmuş ve girdinizle aynı uzunlukta pandas nesnesi alın. Isınma barları
   kırpılmaz, `NaN` kalır; böylece geriye dönük testin altından hiçbir şey sessizce

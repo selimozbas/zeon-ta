@@ -3212,4 +3212,88 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.hurst_exponent(df["close"]).tail(3),
         ],
     },
+    "wavelet_denoise": {
+        "title_en": "Wavelet-Denoised Price (Discrete Wavelet Transform)",
+        "title_tr": "Dalgacık ile Gürültüsü Giderilmiş Fiyat (Ayrık Dalgacık Dönüşümü)",
+        "formula_en": (
+            "For each rolling window: DWT-decompose into an approximation band and `level` "
+            "detail bands; sigma = MAD(finest detail band) / 0.6745; soft-threshold every "
+            "detail band at sigma*sqrt(2*log(window)); reconstruct and keep only the "
+            "window's last sample"
+        ),
+        "formula_tr": (
+            "Her yuvarlanan pencere için: bir yaklaşım bandına ve `level` sayıda detay "
+            "bandına DWT ile ayrıştır; sigma = MAD(en ince detay bandı) / 0,6745; her detay "
+            "bandını sigma*sqrt(2*log(pencere)) eşiğinde yumuşak-eşikle; yeniden inşa et ve "
+            "yalnızca pencerenin son örneğini tut"
+        ),
+        "about_en": (
+            "Wavelet transforms split a series into frequency bands the way a Fourier "
+            "transform does, but — unlike Fourier — keep time localisation: they show *when* "
+            "a frequency occurs, not just that it does. Academic work on wavelet-denoised "
+            "technical indicators (e.g. de-noising return series before building new "
+            "indicators on top of them) exploits exactly this to separate genuine price "
+            "structure from noise without the lag an SMA/EMA adds. Classic wavelet denoising "
+            "decomposes an entire series in a single pass, which is fine for an offline study "
+            "but means every bar's value can depend on bars that come after it. This "
+            "implementation instead re-runs the decomposition from scratch on every rolling "
+            "`window`, using nothing past the current bar — see its own docstring for why "
+            "that distinction matters for anything meant to generate live signals."
+        ),
+        "about_tr": (
+            "Dalgacık dönüşümleri, bir Fourier dönüşümü gibi seriyi frekans bantlarına "
+            "ayırır, ama — Fourier'den farklı olarak — zaman lokalizasyonunu korur: bir "
+            "frekansın yalnızca var olduğunu değil, *ne zaman* oluştuğunu da gösterir. "
+            "Dalgacıkla gürültüsü giderilmiş teknik indikatörler üzerine akademik çalışmalar "
+            "(örn. üzerine yeni indikatörler kurmadan önce getiri serisinin gürültüsünü "
+            "gidermek) tam olarak bunu kullanarak gerçek fiyat yapısını, bir SMA/EMA'nın "
+            "eklediği gecikme olmadan gürültüden ayırır. Klasik dalgacık gürültü giderme, "
+            "tüm seriyi tek geçişte ayrıştırır; bu, çevrimdışı bir çalışma için sorun değildir "
+            "ama her barın değerinin sonraki barlara bağlı olabileceği anlamına gelir. Bu "
+            "uygulama bunun yerine, mevcut bardan sonrasını hiç kullanmadan, her yuvarlanan "
+            "`window` için ayrıştırmayı sıfırdan yeniden çalıştırır — bunun canlı sinyal "
+            "üretmesi gereken her şey için neden önemli olduğu için kendi docstring'ine bakın."
+        ),
+        "reading_en": (
+            "This is a building block, not a finished signal: it returns a denoised price "
+            "series meant to be fed into an existing indicator in place of raw `close` — e.g. "
+            "`zeonta.rsi(zeonta.wavelet_denoise(df['close']))` or the same for `macd` — to get "
+            "a lower-lag version of it. Used on its own as a trendline, it turns roughly the "
+            "way a Super Smoother or Instantaneous Trendline does, but rejects noise by "
+            "frequency-band thresholding rather than by a fixed recursive filter."
+        ),
+        "reading_tr": (
+            "Bu bitmiş bir sinyal değil, bir yapı taşıdır: ham `close` yerine mevcut bir "
+            "indikatöre beslenmek üzere gürültüsü giderilmiş bir fiyat serisi döndürür — örn. "
+            "`zeonta.rsi(zeonta.wavelet_denoise(df['close']))` ya da `macd` için aynısı — "
+            "böylece onun daha az gecikmeli bir sürümü elde edilir. Tek başına bir trend "
+            "çizgisi olarak kullanıldığında, Super Smoother ya da Instantaneous Trendline'a "
+            "yakın şekilde döner, ama gürültüyü sabit özyinelemeli bir filtre yerine "
+            "frekans-bandı eşiklemesiyle reddeder."
+        ),
+        "pitfalls_en": (
+            "The rolling window means each bar re-decomposes from scratch rather than one "
+            "vectorised pass — measure it on your own data before using it on a large "
+            "history (see `BENCHMARKS.md`). The wavelet family and decomposition level are "
+            "real choices, not defaults to ignore: `db4` at level 2 is what published work on "
+            "wavelet-denoised indicators most often uses, but a different pairing changes the "
+            "result. And because a longer lookback resolves lower frequencies at the cost of "
+            "reacting more slowly, `window` is trading the same lag-versus-noise tradeoff "
+            "every smoother in this library makes — just via a different mechanism."
+        ),
+        "pitfalls_tr": (
+            "Yuvarlanan pencere, tek vektörleştirilmiş bir geçiş yerine her barın sıfırdan "
+            "yeniden ayrıştırılması demektir — büyük bir geçmiş üzerinde kullanmadan önce "
+            "kendi verinizde ölçün (bkz. `BENCHMARKS.md`). Dalgacık ailesi ve ayrıştırma "
+            "seviyesi göz ardı edilecek varsayılanlar değil, gerçek seçimlerdir: `db4` ve "
+            "seviye 2, dalgacıkla gürültüsü giderilmiş indikatörler üzerine yayımlanmış "
+            "çalışmaların en sık kullandığı çifttir, ama farklı bir eşleştirme sonucu "
+            "değiştirir. Ve daha uzun bir geriye bakış, daha yavaş tepki vermek pahasına daha "
+            "düşük frekansları çözdüğü için, `window` de kütüphanedeki her düzleştiricinin "
+            "yaptığı gecikme-gürültü ödünleşimini yapar — sadece farklı bir mekanizmayla."
+        ),
+        "example": [
+            lambda df: zeonta.wavelet_denoise(df["close"]).tail(3),
+        ],
+    },
 }

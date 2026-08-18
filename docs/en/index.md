@@ -29,6 +29,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`super_smoother`](indicators/super_smoother.md) | Super Smoother Filter (Ehlers) |
 | [`t3`](indicators/t3.md) | T3 Moving Average (Tillson) |
 | [`tema`](indicators/tema.md) | Triple Exponential Moving Average (TEMA) |
+| [`wavelet_denoise`](indicators/wavelet_denoise.md) | Wavelet-Denoised Price (Discrete Wavelet Transform) |
 | [`wma`](indicators/wma.md) | Weighted Moving Average (WMA) |
 
 ## Oscillators

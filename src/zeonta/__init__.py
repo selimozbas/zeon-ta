@@ -53,6 +53,7 @@ from .moving_averages import (
     super_smoother,
     t3,
     tema,
+    wavelet_denoise,
     wma,
 )
 from .oscillators import (
@@ -163,6 +164,7 @@ __all__ = [
     "ultimate_oscillator",
     "vortex",
     "vwap",
+    "wavelet_denoise",
     "williams_r",
     "wma",
 ]

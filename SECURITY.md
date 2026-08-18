@@ -25,9 +25,10 @@ patient — every report is read and taken seriously.
 
 ## Scope
 
-zeon-ta is a pure NumPy + Pandas numerical library: it computes indicators
-from arrays you already hold in memory and has no network, filesystem, or
-subprocess access of its own. Realistic security concerns are things like:
+zeon-ta is a numerical library built on NumPy, pandas and PyWavelets: it
+computes indicators from arrays you already hold in memory and has no
+network, filesystem, or subprocess access of its own. Realistic security
+concerns are things like:
 
 - A crafted input (`NaN`/`Inf` patterns, extreme lengths, adversarial
   parameter values) causing a crash, hang, or resource-exhaustion rather

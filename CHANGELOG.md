@@ -6,7 +6,35 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **New dependency: PyWavelets (`pywavelets>=1.9`).** Needed for
+  `wavelet_denoise` below — no wavelet transform exists in NumPy or pandas
+  themselves (NumPy's FFT gives frequency information but discards *when*
+  a frequency occurs; a DWT keeps both). This is the project's first
+  dependency beyond NumPy + pandas; every other indicator is unaffected.
+  Registered indicators: 61 -> 62.
+
 ### Added
+
+- **Moving averages** — `wavelet_denoise`: causal, rolling Discrete Wavelet
+  Transform denoising (`db4`, level 2 by default), soft-thresholded with
+  the Donoho & Johnstone (1994) universal threshold
+  (`sigma = MAD(finest detail band) / 0.6745`,
+  `threshold = sigma * sqrt(2 * log(window))`) — the standard rule
+  published work on wavelet-denoised technical indicators applies to
+  price/return series before building indicators on top of them.
+  Deliberately **not** the naive whole-series-in-one-pass approach that
+  academic backtests typically use: that repaints every past bar's value
+  as new data arrives, which is unusable for a live signal even though it
+  looks fine in-sample. Every bar here is decomposed from its own
+  trailing `window` only, so a value once written never changes — the
+  same non-repaint guarantee as every other indicator in this library,
+  at the cost of one decomposition per bar instead of one pass over the
+  whole series. Returns a denoised price series meant to be piped into an
+  existing indicator (`zeonta.rsi(zeonta.wavelet_denoise(df["close"]))`)
+  rather than a `Wavelet_RSI`/`Wavelet_MACD` pair, since that's the same
+  computation without duplicating `rsi()`/`macd()`.
 
 - **Moving averages** — `t3` (Tillson's T3): three cascaded "Generalized
   DEMA" passes (`(1+v)*EMA - v*EMA(EMA)`, blending toward `dema` as `v`

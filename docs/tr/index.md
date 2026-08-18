@@ -29,6 +29,7 @@
 | [`super_smoother`](indicators/super_smoother.md) | Super Smoother Filtresi (Ehlers) |
 | [`t3`](indicators/t3.md) | T3 Hareketli Ortalaması (Tillson) |
 | [`tema`](indicators/tema.md) | Üçlü Üssel Hareketli Ortalama (TEMA) |
+| [`wavelet_denoise`](indicators/wavelet_denoise.md) | Dalgacık ile Gürültüsü Giderilmiş Fiyat (Ayrık Dalgacık Dönüşümü) |
 | [`wma`](indicators/wma.md) | Ağırlıklı Hareketli Ortalama (WMA) |
 
 ## Osilatörler

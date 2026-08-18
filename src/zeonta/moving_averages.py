@@ -11,6 +11,7 @@ from collections.abc import Sequence
 
 import numpy as np
 import pandas as pd
+import pywt
 
 from ._core import (
     ArrayLike,
@@ -42,6 +43,7 @@ __all__ = [
     "super_smoother",
     "t3",
     "tema",
+    "wavelet_denoise",
     "wma",
 ]
 
@@ -836,3 +838,127 @@ def instantaneous_trendline(close: ArrayLike, alpha: Number = 0.07) -> pd.Series
             )
 
     return wrap_series(result, common_index(close), f"ITREND_{alpha}")
+
+
+def _wavelet_denoise_endpoint(segment: np.ndarray, wavelet: str, level: int) -> float:
+    """Denoise *segment* with a level-*level* DWT and return only its last sample.
+
+    Soft-thresholds every detail band with the Donoho-Johnstone universal
+    threshold (noise sigma from the finest band's MAD) and leaves the
+    approximation band untouched, then reconstructs and keeps the endpoint —
+    the one sample that reflects *segment* and nothing after it.
+    """
+    # pywt's Cython core needs a writable buffer; a slice of the caller's
+    # array may not be (e.g. a read-only view from DataFrame.to_numpy()).
+    coeffs = pywt.wavedec(np.array(segment, dtype="float64"), wavelet, level=level)
+    sigma = float(np.median(np.abs(coeffs[-1])) / 0.6745)
+    threshold = 0.0 if sigma == 0.0 else sigma * np.sqrt(2.0 * np.log(segment.shape[0]))
+    denoised = [coeffs[0], *(pywt.threshold(band, threshold, mode="soft") for band in coeffs[1:])]
+    reconstructed: np.ndarray = pywt.waverec(denoised, wavelet)
+    return float(reconstructed[-1])
+
+
+@indicator(
+    category="moving_averages",
+    summary="Causal rolling wavelet (DWT) denoising: cuts noise without an EMA's lag.",
+    reference="https://doi.org/10.1093/biomet/81.3.425",
+    outputs=("WDENOISE",),
+)
+def wavelet_denoise(
+    close: ArrayLike, window: int = 64, wavelet: str = "db4", level: int = 2
+) -> pd.Series:
+    """Wavelet-Denoised Price (Discrete Wavelet Transform, causal/rolling).
+
+    Splits each rolling *window* of price into an approximation band (the
+    trend) and *level* detail bands (finer and finer noise), zeroes out
+    whatever in the detail bands is small enough to be noise rather than
+    signal, and reconstructs — recovering the trend with far less lag than
+    an EMA of comparable smoothness, since it only removes the parts of the
+    signal identified as noise rather than damping everything equally.
+
+    "Small enough to be noise" uses the Donoho-Johnstone universal
+    threshold: the finest detail band's median absolute deviation estimates
+    the noise level (``sigma = MAD(cD1) / 0.6745``, the usual
+    Gaussian-consistent scaling), and any detail coefficient below
+    ``sigma * sqrt(2 * log(window))`` is soft-thresholded — shrunk toward
+    zero by the threshold rather than hard-clipped to it, which avoids
+    reintroducing sharp jumps at the cutoff. This is the same rule
+    academic work on wavelet-denoised technical indicators applies to
+    price/return series before rebuilding indicators on top of it.
+
+    **This implementation only ever looks backward.** Naive wavelet
+    denoising decomposes an entire series in one pass, which means every
+    bar's smoothed value depends on bars that come after it — each new bar
+    silently *repaints* every past value, which is unusable for a live
+    signal even though it looks fine in an in-sample backtest. Here, bar
+    ``i``'s value comes only from ``close[i - window + 1 : i + 1]``: once
+    written, it never changes as new bars arrive. The tradeoff is that each
+    bar re-runs its own decomposition from scratch, rather than one pass
+    over the whole series.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    window:
+        Bars per rolling decomposition. Must be large enough for *wavelet*
+        to reach *level* levels — see ``pywt.dwt_max_level``; the defaults
+        (64, ``"db4"``, level 2) need at least 28. Larger windows resolve
+        lower frequencies but react more slowly to a genuine regime change.
+    wavelet:
+        Any discrete wavelet name PyWavelets recognises (``pywt.wavelist(kind="discrete")``).
+        ``"db4"`` (Daubechies, 4 vanishing moments) is what published
+        wavelet-denoised-indicator work most often uses.
+    level:
+        Number of detail bands to threshold. Must be >= 1 and small enough
+        for *window* bars to support (see *window* above).
+
+    Returns
+    -------
+    pandas.Series
+        Named ``WDENOISE_{window}_{wavelet}``. The first ``window - 1``
+        bars are ``NaN`` — there isn't a full window to decompose yet.
+
+    Notes
+    -----
+    A denoised price series is a building block, not a finished
+    indicator: pipe it into an existing indicator in place of raw
+    ``close`` (e.g. ``zeonta.rsi(zeonta.wavelet_denoise(df["close"]))`` or
+    the same for ``macd``) to get a wavelet-denoised version of it.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import zeonta
+    >>> rng = np.random.default_rng(0)
+    >>> noisy = np.cumsum(rng.normal(size=64)) + 100.0
+    >>> result = zeonta.wavelet_denoise(noisy, window=32, level=2)
+    >>> result.iloc[:31].isna().all()
+    np.True_
+    >>> round(result.iloc[-1], 6)
+    np.float64(103.975548)
+
+    References
+    ----------
+    https://doi.org/10.1093/biomet/81.3.425
+    """
+    window = validate_length(window, "window", minimum=2)
+    if level < 1:
+        raise ValueError(f"'level' must be >= 1, got {level}")
+    max_level = pywt.dwt_max_level(window, pywt.Wavelet(wavelet).dec_len)
+    if level > max_level:
+        raise ValueError(
+            f"'window' ({window}) is too short for {level} level(s) of '{wavelet}' — "
+            f"the most this window supports is level={max_level}"
+        )
+
+    values = as_array(close, "close")
+    size = values.shape[0]
+    result = np.full(size, np.nan, dtype="float64")
+    for i in range(window - 1, size):
+        segment = values[i - window + 1 : i + 1]
+        if not np.all(np.isfinite(segment)):
+            continue
+        result[i] = _wavelet_denoise_endpoint(segment, wavelet, level)
+
+    return wrap_series(result, common_index(close), f"WDENOISE_{window}_{wavelet}")

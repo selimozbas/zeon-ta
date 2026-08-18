@@ -464,3 +464,44 @@ def test_instantaneous_trendline_rejects_alpha_out_of_range() -> None:
         zeonta.instantaneous_trendline([1.0, 2.0, 3.0], alpha=0.0)
     with pytest.raises(ValueError, match="must be < 1"):
         zeonta.instantaneous_trendline([1.0, 2.0, 3.0], alpha=1.0)
+
+
+def test_wavelet_denoise_warmup_is_exactly_window_minus_one_bars() -> None:
+    rng = np.random.default_rng(7)
+    values = np.cumsum(rng.normal(size=50)) + 100.0
+    result = zeonta.wavelet_denoise(values, window=32, level=2)
+    assert result.iloc[:31].isna().all()
+    assert result.iloc[31:].notna().all()
+
+
+def test_wavelet_denoise_is_causal_new_bars_never_change_past_values() -> None:
+    """The whole point of the rolling design: a bar's value must never
+    repaint once written, unlike naive whole-series wavelet denoising —
+    see the indicator's own docstring for why that distinction matters
+    for anything meant to generate a live trading signal."""
+    rng = np.random.default_rng(42)
+    prices = np.cumsum(rng.normal(size=80)) + 100.0
+    full = zeonta.wavelet_denoise(prices, window=32, level=2)
+    prefix = zeonta.wavelet_denoise(prices[:50], window=32, level=2)
+    np.testing.assert_allclose(full.iloc[:50].to_numpy(), prefix.to_numpy(), equal_nan=True)
+
+
+def test_wavelet_denoise_is_exact_on_a_flat_series() -> None:
+    result = zeonta.wavelet_denoise([100.0] * 40, window=32, level=2)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 100.0)
+
+
+def test_wavelet_denoise_output_name_and_type() -> None:
+    result = zeonta.wavelet_denoise([1.0] * 40, window=32, wavelet="db4")
+    assert result.name == "WDENOISE_32_db4"
+    assert isinstance(result, pd.Series)
+
+
+def test_wavelet_denoise_rejects_a_window_too_small_for_the_level() -> None:
+    with pytest.raises(ValueError, match="too short"):
+        zeonta.wavelet_denoise(list(range(20)), window=20, level=2)
+
+
+def test_wavelet_denoise_rejects_non_positive_level() -> None:
+    with pytest.raises(ValueError, match="'level' must be >= 1"):
+        zeonta.wavelet_denoise(list(range(40)), level=0)

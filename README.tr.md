@@ -6,8 +6,9 @@
 
 **English: [README.md](README.md)**
 
-Python için gerçekten bakımı yapılan teknik analiz indikatörleri — derlenecek C
-eklentisi yok, terk edilmiş API yok. Tek bağımlılık NumPy ve pandas.
+Python için gerçekten bakımı yapılan teknik analiz indikatörleri — derleme
+adımı yok, terk edilmiş API yok. NumPy ve pandas neredeyse her indikatörü
+kapsar; PyWavelets tek istisnadır, yalnızca `wavelet_denoise` için gerekir.
 
 Formüller, standart ve yaygın olarak yayımlanmış teknik analiz tanımlarını
 izler. Birkaç indikatör, formülünün doğrulandığı dış kaynağa kendi
@@ -15,9 +16,9 @@ docstring'inde ek olarak bağlantı verir.
 
 ## Neden bir TA kütüphanesi daha
 
-- **Derleme adımı yok.** Saf NumPy/pandas olduğu için `pip install` her yerde
-  sorunsuz çalışır — TA-Lib'in başa dert olduğu ARM Mac'ler ve ince
-  konteynerler dâhil.
+- **Derleme adımı yok.** Her bağımlılık önceden derlenmiş wheel olarak gelir,
+  bu yüzden `pip install` her yerde sorunsuz çalışır — TA-Lib'in başa dert
+  olduğu ARM Mac'ler ve ince konteynerler dâhil.
 - **Tek sözleşme, tüm indikatörler.** `Series`, dizi ya da liste verin; index'iniz
   korunmuş ve girdinizle aynı uzunlukta pandas nesnesi alın. Isınma barları
   kırpılmaz, `NaN` kalır; böylece geriye dönük testin altından hiçbir şey sessizce
@@ -110,6 +111,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `super_smoother` | Super Smoother Filtresi (Ehlers) | [doküman](docs/tr/indicators/super_smoother.md) |
 | `t3` | T3 Hareketli Ortalaması (Tillson) | [doküman](docs/tr/indicators/t3.md) |
 | `tema` | Üçlü Üssel Hareketli Ortalama (TEMA) | [doküman](docs/tr/indicators/tema.md) |
+| `wavelet_denoise` | Dalgacık ile Gürültüsü Giderilmiş Fiyat (Ayrık Dalgacık Dönüşümü) | [doküman](docs/tr/indicators/wavelet_denoise.md) |
 | `wma` | Ağırlıklı Hareketli Ortalama (WMA) | [doküman](docs/tr/indicators/wma.md) |
 
 ### Osilatörler

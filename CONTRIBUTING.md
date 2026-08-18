@@ -4,6 +4,10 @@ Thanks for considering a contribution. This document covers how the codebase
 is structured, how a new indicator gets added end to end, and what the test
 suite expects before a change is done.
 
+By participating in this project you agree to abide by its
+[Code of Conduct](CODE_OF_CONDUCT.md). Found a security issue rather than a
+bug? See [SECURITY.md](SECURITY.md) instead of opening a public issue.
+
 ## Setup
 
 ```bash

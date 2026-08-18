@@ -340,7 +340,9 @@ files drift.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow, and
 [docs/en/methodology.md](docs/en/methodology.md) for how a formula gets
-verified before it's implemented.
+verified before it's implemented. This project follows a
+[Code of Conduct](CODE_OF_CONDUCT.md); see [SECURITY.md](SECURITY.md) to
+report a vulnerability privately.
 
 ## License
 
@@ -451,7 +453,9 @@ başarısız olur.
 
 Tam iş akışı için bkz. [CONTRIBUTING.md](CONTRIBUTING.md); bir formülün
 uygulanmadan önce nasıl doğrulandığı için bkz.
-[docs/tr/methodology.md](docs/tr/methodology.md).
+[docs/tr/methodology.md](docs/tr/methodology.md). Bu proje bir
+[Davranış Kuralları](CODE_OF_CONDUCT.md) belgesine sahiptir; bir güvenlik
+açığını gizli olarak bildirmek için bkz. [SECURITY.md](SECURITY.md).
 
 ## Lisans
 

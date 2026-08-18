@@ -193,7 +193,9 @@ files drift.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow, and
 [docs/en/methodology.md](docs/en/methodology.md) for how a formula gets
-verified before it's implemented.
+verified before it's implemented. This project follows a
+[Code of Conduct](CODE_OF_CONDUCT.md); see [SECURITY.md](SECURITY.md) to
+report a vulnerability privately.
 
 ## License
 

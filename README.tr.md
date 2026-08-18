@@ -197,7 +197,9 @@ başarısız olur.
 
 Tam iş akışı için bkz. [CONTRIBUTING.md](CONTRIBUTING.md); bir formülün
 uygulanmadan önce nasıl doğrulandığı için bkz.
-[docs/tr/methodology.md](docs/tr/methodology.md).
+[docs/tr/methodology.md](docs/tr/methodology.md). Bu proje bir
+[Davranış Kuralları](CODE_OF_CONDUCT.md) belgesine sahiptir; bir güvenlik
+açığını gizli olarak bildirmek için bkz. [SECURITY.md](SECURITY.md).
 
 ## Lisans
 

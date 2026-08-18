@@ -4,16 +4,27 @@
 [![Python](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
 [![License](https://img.shields.io/github/license/selimozbas/zeon-ta)](LICENSE)
 
-Technical analysis indicators for Python that are actually maintained — no
-build step, no abandoned API. NumPy and pandas cover almost every indicator;
-PyWavelets is the one exception, needed only for `wavelet_denoise`.
+Technical analysis for Python, from RSI to a causal cross-wavelet lead-lag
+transform — not a TA-Lib/Tulip Indicators clone with a friendlier install.
+Alongside the standard indicator set, zeon-ta implements newer,
+academically-sourced tools those libraries predate and have never added —
+Ehlers' cycle-analysis filters, the Hurst exponent, wavelet-based denoising
+and multi-scale volatility, a cross-asset lead-lag transform — each one
+traced to the specific paper it comes from, not to a folklore formula.
 
-Formulas follow standard, widely published technical-analysis definitions. A
-few indicators additionally cite the specific external source their formula
-was verified against in their own docstring.
+Formulas follow standard, widely published technical-analysis definitions
+where one exists. Where a formula's own academic paper is the source
+instead, or where a candidate indicator turned out to have no single
+agreed-on formula across implementations, the docstring says which and
+why.
 
 ## Why another TA library
 
+- **Classic and modern, both formula-verified.** Every indicator — whether
+  it is RSI or a MODWT wavelet-variance decomposition — cites what its
+  formula was checked against, and a proposed indicator with no single
+  agreed-on formula across sources is declined outright rather than
+  guessed at (documented in [CHANGELOG.md](CHANGELOG.md) either way).
 - **No build step.** Every dependency ships prebuilt wheels, so `pip install`
   just works — everywhere, including on ARM Macs and in slim containers
   where TA-Lib is a fight.

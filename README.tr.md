@@ -6,16 +6,29 @@
 
 **English: [README.md](README.md)**
 
-Python için gerçekten bakımı yapılan teknik analiz indikatörleri — derleme
-adımı yok, terk edilmiş API yok. NumPy ve pandas neredeyse her indikatörü
-kapsar; PyWavelets tek istisnadır, yalnızca `wavelet_denoise` için gerekir.
+Python için teknik analiz — RSI'dan causal bir cross-wavelet lead-lag
+dönüşümüne kadar. Daha kolay kurulan bir TA-Lib/Tulip Indicators kopyası
+değil. Standart indikatör setinin yanında zeon-ta, bu kütüphanelerin hiç
+eklemediği, onlardan daha yeni ve akademik kaynaklı araçlar da içerir —
+Ehlers'in döngü-analizi filtreleri, Hurst üsteli, dalgacık tabanlı gürültü
+giderme ve çok ölçekli oynaklık, varlıklar-arası bir lead-lag dönüşümü —
+her biri bir halk anlatısı formülüne değil, geldiği belirli makaleye
+dayanır.
 
-Formüller, standart ve yaygın olarak yayımlanmış teknik analiz tanımlarını
-izler. Birkaç indikatör, formülünün doğrulandığı dış kaynağa kendi
-docstring'inde ek olarak bağlantı verir.
+Formüller, mevcut olduğunda standart ve yaygın olarak yayımlanmış teknik
+analiz tanımlarını izler. Bir formülün kaynağı kendi akademik makalesi
+olduğunda, ya da bir aday indikatörün kaynaklar arasında tek bir mutabık
+formülü olmadığı ortaya çıktığında, docstring hangisinin ve nedenini
+söyler.
 
 ## Neden bir TA kütüphanesi daha
 
+- **Klasik ve modern, ikisi de formülü doğrulanmış.** İster RSI olsun
+  ister bir MODWT dalgacık-varyans ayrıştırması, her indikatör formülünün
+  neye karşı doğrulandığını belirtir; kaynaklar arasında tek bir mutabık
+  formülü olmayan bir aday indikatör tahmin edilmek yerine doğrudan
+  reddedilir (her iki durumda da [CHANGELOG.md](CHANGELOG.md)'de
+  belgelenir).
 - **Derleme adımı yok.** Her bağımlılık önceden derlenmiş wheel olarak gelir,
   bu yüzden `pip install` her yerde sorunsuz çalışır — TA-Lib'in başa dert
   olduğu ARM Mac'ler ve ince konteynerler dâhil.

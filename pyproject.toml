@@ -56,7 +56,19 @@ Issues = "https://github.com/selimozbas/zeon-ta/issues"
 packages = ["src/zeonta"]
 
 [tool.hatch.build.targets.sdist]
-include = ["/src", "/tests", "/docs", "/README.md", "/README.tr.md", "/CHANGELOG.md", "/LICENSE"]
+include = [
+    "/src",
+    "/tests",
+    "/docs",
+    "/examples",
+    "/benchmarks",
+    "/README.md",
+    "/README.tr.md",
+    "/CHANGELOG.md",
+    "/CONTRIBUTING.md",
+    "/BENCHMARKS.md",
+    "/LICENSE",
+]
 
 [tool.ruff]
 line-length = 100
@@ -89,6 +101,7 @@ convention = "numpy"
 "tests/*" = ["E501", "D"]                    # test names are the documentation
 "tools/docs_content.py" = ["E501", "D"]      # long prose strings; internal build content
 "tools/gen_docs.py" = ["D"]                  # internal build script, not public API
+"benchmarks/*" = ["D"]                       # internal script, not public API
 
 [tool.mypy]
 python_version = "3.12"

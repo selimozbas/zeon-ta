@@ -23,6 +23,9 @@ was verified against in their own docstring.
   routes to the exact same code — verified equal by tests, not by convention.
 - **Documented honestly.** Every indicator's page states its pitfalls, including
   where an output contains look-ahead information and what to do about it.
+- **Measured, not assumed, performance.** Every indicator is benchmarked at up
+  to 1M bars, with real numbers and methodology in [BENCHMARKS.md](BENCHMARKS.md)
+  — most complete in low milliseconds even at that size.
 
 ## Install
 

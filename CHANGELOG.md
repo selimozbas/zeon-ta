@@ -8,6 +8,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- `benchmarks/run.py` and [BENCHMARKS.md](BENCHMARKS.md): every registered
+  indicator timed against synthetic OHLCV data at 10k/100k/1M bars, with
+  real, reproducible numbers and methodology rather than assumed
+  performance. At 1M bars, 32/47 indicators finish in under half a second
+  and the slowest (`ema_ribbon`, six full EMA passes by design) in under 2s;
+  at a realistic 10k bars every indicator finishes in under 20ms.
 - Ruff's `D` (pydocstyle) rule set is now enforced (`numpy` docstring
   convention), so a public function/class/module missing a docstring, or one
   with a formatting slip (no blank line before an elaboration, closing
@@ -48,6 +54,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Ultimate Oscillator, Stochastic, Ichimoku's base line, and both Classic
   and Fibonacci pivot points) matched TradingView to the penny, catching two
   real bugs in the process — `hma` and `pivot_points` (see Fixed, below).
+
+### Changed
+
+- `support_resistance` and `divergence` no longer detect swing pivots with a
+  per-bar Python loop. The shared `_pivot_flags` helper moved to a single
+  `sliding_window_view` pass, and `support_resistance`'s confirmed-pivot
+  carry-forward moved from its own loop to a shift + `ffill` (the same
+  pattern `obv()` already used). Found and measured via the new
+  `benchmarks/run.py`: `support_resistance` went from 2.48s to 0.06s at 1M
+  bars (~40x), `divergence` from 3.30s to 0.77s (~4.3x). Output is
+  bit-identical to before; no new dependency.
 
 ### Fixed
 

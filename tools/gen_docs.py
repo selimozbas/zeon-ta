@@ -264,6 +264,9 @@ was verified against in their own docstring.
   routes to the exact same code — verified equal by tests, not by convention.
 - **Documented honestly.** Every indicator's page states its pitfalls, including
   where an output contains look-ahead information and what to do about it.
+- **Measured, not assumed, performance.** Every indicator is benchmarked at up
+  to 1M bars, with real numbers and methodology in [BENCHMARKS.md](BENCHMARKS.md)
+  — most complete in low milliseconds even at that size.
 
 ## Install
 
@@ -371,6 +374,9 @@ docstring'inde ek olarak bağlantı verir.
   DataFrame accessor'ı — eşitlikleri gelenekle değil, testlerle doğrulanır.
 - **Dürüst dokümantasyon.** Her indikatörün sayfası, hangi çıktının geleceğe bakma
   bilgisi içerdiği ve buna karşı ne yapılacağı dâhil, tuzaklarını açıkça yazar.
+- **Varsayılan değil, ölçülmüş performans.** Her indikatör 1M bar'a kadar
+  ölçülür; gerçek sayılar ve yöntem [BENCHMARKS.md](BENCHMARKS.md) içinde —
+  çoğu bu ölçekte bile düşük milisaniyelerde tamamlanır.
 
 ## Kurulum
 

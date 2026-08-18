@@ -107,6 +107,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | `dema` | Double Exponential Moving Average (DEMA) | [docs](docs/en/indicators/dema.md) |
 | `ema` | Exponential Moving Average (EMA) | [docs](docs/en/indicators/ema.md) |
 | `ema_ribbon` | EMA Ribbon | [docs](docs/en/indicators/ema_ribbon.md) |
+| `emd_imf1` | Empirical Mode Decomposition — First IMF | [docs](docs/en/indicators/emd_imf1.md) |
 | `hma` | Hull Moving Average (HMA) | [docs](docs/en/indicators/hma.md) |
 | `instantaneous_trendline` | Instantaneous Trendline (Ehlers) | [docs](docs/en/indicators/instantaneous_trendline.md) |
 | `kama` | Kaufman's Adaptive Moving Average (KAMA) | [docs](docs/en/indicators/kama.md) |

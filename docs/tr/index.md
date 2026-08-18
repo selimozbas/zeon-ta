@@ -20,6 +20,7 @@
 | [`dema`](indicators/dema.md) | Çift Üssel Hareketli Ortalama (DEMA) |
 | [`ema`](indicators/ema.md) | Üssel Hareketli Ortalama (EMA) |
 | [`ema_ribbon`](indicators/ema_ribbon.md) | EMA Şeridi |
+| [`emd_imf1`](indicators/emd_imf1.md) | Ampirik Mod Ayrıştırması — Birinci IMF |
 | [`hma`](indicators/hma.md) | Hull Hareketli Ortalaması (HMA) |
 | [`instantaneous_trendline`](indicators/instantaneous_trendline.md) | Anlık Trend Çizgisi (Ehlers) |
 | [`kama`](indicators/kama.md) | Kaufman Uyarlanabilir Hareketli Ortalama (KAMA) |

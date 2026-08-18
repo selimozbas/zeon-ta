@@ -20,6 +20,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`dema`](indicators/dema.md) | Double Exponential Moving Average (DEMA) |
 | [`ema`](indicators/ema.md) | Exponential Moving Average (EMA) |
 | [`ema_ribbon`](indicators/ema_ribbon.md) | EMA Ribbon |
+| [`emd_imf1`](indicators/emd_imf1.md) | Empirical Mode Decomposition — First IMF |
 | [`hma`](indicators/hma.md) | Hull Moving Average (HMA) |
 | [`instantaneous_trendline`](indicators/instantaneous_trendline.md) | Instantaneous Trendline (Ehlers) |
 | [`kama`](indicators/kama.md) | Kaufman's Adaptive Moving Average (KAMA) |

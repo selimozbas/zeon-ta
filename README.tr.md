@@ -113,6 +113,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `dema` | Çift Üssel Hareketli Ortalama (DEMA) | [doküman](docs/tr/indicators/dema.md) |
 | `ema` | Üssel Hareketli Ortalama (EMA) | [doküman](docs/tr/indicators/ema.md) |
 | `ema_ribbon` | EMA Şeridi | [doküman](docs/tr/indicators/ema_ribbon.md) |
+| `emd_imf1` | Ampirik Mod Ayrıştırması — Birinci IMF | [doküman](docs/tr/indicators/emd_imf1.md) |
 | `hma` | Hull Hareketli Ortalaması (HMA) | [doküman](docs/tr/indicators/hma.md) |
 | `instantaneous_trendline` | Anlık Trend Çizgisi (Ehlers) | [doküman](docs/tr/indicators/instantaneous_trendline.md) |
 | `kama` | Kaufman Uyarlanabilir Hareketli Ortalama (KAMA) | [doküman](docs/tr/indicators/kama.md) |

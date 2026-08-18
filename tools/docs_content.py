@@ -3616,4 +3616,93 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.sample_entropy(df["close"]).tail(3),
         ],
     },
+    "emd_imf1": {
+        "title_en": "Empirical Mode Decomposition — First IMF",
+        "title_tr": "Ampirik Mod Ayrıştırması — Birinci IMF",
+        "formula_en": (
+            "Sift close within a rolling window: fit natural cubic splines through "
+            "its local maxima and minima to form upper/lower envelopes, subtract "
+            "their mean, repeat on the result until the Cauchy-type convergence "
+            "measure SD < sd_threshold or max_iterations is reached; the result is "
+            "the first Intrinsic Mode Function"
+        ),
+        "formula_tr": (
+            "Yuvarlanan bir pencere içinde close'u salla (sift): yerel maksimum ve "
+            "minimumlarından doğal kübik spline'lar geçirerek üst/alt zarfları "
+            "oluştur, ortalamalarını çıkar, SD < sd_threshold ya da max_iterations'a "
+            "ulaşılana kadar sonuç üzerinde tekrarla; sonuç birinci Intrinsic Mode "
+            "Function'dır"
+        ),
+        "about_en": (
+            "Huang et al. (1998) built EMD as an alternative to Fourier and wavelet "
+            "analysis for signals that are non-stationary and nonlinear — a price "
+            "series among them. Rather than projecting onto a fixed basis (sines, or "
+            "a wavelet's fixed mother function), EMD derives its own basis functions "
+            "directly from the data's local extrema. This library exposes only the "
+            "first of what a full decomposition would produce: the fastest local "
+            "oscillation, with slower components (later IMFs, and the residual trend "
+            "a full decomposition ends with) left out, since a full decomposition's "
+            "IMF count varies with the data and does not fit a fixed-column output."
+        ),
+        "about_tr": (
+            "Huang ve ark. (1998), durağan olmayan ve doğrusal olmayan sinyaller "
+            "için — bir fiyat serisi de dahil — Fourier ve dalgacık analizine "
+            "alternatif olarak EMD'yi geliştirdi. Sabit bir taban üzerine izdüşüm "
+            "almak yerine (sinüsler, ya da bir dalgacığın sabit ana fonksiyonu), "
+            "EMD kendi taban fonksiyonlarını doğrudan verinin yerel "
+            "ekstremumlarından türetir. Bu kütüphane, tam bir ayrıştırmanın "
+            "üreteceği şeyin yalnızca ilkini sunar: en hızlı yerel salınım; daha "
+            "yavaş bileşenler (sonraki IMF'ler ve tam bir ayrıştırmanın bittiği "
+            "artık trend) dışarıda bırakılır, çünkü tam bir ayrıştırmanın IMF "
+            "sayısı veriye göre değişir ve sabit-kolon çıktıya uymaz."
+        ),
+        "reading_en": (
+            "`close - zeonta.emd_imf1(close, window)` approximates the trend/cycle "
+            "residual a full decomposition would isolate, though it is not exactly "
+            "that residual — only one IMF has been removed, not the full recursive "
+            "decomposition down to a monotonic trend. Used directly, IMF1 behaves "
+            "like a cycle/noise extraction, similar in spirit to what "
+            "`wavelet_denoise` removes but from the opposite direction: this keeps "
+            "the fast component rather than filtering it out."
+        ),
+        "reading_tr": (
+            "`close - zeonta.emd_imf1(close, window)`, tam bir ayrıştırmanın "
+            "izole edeceği trend/döngü artığına yaklaşır, ama tam olarak o artık "
+            "değildir — yalnızca bir IMF çıkarılmıştır, monoton bir trende kadar "
+            "inen tam yinelemeli ayrıştırma değil. Doğrudan kullanıldığında, IMF1 "
+            "bir döngü/gürültü çıkarımı gibi davranır — `wavelet_denoise`'in "
+            "çıkardığına benzer bir ruhta ama ters yönden: bu, hızlı bileşeni "
+            "filtrelemek yerine onu tutar."
+        ),
+        "pitfalls_en": (
+            "By far the most expensive indicator in this library to compute: every "
+            "bar re-runs an iterative spline-fitting loop over its own window, not "
+            "a single vectorised pass (see `BENCHMARKS.md`). Boundary handling is a "
+            "known, real weak point of EMD in general — this implementation "
+            "deliberately does not anchor the envelope splines to the window's own "
+            "first/last sample (an earlier version did, and it turned out to force "
+            "every sifted value at the boundary to exactly 0.0, caught by noticing "
+            "a suspiciously exact zero rather than trusting the formula); letting "
+            "the natural cubic spline extrapolate past the outermost real extremum "
+            "instead avoids that specific artifact, but boundary bars are still the "
+            "least reliable part of any EMD window for that reason."
+        ),
+        "pitfalls_tr": (
+            "Bu kütüphanedeki açık farkla en pahalı indikatör: her bar kendi "
+            "penceresi üzerinde yinelemeli bir spline-uydurma döngüsünü yeniden "
+            "çalıştırır, tek bir vektörleştirilmiş geçiş değil (bkz. "
+            "`BENCHMARKS.md`). Sınır işleme, genel olarak EMD'nin bilinen, gerçek "
+            "bir zayıf noktasıdır — bu uygulama, zarf spline'larını pencerenin "
+            "kendi ilk/son örneğine kasıtlı olarak sabitlemez (önceki bir sürüm "
+            "sabitliyordu ve bunun sınırdaki her salınmış değeri tam olarak 0,0'a "
+            "zorladığı ortaya çıktı — formüle güvenmek yerine şüpheli derecede tam "
+            "bir sıfırın fark edilmesiyle yakalandı); doğal kübik spline'ın en "
+            "dıştaki gerçek ekstremumun ötesine ekstrapolasyon yapmasına izin "
+            "vermek bu belirli sorunu önler, ama sınır barları bu yüzden yine de "
+            "herhangi bir EMD penceresinin en güvenilmez kısmıdır."
+        ),
+        "example": [
+            lambda df: zeonta.emd_imf1(df["close"]).tail(3),
+        ],
+    },
 }

@@ -17,6 +17,40 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Moving averages** — `emd_imf1` (Huang et al., 1998): the fifth and
+  last of the academic indicator batch, and the biggest single
+  implementation in it. Empirical Mode Decomposition derives its own
+  basis functions from a signal's local extrema rather than assuming a
+  fixed one (Fourier's sines, a wavelet's mother function) — this returns
+  only the first Intrinsic Mode Function (the fastest local oscillation)
+  of what a full recursive decomposition would produce, since the full
+  IMF count varies with the data and does not fit a fixed-column output.
+
+  Needed a natural cubic spline to fit the envelope through local
+  extrema, which does not exist in NumPy; hand-implemented it (the
+  standard tridiagonal second-derivative system, solved directly) rather
+  than adding scipy as a second major dependency after PyWavelets —
+  checked against `scipy.interpolate.CubicSpline` while writing it
+  (installed only in the dev environment for that one check, never a
+  runtime dependency; max difference ~1e-15) before relying on it.
+
+  Found and fixed a real bug before finalizing: an earlier version
+  anchored both the upper and lower envelope splines to the window's own
+  first/last sample, which forces their mean to equal the data exactly at
+  that point — so every sift zeroed out the boundary bars deterministically,
+  caught by noticing a suspiciously exact `0.0` at the read-out point
+  rather than trusting the formula. Removing that anchor and letting the
+  spline extrapolate past the outermost real extremum fixed it (correlation
+  with a synthetic fast-oscillation component went from unusable to 0.999).
+
+  Causal and rolling for the same non-repaint reason as this library's
+  wavelet tools, verified the same way (a data-prefix run agrees exactly
+  with the equivalent slice of a full run). By far the most expensive
+  indicator in the library — every bar re-runs an iterative spline-fitting
+  sift over its own window — documented as such.
+
+  Registered indicators: 66 -> 67.
+
 - **Advanced** — `sample_entropy` (Richman & Moorman, 2000): the third of
   the five-indicator academic batch. Measures how much a rolling window
   of log returns repeats its own short-term patterns (`SampEn = -ln(A/B)`,

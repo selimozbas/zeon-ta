@@ -505,3 +505,75 @@ def test_wavelet_denoise_rejects_a_window_too_small_for_the_level() -> None:
 def test_wavelet_denoise_rejects_non_positive_level() -> None:
     with pytest.raises(ValueError, match="'level' must be >= 1"):
         zeonta.wavelet_denoise(list(range(40)), level=0)
+
+
+def test_emd_imf1_extracts_the_fast_component_of_a_two_scale_signal() -> None:
+    """A signal built from a fast oscillation plus a much slower trend:
+    IMF1 should track the fast component and have far less spread than
+    the slow one it left behind — the whole point of the decomposition."""
+    t = np.arange(150, dtype="float64")
+    fast = 0.5 * np.sin(2 * np.pi * t / 8)
+    slow_trend = 0.02 * t + 3 * np.sin(2 * np.pi * t / 150)
+    result = zeonta.emd_imf1(fast + slow_trend, window=100)
+    imf1 = result.dropna()
+    correlation = np.corrcoef(imf1, fast[-len(imf1) :])[0, 1]
+    assert correlation > 0.95
+    assert imf1.std() < slow_trend.std()
+
+
+def test_emd_imf1_is_causal_new_bars_never_change_past_values() -> None:
+    """Same non-repaint requirement as the wavelet-based tools: a bar's
+    value must never depend on bars that arrive after it."""
+    t = np.arange(200, dtype="float64")
+    signal = 0.5 * np.sin(2 * np.pi * t / 8) + 0.02 * t
+    full = zeonta.emd_imf1(signal, window=50)
+    prefix = zeonta.emd_imf1(signal[:120], window=50)
+    np.testing.assert_allclose(full.iloc[:120].to_numpy(), prefix.to_numpy(), equal_nan=True)
+
+
+def test_emd_imf1_is_nan_on_a_perfectly_flat_series() -> None:
+    """A flat window has no extrema at all, so sifting never runs even
+    once - must be NaN, not a crash or a divide-by-zero warning (covered
+    generically by the registry-wide constant-input contract test, pinned
+    down here too)."""
+    result = zeonta.emd_imf1([100.0] * 40, window=16)
+    assert result.isna().all()
+
+
+def test_emd_imf1_is_nan_on_a_monotonic_series() -> None:
+    """A strictly increasing series has no local maxima or minima at all
+    (every point is either the running high or running low), so there is
+    nothing to sift - must be NaN, not a crash."""
+    result = zeonta.emd_imf1(list(range(1, 60)), window=20)
+    assert result.isna().all()
+
+
+def test_emd_imf1_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.emd_imf1([1.0, 2.0, 3.0], window=100)
+    assert len(result) == 3
+    assert result.isna().all()
+
+
+def test_emd_imf1_rejects_window_below_sixteen() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.emd_imf1(list(range(1, 30)), window=10)
+
+
+def test_emd_imf1_rejects_max_iterations_below_one() -> None:
+    with pytest.raises(ValueError, match="'max_iterations' must be an integer >= 1"):
+        zeonta.emd_imf1(list(range(1, 30)), max_iterations=0)
+
+
+def test_emd_imf1_rejects_non_positive_sd_threshold() -> None:
+    with pytest.raises(ValueError, match="'sd_threshold' must be > 0"):
+        zeonta.emd_imf1(list(range(1, 30)), sd_threshold=0.0)
+
+
+def test_emd_imf1_handles_a_window_with_exactly_two_extrema_of_each_kind() -> None:
+    """Two-cycle window: exactly two maxima and two minima, exercising the
+    two-knot (linear) fallback in the hand-rolled cubic spline rather than
+    the general tridiagonal solve."""
+    t = np.arange(16, dtype="float64")
+    signal = np.sin(2 * np.pi * t / 8)
+    result = zeonta.emd_imf1(signal, window=16)
+    assert np.isfinite(result.iloc[-1])

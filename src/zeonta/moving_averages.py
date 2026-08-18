@@ -34,6 +34,7 @@ __all__ = [
     "dema",
     "ema",
     "ema_ribbon",
+    "emd_imf1",
     "hma",
     "instantaneous_trendline",
     "kama",
@@ -962,3 +963,221 @@ def wavelet_denoise(
         result[i] = _wavelet_denoise_endpoint(segment, wavelet, level)
 
     return wrap_series(result, common_index(close), f"WDENOISE_{window}_{wavelet}")
+
+
+def _fit_natural_cubic_spline(
+    x_knots: np.ndarray, y_knots: np.ndarray, x_query: np.ndarray
+) -> np.ndarray:
+    """Compute the natural cubic spline through ``(x_knots, y_knots)`` at ``x_query``.
+
+    Hand-implemented (solves the standard tridiagonal second-derivative
+    system directly with ``np.linalg.solve``) rather than adding a
+    dependency for it — checked against ``scipy.interpolate.CubicSpline``
+    while this was written (max difference ~1e-15) but scipy is not a
+    runtime dependency of this library. ``x_knots`` must be sorted with no
+    duplicates; ``len(x_knots) >= 2``.
+    """
+    n = x_knots.shape[0]
+    if n == 2:
+        slope = (y_knots[1] - y_knots[0]) / (x_knots[1] - x_knots[0])
+        return np.asarray(y_knots[0] + slope * (x_query - x_knots[0]), dtype="float64")
+
+    h = np.diff(x_knots)
+    coefficients = np.zeros((n, n), dtype="float64")
+    rhs = np.zeros(n, dtype="float64")
+    coefficients[0, 0] = 1.0
+    coefficients[n - 1, n - 1] = 1.0
+    for i in range(1, n - 1):
+        coefficients[i, i - 1] = h[i - 1]
+        coefficients[i, i] = 2.0 * (h[i - 1] + h[i])
+        coefficients[i, i + 1] = h[i]
+        rhs[i] = 6.0 * (
+            (y_knots[i + 1] - y_knots[i]) / h[i] - (y_knots[i] - y_knots[i - 1]) / h[i - 1]
+        )
+    second_derivative = np.linalg.solve(coefficients, rhs)
+
+    segment = np.clip(np.searchsorted(x_knots, x_query, side="right") - 1, 0, n - 2)
+    left_x, right_x = x_knots[segment], x_knots[segment + 1]
+    span = right_x - left_x
+    a = (right_x - x_query) / span
+    b = (x_query - left_x) / span
+    result = (
+        a * y_knots[segment]
+        + b * y_knots[segment + 1]
+        + ((a**3 - a) * second_derivative[segment] + (b**3 - b) * second_derivative[segment + 1])
+        * (span**2)
+        / 6.0
+    )
+    return np.asarray(result, dtype="float64")
+
+
+def _local_extrema(h: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Indices of *h*'s interior local maxima and local minima."""
+    delta = np.diff(h)
+    maxima = np.flatnonzero((delta[:-1] > 0.0) & (delta[1:] < 0.0)) + 1
+    minima = np.flatnonzero((delta[:-1] < 0.0) & (delta[1:] > 0.0)) + 1
+    return maxima, minima
+
+
+def _envelope_mean(t: np.ndarray, h: np.ndarray) -> np.ndarray | None:
+    """Mean of the upper/lower envelopes spline-fit through *h*'s extrema.
+
+    ``None`` when *h* has fewer than two maxima or two minima — too few to
+    define an envelope at all, the signal for the sifting loop to stop.
+
+    Deliberately does *not* anchor either spline with *h*'s own first/last
+    sample (a tempting way to avoid extrapolating past the real extrema,
+    tried first here and rejected): pinning both the upper and lower
+    envelope to the same literal endpoint value forces their mean to
+    equal ``h`` exactly at that point, so every sift would zero out the
+    boundary bars deterministically — caught by checking that the last
+    bar of a sifted, clearly-oscillating test signal was not suspiciously
+    always exactly ``0.0``. Left unanchored, the natural cubic spline
+    still extrapolates past the outermost real extremum using that
+    segment's own cubic, which is what Huang et al.'s paper calls for in
+    substance (a smooth envelope beyond the last extremum) without the
+    boundary artifact the anchored version introduced.
+    """
+    maxima, minima = _local_extrema(h)
+    if maxima.shape[0] < 2 or minima.shape[0] < 2:
+        return None
+    upper = _fit_natural_cubic_spline(t[maxima], h[maxima], t)
+    lower = _fit_natural_cubic_spline(t[minima], h[minima], t)
+    return np.asarray((upper + lower) / 2.0, dtype="float64")
+
+
+def _sift_first_imf(x: np.ndarray, max_iterations: int, sd_threshold: float) -> np.ndarray | None:
+    """Extract the first Intrinsic Mode Function from *x* by sifting.
+
+    Huang et al. (1998)'s own iterative procedure: repeatedly subtract the
+    local mean of the upper/lower envelopes until the Cauchy-type
+    convergence measure ``SD`` (the normalised squared change between
+    successive sifts) drops below *sd_threshold*, or *max_iterations* is
+    reached (a practical safety cap Huang's own convergence criterion does
+    not itself require, since it is not guaranteed to converge on every
+    input). ``None`` if *x* never had two-and-two extrema to sift even
+    once — too little oscillatory structure to extract anything from.
+    """
+    t = np.arange(x.shape[0], dtype="float64")
+    h = x
+    sifted_at_least_once = False
+    for _ in range(max_iterations):
+        mean_envelope = _envelope_mean(t, h)
+        if mean_envelope is None:
+            break
+        h_next = h - mean_envelope
+        previous_energy = np.sum(h * h)
+        sd = np.sum((h - h_next) ** 2) / previous_energy if previous_energy > 0.0 else 0.0
+        h = h_next
+        sifted_at_least_once = True
+        if sd < sd_threshold:
+            break
+    return h if sifted_at_least_once else None
+
+
+@indicator(
+    category="moving_averages",
+    summary="Empirical Mode Decomposition's first IMF: the dominant local oscillation.",
+    reference="https://doi.org/10.1098/rspa.1998.0193",
+    outputs=("EMDIMF1",),
+)
+def emd_imf1(
+    close: ArrayLike,
+    window: int = 100,
+    max_iterations: int = 50,
+    sd_threshold: Number = 0.25,
+) -> pd.Series:
+    """Empirical Mode Decomposition — first Intrinsic Mode Function (Huang et al., 1998).
+
+    A rival to this library's wavelet tools for splitting price by
+    timescale, built on a different idea: rather than a fixed basis
+    (Fourier's sines, a wavelet's fixed mother function), EMD derives its
+    basis functions — Intrinsic Mode Functions (IMFs) — directly from the
+    data's own local extrema, by repeated ("sifting") subtraction of a
+    spline-fit envelope mean. It was designed specifically for signals
+    that are non-stationary and nonlinear, which describes a price series
+    better than a fixed sinusoidal or wavelet basis assumes.
+
+    This returns only the *first* IMF: the fastest local oscillation, with
+    the slower trend/cycle components (later IMFs, and the final residual
+    trend a full decomposition would also produce) removed. A full
+    decomposition's IMF count varies with the data, which does not fit
+    this library's fixed-column contract — see the Notes below for how to
+    approximate the removed trend yourself.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    window:
+        Bars per rolling extraction. Must be >= 16 — a natural cubic
+        spline envelope needs several extrema to be meaningful, not just
+        the bare minimum two.
+    max_iterations:
+        Safety cap on sifting iterations per window. Not part of Huang et
+        al.'s own convergence criterion (which has no guaranteed bound) —
+        an engineering limit so a window that never converges cannot loop
+        indefinitely. Must be >= 1.
+    sd_threshold:
+        Sifting stops once the Cauchy-type convergence measure ``SD``
+        drops below this. Huang et al. recommend ``0.2`` to ``0.3``;
+        ``0.25`` (the default) is their own paper's most-used value. Must
+        be > 0.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``EMDIMF1_{window}``. ``NaN`` for the first ``window - 1``
+        bars, and wherever a window never had two-and-two extrema to sift
+        even once (e.g. a monotonic or very short-period window).
+
+    Notes
+    -----
+    Causal and rolling, like this library's wavelet-based tools, and for
+    the same reason: sifting the *whole* series in one pass — the
+    textbook approach — lets a bar's value depend on bars that arrive
+    later. Every bar here is sifted from only its own trailing *window*,
+    so a value once written never changes.
+
+    ``close - zeonta.emd_imf1(close, window)`` approximates the trend/cycle
+    residual a full decomposition would isolate, though it is not exactly
+    that residual — this only ever extracts one IMF, not the full
+    recursive decomposition down to a monotonic trend.
+
+    By far the most expensive indicator in this library to compute: every
+    bar re-runs an iterative spline-fitting loop over its own window, not
+    a single vectorised pass or even the single fixed-shape loop
+    :func:`~zeonta.sample_entropy` uses (see `BENCHMARKS.md`).
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import zeonta
+    >>> t = np.arange(150, dtype="float64")
+    >>> fast = 0.5 * np.sin(2 * np.pi * t / 8)
+    >>> slow_trend = 0.02 * t + 3 * np.sin(2 * np.pi * t / 150)
+    >>> result = zeonta.emd_imf1(fast + slow_trend, window=100)
+    >>> bool(result.dropna().std() < slow_trend.std())
+    True
+
+    References
+    ----------
+    https://doi.org/10.1098/rspa.1998.0193
+    """
+    window = validate_length(window, "window", minimum=16)
+    if not isinstance(max_iterations, (int, np.integer)) or max_iterations < 1:
+        raise ValueError(f"'max_iterations' must be an integer >= 1, got {max_iterations!r}")
+    sd_threshold = validate_multiplier(sd_threshold, "sd_threshold")
+
+    values = as_array(close, "close")
+    size = values.shape[0]
+    result = np.full(size, np.nan, dtype="float64")
+    for i in range(window - 1, size):
+        segment = values[i - window + 1 : i + 1]
+        if not np.all(np.isfinite(segment)):
+            continue
+        imf1 = _sift_first_imf(segment, max_iterations, sd_threshold)
+        if imf1 is not None:
+            result[i] = imf1[-1]
+
+    return wrap_series(result, common_index(close), f"EMDIMF1_{window}")

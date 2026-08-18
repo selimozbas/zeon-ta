@@ -189,6 +189,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | `hurst_exponent` | Hurst Exponent (Rescaled Range Analysis) | [docs](docs/en/indicators/hurst_exponent.md) |
 | `ou_half_life` | Ornstein-Uhlenbeck Half-Life of Mean Reversion | [docs](docs/en/indicators/ou_half_life.md) |
 | `pivot_points` | Pivot Points | [docs](docs/en/indicators/pivot_points.md) |
+| `sample_entropy` | Sample Entropy (SampEn) | [docs](docs/en/indicators/sample_entropy.md) |
 | `vwap` | VWAP (Volume-Weighted Average Price) | [docs](docs/en/indicators/vwap.md) |
 
 ### Cross-asset utilities (outside the registry)

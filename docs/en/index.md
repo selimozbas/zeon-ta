@@ -102,4 +102,5 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`hurst_exponent`](indicators/hurst_exponent.md) | Hurst Exponent (Rescaled Range Analysis) |
 | [`ou_half_life`](indicators/ou_half_life.md) | Ornstein-Uhlenbeck Half-Life of Mean Reversion |
 | [`pivot_points`](indicators/pivot_points.md) | Pivot Points |
+| [`sample_entropy`](indicators/sample_entropy.md) | Sample Entropy (SampEn) |
 | [`vwap`](indicators/vwap.md) | VWAP (Volume-Weighted Average Price) |

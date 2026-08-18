@@ -39,6 +39,7 @@ from .advanced import (
     hurst_exponent,
     ou_half_life,
     pivot_points,
+    sample_entropy,
     vwap,
 )
 from .foundations import candles, relative_volume, sr_levels, support_resistance, trend_channel
@@ -149,6 +150,7 @@ __all__ = [
     "relative_volume",
     "roc",
     "rsi",
+    "sample_entropy",
     "sma",
     "smma",
     "squeeze",

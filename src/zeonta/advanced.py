@@ -27,11 +27,13 @@ from .foundations import _pivot_flags
 from .oscillators import rsi
 
 __all__ = [
+    "dfa",
     "divergence",
     "fib_retracement",
     "hurst_exponent",
     "ou_half_life",
     "pivot_points",
+    "sample_entropy",
     "vwap",
 ]
 
@@ -783,3 +785,127 @@ def dfa(close: ArrayLike, window: int = 100) -> pd.Series:
             result[i - 1] = slope
 
     return wrap_series(result, common_index(close), f"DFA_{window}")
+
+
+def _sample_entropy_value(segment: np.ndarray, m: int, tolerance: float) -> float:
+    """Sample Entropy of one *segment*, Richman & Moorman (2000).
+
+    ``tolerance`` is an absolute distance already (the caller scales it
+    from *segment*'s own standard deviation) — this only implements the
+    template-matching count.
+    """
+    template_count = segment.shape[0] - m
+    if template_count < 2:
+        return np.nan
+
+    index_m = np.arange(template_count)[:, None] + np.arange(m)[None, :]
+    vectors_m = segment[index_m]
+    index_m1 = np.arange(template_count)[:, None] + np.arange(m + 1)[None, :]
+    vectors_m1 = segment[index_m1]
+
+    # Chebyshev (L-infinity) distance between every pair of templates.
+    distance_m = np.abs(vectors_m[:, None, :] - vectors_m[None, :, :]).max(axis=2)
+    distance_m1 = np.abs(vectors_m1[:, None, :] - vectors_m1[None, :, :]).max(axis=2)
+    np.fill_diagonal(distance_m, np.inf)  # no self-matches, unlike Approximate Entropy
+    np.fill_diagonal(distance_m1, np.inf)
+
+    b_count = np.count_nonzero(distance_m <= tolerance)
+    a_count = np.count_nonzero(distance_m1 <= tolerance)
+    if b_count == 0 or a_count == 0:
+        return np.nan
+    return float(-np.log(a_count / b_count))
+
+
+@indicator(
+    category="advanced",
+    summary="Sample Entropy: how unpredictable a series is, from 0 (regular) upward (irregular).",
+    reference="https://physionet.org/content/sampen/1.0.0/",
+    outputs=("SAMPEN",),
+)
+def sample_entropy(close: ArrayLike, window: int = 100, m: int = 2, r: Number = 0.2) -> pd.Series:
+    """Sample Entropy (Richman & Moorman, 2000).
+
+    Measures how *unpredictable* a rolling window of log returns is,
+    independent of its scale of persistence — a different question from
+    :func:`hurst_exponent`/:func:`dfa`, which ask whether a series trends
+    or reverts, not how noisy it is at either extreme.
+
+    Builds every length-``m`` and length-``m+1`` "template" vector from
+    the window and counts, at each length, how many *different* templates
+    are within tolerance ``r`` of each other (Chebyshev/L-infinity
+    distance, self-matches excluded — the fix Sample Entropy makes over
+    the older, self-match-biased Approximate Entropy)::
+
+        SampEn = -ln(A / B)
+
+    where ``B`` counts length-``m`` matches and ``A`` counts length-
+    ``(m+1)`` matches, both over the same template positions. A window
+    that keeps repeating short patterns matches often at both lengths
+    (``A/B`` close to 1, ``SampEn`` near 0); a window with no repeating
+    structure barely matches at all (``SampEn`` large).
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    window:
+        Bars per rolling estimate, in log returns. Must be >= 20.
+    m:
+        Template length. Richman & Moorman's own examples use ``2``
+        (the default); must be >= 1.
+    r:
+        Matching tolerance as a fraction of the window's own standard
+        deviation (the standard scale-free convention) — the *actual*
+        Chebyshev distance threshold is ``r * std(window)``. Richman &
+        Moorman recommend ``0.1`` to ``0.25``; ``0.2`` (the default) is
+        their own most-used value. Must be > 0.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``SAMPEN_{window}_{m}_{r}``. ``NaN`` wherever a window has
+        too few matches at either template length to form a ratio
+        (a very short or very tightly-toleranced window).
+
+    Notes
+    -----
+    Every bar compares every pair of templates in its own *window* —
+    ``O(window^2)`` per bar, not the single vectorised pass most other
+    indicators here use, and slower again than :func:`hurst_exponent` or
+    :func:`dfa`'s own per-bar loops (see `BENCHMARKS.md`).
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import zeonta
+    >>> rng = np.random.default_rng(0)
+    >>> noisy = 100.0 * np.cumprod(1.0 + rng.normal(scale=0.01, size=150))
+    >>> result = zeonta.sample_entropy(noisy, window=100)
+    >>> bool(result.iloc[-1] > 0.0)
+    True
+
+    References
+    ----------
+    https://physionet.org/content/sampen/1.0.0/
+    """
+    window = validate_length(window, "window", minimum=20)
+    if not isinstance(m, (int, np.integer)) or isinstance(m, bool) or m < 1:
+        raise ValueError(f"'m' must be an integer >= 1, got {m!r}")
+    r = validate_multiplier(r, "r")
+
+    values = as_array(close, "close")
+    size = values.shape[0]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        log_returns = np.diff(np.log(values), prepend=np.nan)
+
+    result = np.full(size, np.nan, dtype="float64")
+    for i in range(window, size + 1):
+        segment = log_returns[i - window : i]
+        if not np.all(np.isfinite(segment)):
+            continue
+        tolerance = r * segment.std()
+        if tolerance == 0.0:
+            continue
+        result[i - 1] = _sample_entropy_value(segment, m, tolerance)
+
+    return wrap_series(result, common_index(close), f"SAMPEN_{window}_{m}_{r}")

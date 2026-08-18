@@ -17,6 +17,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Advanced** — `sample_entropy` (Richman & Moorman, 2000): the third of
+  the five-indicator academic batch. Measures how much a rolling window
+  of log returns repeats its own short-term patterns (`SampEn = -ln(A/B)`,
+  counting length-`m` vs. length-`(m+1)` template matches within a
+  tolerance scaled to the window's own standard deviation, self-matches
+  excluded) — a different question from `hurst_exponent`/`dfa` (trend vs.
+  reversion) and from `wavelet_variance` (which timescale the volatility
+  is at): how *unpredictable* the series is, independent of direction.
+  Verified directionally against a periodic-vs-white-noise pair (near-zero
+  entropy for an exactly repeating pattern, clearly higher for
+  unstructured noise) rather than trusting the formula alone. By far the
+  slowest indicator in the library — every bar compares every pair of
+  templates in its own window (`O(window^2)`), documented as such.
+  Registered indicators: 65 -> 66.
+
 - **Advanced** — `ou_half_life` and `dfa`, the first two of a batch of
   newer, academically-sourced indicators (`hepsi` — "all of them" — was
   requested from five proposed candidates; Sample/Approximate Entropy and

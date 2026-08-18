@@ -195,6 +195,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `hurst_exponent` | Hurst Üsteli (Yeniden Ölçeklenmiş Aralık Analizi) | [doküman](docs/tr/indicators/hurst_exponent.md) |
 | `ou_half_life` | Ortalamaya Dönüşün Ornstein-Uhlenbeck Yarı Ömrü | [doküman](docs/tr/indicators/ou_half_life.md) |
 | `pivot_points` | Pivot Noktaları | [doküman](docs/tr/indicators/pivot_points.md) |
+| `sample_entropy` | Örnek Entropi (SampEn) | [doküman](docs/tr/indicators/sample_entropy.md) |
 | `vwap` | VWAP (Hacim Ağırlıklı Ortalama Fiyat) | [doküman](docs/tr/indicators/vwap.md) |
 
 ### Varlıklar-arası araçlar (registry dışında)

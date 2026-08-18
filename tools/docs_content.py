@@ -3535,4 +3535,85 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.dfa(df["close"]).tail(3),
         ],
     },
+    "sample_entropy": {
+        "title_en": "Sample Entropy (SampEn)",
+        "title_tr": "Örnek Entropi (SampEn)",
+        "formula_en": (
+            "Build every length-m and length-(m+1) template from the log-return "
+            "window; B = count of length-m template pairs within tolerance "
+            "r*std(window) (self-matches excluded); A = same count at length m+1; "
+            "SampEn = -ln(A/B)"
+        ),
+        "formula_tr": (
+            "Log-getiri penceresinden her uzunluk-m ve uzunluk-(m+1) şablonu "
+            "oluştur; B = tolerans r*std(pencere) içindeki uzunluk-m şablon "
+            "çiftlerinin sayısı (öz-eşleşmeler hariç); A = uzunluk m+1'de aynı "
+            "sayım; SampEn = -ln(A/B)"
+        ),
+        "about_en": (
+            "Richman and Moorman (2000) built Sample Entropy to fix a specific "
+            "flaw in the earlier Approximate Entropy (Pincus, 1991): ApEn counts a "
+            "template as matching itself, which biases it — more so on shorter "
+            "series — toward reading more regular than the data actually is. "
+            "SampEn excludes self-matches entirely. It asks a different question "
+            "from hurst_exponent/dfa: not whether a series trends or reverts, but "
+            "how much it repeats its own short-term patterns at all, independent "
+            "of which direction those patterns point."
+        ),
+        "about_tr": (
+            "Richman ve Moorman (2000), daha önceki Yaklaşık Entropi'deki (ApEn, "
+            "Pincus 1991) belirli bir kusuru düzeltmek için Örnek Entropi'yi "
+            "geliştirdi: ApEn bir şablonu kendisiyle eşleşiyor sayar, bu da onu — "
+            "daha kısa serilerde daha fazla olmak üzere — verinin gerçekte olduğundan "
+            "daha düzenli okumaya yanlı hale getirir. SampEn öz-eşleşmeleri "
+            "tamamen dışlar. hurst_exponent/dfa'dan farklı bir soru sorar: bir "
+            "serinin trend mi yoksa ortalamaya mı döndüğünü değil, kısa vadeli "
+            "kendi kalıplarını ne kadar tekrarladığını, bu kalıpların hangi yöne "
+            "işaret ettiğinden bağımsız olarak."
+        ),
+        "reading_en": (
+            "Low values (near 0) mean the window keeps repeating short patterns — "
+            "regular, more predictable behaviour. High values mean little to no "
+            "repeating structure — irregular, closer to noise. Unlike "
+            "hurst_exponent/dfa, a high reading here does not say *which way* price "
+            "is likely to move, only that its recent behaviour has been harder to "
+            "characterise by a short repeating pattern."
+        ),
+        "reading_tr": (
+            "Düşük değerler (0'a yakın), pencerenin kısa kalıpları tekrarlamaya "
+            "devam ettiği anlamına gelir — düzenli, daha öngörülebilir davranış. "
+            "Yüksek değerler, tekrarlayan yapının az ya da hiç olmadığı anlamına "
+            "gelir — düzensiz, gürültüye daha yakın. hurst_exponent/dfa'nın "
+            "aksine, buradaki yüksek bir okuma fiyatın *hangi yöne* hareket "
+            "etmesinin muhtemel olduğunu söylemez, yalnızca son davranışının kısa "
+            "tekrarlayan bir kalıpla karakterize edilmesinin daha zor olduğunu "
+            "söyler."
+        ),
+        "pitfalls_en": (
+            "By far the slowest indicator in this library — every bar compares "
+            "every pair of templates in its own window (O(window^2)), not the "
+            "single vectorised pass most indicators here use, and slower again "
+            "than hurst_exponent/dfa's own per-bar loops (see `BENCHMARKS.md`). "
+            "`m` and `r` are real choices, not defaults to ignore: Richman & "
+            "Moorman's own examples use `m=2`, `r` between `0.1` and `0.25` of the "
+            "window's standard deviation, and a different pairing changes the "
+            "result — this is one specific, standard parameterisation, not the "
+            "only one used in the literature."
+        ),
+        "pitfalls_tr": (
+            "Bu kütüphanedeki açık farkla en yavaş indikatör — her bar kendi "
+            "penceresindeki her şablon çiftini karşılaştırır (O(pencere^2)), "
+            "buradaki çoğu indikatörün kullandığı tek vektörleştirilmiş geçiş "
+            "değil, hatta hurst_exponent/dfa'nın kendi bar-başı döngülerinden de "
+            "yavaş (bkz. `BENCHMARKS.md`). `m` ve `r` göz ardı edilecek "
+            "varsayılanlar değil, gerçek seçimlerdir: Richman & Moorman'ın kendi "
+            "örnekleri `m=2` ve pencerenin standart sapmasının `0,1` ile `0,25`'i "
+            "arasında bir `r` kullanır, farklı bir eşleştirme sonucu değiştirir — "
+            "bu, literatürde kullanılan tek parametreleme değil, belirli, standart "
+            "bir parametrelemedir."
+        ),
+        "example": [
+            lambda df: zeonta.sample_entropy(df["close"]).tail(3),
+        ],
+    },
 }

@@ -358,3 +358,67 @@ def test_dfa_warmup_is_exactly_window_bars() -> None:
 def test_dfa_rejects_a_window_too_small_for_two_box_sizes() -> None:
     with pytest.raises(ValueError, match="must be >="):
         zeonta.dfa(list(range(1, 50)), window=16)
+
+
+def test_sample_entropy_is_higher_for_noisy_than_periodic_returns() -> None:
+    """A perfectly periodic return series repeats its own short patterns
+    exactly, so it should score near-zero entropy; unstructured noise at a
+    comparable scale should score noticeably higher."""
+    rng = np.random.default_rng(2)
+    n = 300
+    t = np.arange(n)
+    periodic_returns = 0.01 * np.sin(2 * np.pi * t / 10)
+    noisy_returns = rng.normal(scale=0.01, size=n)
+    periodic_price = 100.0 * np.cumprod(1 + periodic_returns)
+    noisy_price = 100.0 * np.cumprod(1 + noisy_returns)
+
+    periodic_entropy = zeonta.sample_entropy(periodic_price, window=100).dropna().iloc[-1]
+    noisy_entropy = zeonta.sample_entropy(noisy_price, window=100).dropna().iloc[-1]
+    assert noisy_entropy > periodic_entropy
+    np.testing.assert_allclose(periodic_entropy, 0.0, atol=1e-9)
+
+
+def test_sample_entropy_is_nan_on_a_perfectly_flat_series() -> None:
+    """Zero log returns everywhere means a zero-width tolerance - no
+    meaningful match count is possible, so this must be NaN, not a crash
+    or a divide-by-zero warning (covered generically by the registry-wide
+    constant-input contract test, pinned down here too)."""
+    result = zeonta.sample_entropy([100.0] * 50, window=20)
+    assert result.isna().all()
+
+
+def test_sample_entropy_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.sample_entropy([1.0, 2.0, 3.0], window=100)
+    assert len(result) == 3
+    assert result.isna().all()
+
+
+def test_sample_entropy_rejects_window_below_twenty() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.sample_entropy(list(range(1, 50)), window=10)
+
+
+def test_sample_entropy_rejects_m_below_one() -> None:
+    with pytest.raises(ValueError, match="'m' must be an integer >= 1"):
+        zeonta.sample_entropy(list(range(1, 50)), m=0)
+
+
+def test_sample_entropy_rejects_non_positive_r() -> None:
+    with pytest.raises(ValueError, match="'r' must be > 0"):
+        zeonta.sample_entropy(list(range(1, 50)), r=0.0)
+
+
+def test_sample_entropy_is_nan_when_tolerance_is_too_tight_for_any_match() -> None:
+    rng = np.random.default_rng(0)
+    prices = 100.0 * np.cumprod(1 + rng.normal(scale=0.02, size=60))
+    result = zeonta.sample_entropy(prices, window=20, r=0.0001)
+    assert result.isna().all()
+
+
+def test_sample_entropy_is_nan_when_m_leaves_too_few_templates() -> None:
+    """window - m must leave at least two templates to compare; m close to
+    window (window=20, m=19 -> a single template) must be NaN, not a crash."""
+    rng = np.random.default_rng(0)
+    prices = 100.0 * np.cumprod(1 + rng.normal(scale=0.02, size=60))
+    result = zeonta.sample_entropy(prices, window=20, m=19)
+    assert result.isna().all()

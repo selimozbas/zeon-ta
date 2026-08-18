@@ -111,13 +111,18 @@ the cloud that projects past the last bar, rather than discarding it.
 | --- | --- | --- |
 | `awesome_oscillator` | Awesome Oscillator (AO) | [docs](docs/en/indicators/awesome_oscillator.md) |
 | `cci` | Commodity Channel Index (CCI) | [docs](docs/en/indicators/cci.md) |
+| `coppock_curve` | Coppock Curve | [docs](docs/en/indicators/coppock_curve.md) |
+| `dpo` | Detrended Price Oscillator (DPO) | [docs](docs/en/indicators/dpo.md) |
 | `elder_ray` | Elder Ray (Bull Power / Bear Power) | [docs](docs/en/indicators/elder_ray.md) |
 | `macd` | MACD (Moving Average Convergence Divergence) | [docs](docs/en/indicators/macd.md) |
 | `momentum` | Momentum | [docs](docs/en/indicators/momentum.md) |
+| `ppo` | Percentage Price Oscillator (PPO) | [docs](docs/en/indicators/ppo.md) |
 | `roc` | Rate of Change (ROC) | [docs](docs/en/indicators/roc.md) |
 | `rsi` | Relative Strength Index (RSI) | [docs](docs/en/indicators/rsi.md) |
 | `stoch` | Stochastic Oscillator | [docs](docs/en/indicators/stoch.md) |
 | `stoch_rsi` | Stochastic RSI (StochRSI) | [docs](docs/en/indicators/stoch_rsi.md) |
+| `trix` | TRIX (Triple Exponential Average) | [docs](docs/en/indicators/trix.md) |
+| `tsi` | True Strength Index (TSI) | [docs](docs/en/indicators/tsi.md) |
 | `ultimate_oscillator` | Ultimate Oscillator | [docs](docs/en/indicators/ultimate_oscillator.md) |
 | `williams_r` | Williams %R | [docs](docs/en/indicators/williams_r.md) |
 
@@ -128,6 +133,8 @@ the cloud that projects past the last bar, rather than discarding it.
 | `adl` | Accumulation/Distribution Line (ADL) | [docs](docs/en/indicators/adl.md) |
 | `chaikin_oscillator` | Chaikin Oscillator | [docs](docs/en/indicators/chaikin_oscillator.md) |
 | `cmf` | Chaikin Money Flow (CMF) | [docs](docs/en/indicators/cmf.md) |
+| `ease_of_movement` | Ease of Movement (EMV) | [docs](docs/en/indicators/ease_of_movement.md) |
+| `force_index` | Force Index | [docs](docs/en/indicators/force_index.md) |
 | `mfi` | Money Flow Index (MFI) | [docs](docs/en/indicators/mfi.md) |
 | `obv` | On-Balance Volume (OBV) | [docs](docs/en/indicators/obv.md) |
 
@@ -140,6 +147,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | `keltner` | Keltner Channels | [docs](docs/en/indicators/keltner.md) |
 | `squeeze` | The Squeeze (TTM Squeeze) | [docs](docs/en/indicators/squeeze.md) |
 | `true_range` | True Range | [docs](docs/en/indicators/true_range.md) |
+| `ulcer_index` | Ulcer Index | [docs](docs/en/indicators/ulcer_index.md) |
 
 ### Trend Systems
 
@@ -150,6 +158,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | `chandelier_exit` | Chandelier Exit | [docs](docs/en/indicators/chandelier_exit.md) |
 | `donchian` | Donchian Channels | [docs](docs/en/indicators/donchian.md) |
 | `ichimoku` | Ichimoku | [docs](docs/en/indicators/ichimoku.md) |
+| `linreg` | Linear Regression Slope & Forecast | [docs](docs/en/indicators/linreg.md) |
 | `parabolic_sar` | Parabolic SAR | [docs](docs/en/indicators/parabolic_sar.md) |
 | `supertrend` | SuperTrend | [docs](docs/en/indicators/supertrend.md) |
 | `vortex` | Vortex Indicator | [docs](docs/en/indicators/vortex.md) |

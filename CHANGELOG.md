@@ -8,6 +8,38 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+Nine indicators, each citing the external source its formula was verified
+against, each verified against a second independent source as well (see each
+one's own docstring for the specific second source and any default-parameter
+ambiguity found along the way):
+
+- **Oscillators** — `trix` (Triple Exponential Average, with signal line);
+  `ppo` (Percentage Price Oscillator — `macd`'s construction expressed as a
+  percentage, comparable across symbols); `tsi` (True Strength Index,
+  William Blau's double-smoothed momentum); `dpo` (Detrended Price
+  Oscillator, a cycle-identification tool built differently from every other
+  oscillator here — it compares an *older* price to the *current* SMA);
+  `coppock_curve` (a WMA of two summed ROC readings, built for calling major
+  long-term bottoms on monthly charts).
+- **Volume** — `force_index` (Alexander Elder; price change x volume,
+  EMA-smoothed — the same author as `elder_ray`, viewed through volume
+  instead of an EMA); `ease_of_movement` (Richard Arms' box-ratio: how much
+  volume a bar's price movement needed).
+- **Volatility** — `ulcer_index` (Peter Martin's drawdown-only risk measure —
+  squares the drawdown before averaging, so one deep decline dominates the
+  reading far more than several small ones of the same total size).
+- **Trend** — `linreg` (Slope and Forecast/endpoint from the same
+  ordinary-least-squares fit `trend_channel`/`squeeze` already use).
+
+Registered indicators: 47 -> 56.
+
+Also: doctests across the whole library are now actually executed.
+`pytest --doctest-modules` was never wired into `testpaths`, so every
+docstring `Examples` block — the ones this project's own methodology
+insists must be computed, never guessed — had silently never been checked
+by CI. All 50 pre-existing doctests turned out to still be correct; this
+closes the gap going forward.
+
 - `benchmarks/run.py` and [BENCHMARKS.md](BENCHMARKS.md): every registered
   indicator timed against synthetic OHLCV data at 10k/100k/1M bars, with
   real, reproducible numbers and methodology rather than assumed

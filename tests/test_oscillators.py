@@ -299,3 +299,111 @@ def test_elder_ray_bear_power_is_negative_right_after_a_sharp_drop() -> None:
 def test_elder_ray_rejects_non_positive_length() -> None:
     with pytest.raises(ValueError, match="must be >="):
         zeonta.elder_ray([2.0] * 20, [1.0] * 20, [1.5] * 20, length=0)
+
+
+def test_trix_is_zero_on_a_flat_series() -> None:
+    result = zeonta.trix([25.0] * 40, length=5, signal=3)
+    np.testing.assert_allclose(result["TRIX_5_3"].dropna().to_numpy(), 0.0)
+
+
+def test_trix_matches_the_triple_ema_pct_change_formula() -> None:
+    prices = list(np.linspace(10, 60, 80))
+    result = zeonta.trix(prices, length=5, signal=3)
+    ema1 = zeonta.ema(prices, 5)
+    ema2 = zeonta.ema(ema1, 5)
+    ema3 = zeonta.ema(ema2, 5)
+    expected = (ema3 - ema3.shift(1)) / ema3.shift(1) * 100.0
+    np.testing.assert_allclose(
+        result["TRIX_5_3"].to_numpy(), expected.to_numpy(), equal_nan=True, rtol=1e-9
+    )
+
+
+def test_trix_signal_is_the_ema_of_trix() -> None:
+    prices = list(np.linspace(10, 60, 80))
+    result = zeonta.trix(prices, length=5, signal=3)
+    expected_signal = zeonta.ema(result["TRIX_5_3"], 3)
+    np.testing.assert_allclose(
+        result["TRIXs_5_3"].to_numpy(), expected_signal.to_numpy(), equal_nan=True
+    )
+
+
+def test_trix_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.trix(list(range(20)), length=0)
+
+
+def test_ppo_matches_the_pct_ema_difference_formula() -> None:
+    prices = list(np.linspace(10, 60, 200))
+    out = zeonta.ppo(prices)
+    fast = zeonta.ema(prices, 12)
+    slow = zeonta.ema(prices, 26)
+    expected = (fast - slow) / slow * 100.0
+    np.testing.assert_allclose(out["PPO_12_26_9"].to_numpy(), expected.to_numpy(), equal_nan=True)
+
+
+def test_ppo_histogram_is_line_minus_signal() -> None:
+    out = zeonta.ppo(list(np.linspace(10, 60, 200)))
+    np.testing.assert_allclose(
+        out["PPOh_12_26_9"], out["PPO_12_26_9"] - out["PPOs_12_26_9"], equal_nan=True
+    )
+
+
+def test_ppo_rejects_fast_not_smaller_than_slow() -> None:
+    with pytest.raises(ValueError, match="'fast' must be smaller than 'slow'"):
+        zeonta.ppo(list(range(50)), fast=26, slow=12)
+
+
+def test_ppo_and_macd_agree_on_direction() -> None:
+    """PPO is MACD normalised by the slow EMA — same sign, different scale."""
+    prices = list(np.linspace(10, 100, 200))
+    macd_line = zeonta.macd(prices)["MACD_12_26_9"]
+    ppo_line = zeonta.ppo(prices)["PPO_12_26_9"]
+    np.testing.assert_allclose(np.sign(macd_line.dropna()), np.sign(ppo_line.dropna()))
+
+
+def test_tsi_is_zero_on_a_flat_series() -> None:
+    result = zeonta.tsi([25.0] * 60, long=10, short=5, signal=3)
+    np.testing.assert_allclose(result["TSI_10_5_3"].dropna().to_numpy(), 0.0)
+
+
+def test_tsi_stays_within_bounds(ohlcv: pd.DataFrame) -> None:
+    result = zeonta.tsi(ohlcv["close"]).dropna()
+    assert result["TSI_25_13_7"].between(-100.0, 100.0).all()
+
+
+def test_tsi_is_positive_in_a_clean_uptrend() -> None:
+    result = zeonta.tsi(list(np.linspace(10, 100, 120)), long=10, short=5, signal=3)
+    assert result["TSI_10_5_3"].iloc[-1] > 0
+
+
+def test_tsi_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.tsi(list(range(60)), long=0)
+
+
+def test_dpo_matches_the_hand_computed_shift_minus_sma() -> None:
+    # length=10 -> shift = 10//2+1 = 6. Close 6 bars ago minus the 10-bar SMA.
+    prices = [float(i) for i in range(1, 30)]
+    result = zeonta.dpo(prices, length=10)
+    sma = zeonta.sma(prices, length=10)
+    shifted = pd.Series(prices).shift(6)
+    expected = shifted - sma
+    np.testing.assert_allclose(result.to_numpy(), expected.to_numpy(), equal_nan=True)
+
+
+def test_dpo_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.dpo(list(range(20)), length=0)
+
+
+def test_coppock_curve_matches_the_hand_computed_wma_of_summed_roc() -> None:
+    prices = [float(i) for i in range(1, 60)]
+    result = zeonta.coppock_curve(prices, long=5, short=3, wma_length=3)
+    combined = zeonta.roc(prices, length=5) + zeonta.roc(prices, length=3)
+    expected = zeonta.wma(combined, length=3)
+    np.testing.assert_allclose(result.to_numpy(), expected.to_numpy(), equal_nan=True)
+
+
+def test_coppock_curve_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.coppock_curve(list(range(30)), long=0)

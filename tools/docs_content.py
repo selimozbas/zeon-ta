@@ -2464,4 +2464,460 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.elder_ray(df["high"], df["low"], df["close"]).tail(3),
         ],
     },
+    "trix": {
+        "title_en": "TRIX (Triple Exponential Average)",
+        "title_tr": "TRIX (Üçlü Üssel Ortalama)",
+        "formula_en": (
+            "EMA1 = EMA(Close, n); EMA2 = EMA(EMA1, n); EMA3 = EMA(EMA2, n); "
+            "TRIX = (EMA3[t] - EMA3[t-1]) / EMA3[t-1] x 100"
+        ),
+        "formula_tr": (
+            "EMA1 = EMA(Kapanış, n); EMA2 = EMA(EMA1, n); EMA3 = EMA(EMA2, n); "
+            "TRIX = (EMA3[t] - EMA3[t-1]) / EMA3[t-1] x 100"
+        ),
+        "about_en": (
+            "Three EMA passes before ever measuring a change is a deliberately heavier filter than "
+            "`roc`'s single comparison against an older price, or `macd`'s single-pass EMA "
+            "difference — the tradeoff for that extra noise reduction is proportionally more lag "
+            "before TRIX actually turns."
+        ),
+        "about_tr": (
+            "Bir değişim ölçülmeden önce üç EMA geçişi, `roc`'un eski bir fiyatla tek "
+            "karşılaştırmasından ya da `macd`'nin tek geçişli EMA farkından bilinçli olarak daha "
+            "ağır bir filtredir — bu ekstra gürültü azaltmanın bedeli, TRIX'in gerçekten dönmeden "
+            "önce orantılı olarak daha fazla gecikmedir."
+        ),
+        "reading_en": (
+            "Read the zero line and the signal line the same way as `macd`: crossing above zero is "
+            "bullish, crossing below is bearish, and a cross of TRIX above/below its own signal "
+            "line (a 9-day EMA of TRIX) gives an earlier, noisier version of the same call."
+        ),
+        "reading_tr": (
+            "Sıfır çizgisini ve sinyal çizgisini `macd` ile aynı şekilde okuyun: sıfırın üzerine "
+            "çıkmak boğa, altına inmek ayı sinyalidir; TRIX'in kendi sinyal çizgisini (TRIX'in "
+            "9 günlük EMA'sı) yukarı/aşağı kesmesi aynı çağrının daha erken, daha gürültülü bir "
+            "versiyonunu verir."
+        ),
+        "pitfalls_en": (
+            "The triple smoothing that makes TRIX quiet also makes it slow — on a fast-moving or "
+            "short-lived trend it can still be turning while the move is already over. It is "
+            "usually applied to longer time frames (weekly charts, or long daily lengths) for "
+            "exactly this reason."
+        ),
+        "pitfalls_tr": (
+            "TRIX'i sakinleştiren üçlü yumuşatma, onu aynı zamanda yavaşlatır — hızlı hareket eden "
+            "ya da kısa ömürlü bir trendde, hareket zaten bitmişken TRIX hâlâ dönüyor olabilir. "
+            "Tam da bu yüzden genellikle daha uzun zaman dilimlerinde (haftalık grafikler ya da "
+            "uzun günlük periyotlar) kullanılır."
+        ),
+        "example": [
+            lambda df: zeonta.trix(df["close"]).tail(3),
+        ],
+    },
+    "ppo": {
+        "title_en": "Percentage Price Oscillator (PPO)",
+        "title_tr": "Yüzde Fiyat Osilatörü (PPO)",
+        "formula_en": (
+            "PPO = (EMA(Close, fast) - EMA(Close, slow)) / EMA(Close, slow) x 100; "
+            "Signal = EMA(PPO, signal); Histogram = PPO - Signal"
+        ),
+        "formula_tr": (
+            "PPO = (EMA(Kapanış, hızlı) - EMA(Kapanış, yavaş)) / EMA(Kapanış, yavaş) x 100; "
+            "Sinyal = EMA(PPO, sinyal); Histogram = PPO - Sinyal"
+        ),
+        "about_en": (
+            "Exactly `macd`'s construction, divided by the slow EMA to turn an absolute price "
+            "difference into a percentage. A PPO reading of 5 means the fast EMA sits 5% above the "
+            "slow one regardless of whether the security trades at $5 or $500 — a comparison "
+            "`macd`'s own raw output cannot make across symbols."
+        ),
+        "about_tr": (
+            "Tam olarak `macd`'nin kurulumu, mutlak fiyat farkını yüzdeye çevirmek için yavaş "
+            "EMA'ya bölünmüş hâli. PPO okuması 5 ise, menkul kıymet 5 dolardan da 500 dolardan da "
+            "işlem görse hızlı EMA yavaş olanın %5 üzerindedir — `macd`'nin kendi ham çıktısının "
+            "semboller arasında yapamayacağı bir karşılaştırma."
+        ),
+        "reading_en": (
+            "Read it exactly like `macd`: signal-line crossovers, centerline crossovers and "
+            "divergences all carry the same meaning, just on a percentage scale that stays "
+            "comparable when screening across many different symbols."
+        ),
+        "reading_tr": (
+            "Tam olarak `macd` gibi okuyun: sinyal çizgisi kesişimleri, orta çizgi kesişimleri ve "
+            "uyumsuzluklar aynı anlamı taşır, sadece farklı semboller arasında tarama yaparken "
+            "karşılaştırılabilir kalan bir yüzde ölçeğinde."
+        ),
+        "pitfalls_en": (
+            "Because it divides by the slow EMA, a security whose price (and therefore whose EMA) "
+            "crosses through zero makes PPO briefly undefined or wildly scaled — this only matters "
+            "for spread/synthetic series that can go negative, not for ordinary prices."
+        ),
+        "pitfalls_tr": (
+            "Yavaş EMA'ya böldüğü için, fiyatı (ve dolayısıyla EMA'sı) sıfırdan geçen bir menkul "
+            "kıymette PPO kısa süreliğine tanımsız ya da aşırı ölçeklenmiş olur — bu yalnızca "
+            "negatif olabilen spread/sentetik seriler için önemlidir, sıradan fiyatlar için değil."
+        ),
+        "example": [
+            lambda df: zeonta.ppo(df["close"]).tail(3),
+        ],
+    },
+    "tsi": {
+        "title_en": "True Strength Index (TSI)",
+        "title_tr": "Gerçek Güç Endeksi (TSI)",
+        "formula_en": (
+            "PC = Close - Close[1 bar ago]; DoubleSmoothedPC = EMA(EMA(PC, long), short); "
+            "DoubleSmoothedAbsPC = EMA(EMA(|PC|, long), short); "
+            "TSI = 100 x DoubleSmoothedPC / DoubleSmoothedAbsPC; Signal = EMA(TSI, signal)"
+        ),
+        "formula_tr": (
+            "PC = Kapanış - Kapanış[1 bar önce]; "
+            "ÇiftYumuşatılmışPC = EMA(EMA(PC, uzun), kısa); "
+            "ÇiftYumuşatılmışMutlakPC = EMA(EMA(|PC|, uzun), kısa); "
+            "TSI = 100 x ÇiftYumuşatılmışPC / ÇiftYumuşatılmışMutlakPC; "
+            "Sinyal = EMA(TSI, sinyal)"
+        ),
+        "about_en": (
+            "William Blau's double smoothing operates on the raw price change itself, before any "
+            "ratio is taken — the opposite order from `rsi`, which first turns gains/losses into "
+            "separate averages and only then divides. TSI's double-EMA-first approach is meant to "
+            "track the underlying trend closely while still filtering short-term noise."
+        ),
+        "about_tr": (
+            "William Blau'nun çift yumuşatması, herhangi bir oran alınmadan önce ham fiyat "
+            "değişiminin kendisi üzerinde çalışır — bu, önce kazanç/kayıpları ayrı ortalamalara "
+            "dönüştürüp ancak sonra bölen `rsi`'nin tam tersi bir sıradır. TSI'nin önce-çift-EMA "
+            "yaklaşımı, kısa vadeli gürültüyü filtrelerken altta yatan trendi yakından takip etmeyi "
+            "hedefler."
+        ),
+        "reading_en": (
+            "Overbought/oversold readings, centerline crossovers, signal-line crossovers and "
+            "divergences all apply, the same vocabulary as `rsi` and `macd` combined — TSI is "
+            "somewhat unusual in that its peaks and troughs often line up closely with price's own "
+            "peaks and troughs, unlike oscillators that flatten out during a strong sustained move."
+        ),
+        "reading_tr": (
+            "Aşırı alım/aşırı satım okumaları, orta çizgi kesişimleri, sinyal çizgisi kesişimleri "
+            "ve uyumsuzluklar — hepsi geçerlidir, `rsi` ve `macd`'nin birleşimi gibi bir "
+            "kelime dağarcığı. TSI, tepe ve diplerinin genellikle fiyatın kendi tepe ve dipleriyle "
+            "yakından örtüşmesi bakımından biraz sıra dışıdır — güçlü, sürdürülen bir hareket "
+            "sırasında düzleşen osilatörlerin aksine."
+        ),
+        "pitfalls_en": (
+            "Neither StockCharts nor Fidelity's guide commits to one canonical default signal-line "
+            "period — this implementation uses 7 alongside the (25, 13) core smoothing pair, the "
+            "value repeated most often across independent sources, but TSI(25,13,13) and "
+            "TSI(40,20,10) are both also in common use."
+        ),
+        "pitfalls_tr": (
+            "Ne StockCharts ne de Fidelity'nin kılavuzu tek bir kanonik varsayılan sinyal-çizgisi "
+            "periyoduna bağlanır — bu uygulama (25, 13) çekirdek yumuşatma çiftiyle birlikte, "
+            "bağımsız kaynaklar arasında en sık tekrarlanan değer olan 7'yi kullanır, ama "
+            "TSI(25,13,13) ve TSI(40,20,10) da yaygın olarak kullanılır."
+        ),
+        "example": [
+            lambda df: zeonta.tsi(df["close"]).tail(3),
+        ],
+    },
+    "dpo": {
+        "title_en": "Detrended Price Oscillator (DPO)",
+        "title_tr": "Trendi Arındırılmış Fiyat Osilatörü (DPO)",
+        "formula_en": "DPO = Close[n/2 + 1 bars ago] - SMA(Close, n)",
+        "formula_tr": "DPO = Kapanış[n/2 + 1 bar önce] - SMA(Kapanış, n)",
+        "about_en": (
+            "Every other oscillator in this library compares the *current* price against a "
+            "moving average or a prior value; DPO instead compares an *older* price against the "
+            "*current* SMA. That inversion is deliberate — it removes the trend component so the "
+            "leftover oscillation lines up with the market's actual cycle peaks and troughs, at "
+            "the cost of the line no longer reacting to the most recent bars at all."
+        ),
+        "about_tr": (
+            "Bu kütüphanedeki diğer her osilatör *geçerli* fiyatı bir hareketli ortalamayla ya da "
+            "önceki bir değerle karşılaştırır; DPO bunun yerine *eski* bir fiyatı *geçerli* SMA "
+            "ile karşılaştırır. Bu tersine çevirme bilinçlidir — trend bileşenini kaldırır, böylece "
+            "kalan salınım piyasanın gerçek döngü tepe ve dipleriyle örtüşür; bedeli ise çizginin "
+            "en son barlara artık hiç tepki vermemesidir."
+        ),
+        "reading_en": (
+            "Count the bars between successive DPO peaks (or troughs) to estimate the dominant "
+            "cycle length in the data, then use that estimate to set lengths for other tools. This "
+            "is a cycle-identification tool, not a momentum or trend signal — it should not be "
+            "read the way `macd` or `rsi` are."
+        ),
+        "reading_tr": (
+            "Baskın döngü uzunluğunu tahmin etmek için ardışık DPO tepeleri (ya da dipleri) "
+            "arasındaki bar sayısını sayın, sonra bu tahmini diğer araçların uzunluklarını "
+            "ayarlamak için kullanın. Bu bir döngü-belirleme aracıdır, momentum ya da trend sinyali "
+            "değildir — `macd` ya da `rsi` gibi okunmamalıdır."
+        ),
+        "pitfalls_en": (
+            "Because it is deliberately shifted left (using an older price), the most recent DPO "
+            "value does not reflect the most recent bars — it lags by design and cannot be used "
+            "for a real-time signal the way it might naively appear on a chart."
+        ),
+        "pitfalls_tr": (
+            "Bilinçli olarak sola kaydırıldığından (eski bir fiyat kullanır), en son DPO değeri en "
+            "son barları yansıtmaz — tasarım gereği gecikir ve bir grafikte saf bakışla göründüğü "
+            "gibi gerçek zamanlı bir sinyal için kullanılamaz."
+        ),
+        "example": [
+            lambda df: zeonta.dpo(df["close"]).tail(3),
+        ],
+    },
+    "coppock_curve": {
+        "title_en": "Coppock Curve",
+        "title_tr": "Coppock Eğrisi",
+        "formula_en": "Coppock = WMA(ROC(Close, long) + ROC(Close, short), wma_length)",
+        "formula_tr": "Coppock = WMA(ROC(Kapanış, uzun) + ROC(Kapanış, kısa), wma_uzunluk)",
+        "about_en": (
+            "Edwin Coppock built the two `roc` periods (14 and 11) around how long, in his "
+            "research, it took investor sentiment to recover from a loss — unconventional inputs "
+            "for a technical indicator, but the result is a slow, heavily-smoothed long-term "
+            "momentum line. Summing two `roc` readings before smoothing gives it a broader view of "
+            "momentum than either period alone."
+        ),
+        "about_tr": (
+            "Edwin Coppock, iki `roc` periyodunu (14 ve 11) kendi araştırmasında yatırımcı "
+            "duyarlılığının bir kayıptan toparlanmasının ne kadar sürdüğü etrafında kurdu — teknik "
+            "bir indikatör için sıra dışı girdiler, ama sonuç yavaş, ağır biçimde yumuşatılmış "
+            "uzun vadeli bir momentum çizgisi. Yumuşatmadan önce iki `roc` okumasını toplamak, tek "
+            "başına her iki periyottan da daha geniş bir momentum görüşü verir."
+        ),
+        "reading_en": (
+            "Originally designed for monthly charts to call major market bottoms: a buy signal is "
+            "the Coppock Curve turning up from below zero. It was never meant for everyday trading "
+            "signals or for calling tops — Coppock built it specifically as a long-term, "
+            "buy-side-only tool."
+        ),
+        "reading_tr": (
+            "Aslında büyük piyasa diplerini çağırmak için aylık grafikler için tasarlandı: bir "
+            "alım sinyali, Coppock Eğrisi'nin sıfırın altından yukarı dönmesidir. Hiçbir zaman "
+            "günlük ticaret sinyalleri ya da tepe çağırmak için tasarlanmadı — Coppock onu özellikle "
+            "uzun vadeli, yalnızca alım tarafı için bir araç olarak inşa etti."
+        ),
+        "pitfalls_en": (
+            "Applying Coppock's own (14, 11, 10) settings to daily charts (rather than the monthly "
+            "charts it was designed for) produces a much noisier, faster-turning line that no "
+            "longer behaves like the major-bottom-calling tool it was built to be."
+        ),
+        "pitfalls_tr": (
+            "Coppock'un kendi (14, 11, 10) ayarlarını (tasarlandığı aylık grafikler yerine) günlük "
+            "grafiklere uygulamak, artık tasarlandığı büyük-dip-çağıran araç gibi davranmayan, çok "
+            "daha gürültülü ve hızlı dönen bir çizgi üretir."
+        ),
+        "example": [
+            lambda df: zeonta.coppock_curve(df["close"]).tail(3),
+        ],
+    },
+    "force_index": {
+        "title_en": "Force Index",
+        "title_tr": "Force Index (Güç Endeksi)",
+        "formula_en": "FI(1) = (Close - PriorClose) x Volume; FI(n) = EMA(FI(1), n)",
+        "formula_tr": "FI(1) = (Kapanış - ÖncekiKapanış) x Hacim; FI(n) = EMA(FI(1), n)",
+        "about_en": (
+            "Alexander Elder's combination of price direction, price magnitude and volume into one "
+            "line — a bar that moves further on more volume produces a proportionally larger "
+            "reading than the same move on light volume, something a pure price indicator like "
+            "`momentum` cannot see. It is the same author's indicator as `elder_ray`, viewing "
+            "buying/selling pressure through volume instead of through price relative to an EMA."
+        ),
+        "about_tr": (
+            "Alexander Elder'ın fiyat yönü, fiyat büyüklüğü ve hacmi tek bir çizgide birleştirmesi "
+            "— daha fazla hacimle daha uzağa hareket eden bir bar, aynı hareketin düşük hacimde "
+            "yaptığından orantılı olarak daha büyük bir okuma üretir; bu, `momentum` gibi saf bir "
+            "fiyat indikatörünün göremeyeceği bir şeydir. `elder_ray` ile aynı yazarın "
+            "indikatörüdür; alım-satım baskısını fiyatın bir EMA'ya göre konumu yerine hacim "
+            "üzerinden görür."
+        ),
+        "reading_en": (
+            "A rising Force Index confirms an uptrend (price advancing on strong volume); a "
+            "falling one during an uptrend, or a bearish divergence against price, warns that the "
+            "advance is losing conviction. Elder himself used both a short unsmoothed version "
+            "(``length=1``, or 2) for entry timing and the smoothed 13-period version for the "
+            "underlying trend."
+        ),
+        "reading_tr": (
+            "Yükselen bir Force Index bir yükseliş trendini doğrular (fiyat güçlü hacimle "
+            "ilerliyor); bir yükseliş trendi sırasında düşen bir Force Index, ya da fiyata karşı "
+            "ayı uyumsuzluğu, yükselişin inandırıcılığını kaybettiğini işaret eder. Elder'ın "
+            "kendisi giriş zamanlaması için hem kısa, yumuşatılmamış bir versiyon (``length=1`` "
+            "ya da 2) hem de altta yatan trend için yumuşatılmış 13-periyotluk versiyonu kullandı."
+        ),
+        "pitfalls_en": (
+            "Like `obv` and `adl`, only its sign and slope are meaningful — the absolute level "
+            "scales directly with the security's own typical share volume, so it cannot be "
+            "compared across different symbols."
+        ),
+        "pitfalls_tr": (
+            "`obv` ve `adl` gibi, yalnızca işareti ve eğimi anlamlıdır — mutlak seviye, menkul "
+            "kıymetin kendi tipik hacmiyle doğrudan ölçeklenir, bu yüzden farklı semboller arasında "
+            "karşılaştırılamaz."
+        ),
+        "example": [
+            lambda df: zeonta.force_index(df["close"], df["volume"]).tail(3),
+        ],
+    },
+    "ease_of_movement": {
+        "title_en": "Ease of Movement (EMV)",
+        "title_tr": "Hareket Kolaylığı (EMV)",
+        "formula_en": (
+            "DistanceMoved = (High+Low)/2 - (PriorHigh+PriorLow)/2; "
+            "BoxRatio = (Volume/100,000,000) / (High-Low); "
+            "EMV(1) = DistanceMoved / BoxRatio; EOM = SMA(EMV(1), n)"
+        ),
+        "formula_tr": (
+            "KatedilenMesafe = (Yüksek+Düşük)/2 - (ÖncekiYüksek+ÖncekiDüşük)/2; "
+            "KutuOranı = (Hacim/100.000.000) / (Yüksek-Düşük); "
+            "EMV(1) = KatedilenMesafe / KutuOranı; EOM = SMA(EMV(1), n)"
+        ),
+        "about_en": (
+            "Richard Arms' box-ratio idea directly compares a bar's price movement against how "
+            "much volume that movement needed — the same underlying question `chaikin_oscillator` "
+            "and `mfi` ask, from a different angle. A large price move on light volume scores much "
+            "higher than the same move on heavy volume."
+        ),
+        "about_tr": (
+            "Richard Arms'ın kutu-oranı fikri, bir barın fiyat hareketini o hareketin ne kadar "
+            "hacme ihtiyaç duyduğuyla doğrudan karşılaştırır — `chaikin_oscillator` ve `mfi`'nin "
+            "farklı bir açıdan sorduğu aynı temel soru. Düşük hacimde büyük bir fiyat hareketi, "
+            "yüksek hacimdeki aynı hareketten çok daha yüksek puan alır."
+        ),
+        "reading_en": (
+            "Sustained positive readings mean price is advancing easily — little volume is needed "
+            "per unit of price movement, a healthy uptrend. Readings near or below zero mean price "
+            "is struggling against volume to move at all, whether flat or actively declining."
+        ),
+        "reading_tr": (
+            "Sürekli pozitif okumalar, fiyatın kolayca ilerlediği anlamına gelir — fiyat hareketi "
+            "birimi başına az hacim gerekir, sağlıklı bir yükseliş trendi. Sıfıra yakın ya da "
+            "altındaki okumalar, fiyatın hacme karşı hareket etmekte zorlandığı anlamına gelir; "
+            "ister yatay ister aktif olarak düşüyor olsun."
+        ),
+        "pitfalls_en": (
+            "A zero-range bar or a zero-volume bar makes the box ratio degenerate (a zero or "
+            "infinite denominator); this implementation treats either case as contributing ``0`` "
+            "to the raw EMV rather than raising or producing ``inf``/``NaN``, the same convention "
+            "`cmf`'s Money Flow Multiplier uses for its own zero-range case."
+        ),
+        "pitfalls_tr": (
+            "Sıfır-aralıklı bir bar ya da sıfır-hacimli bir bar, kutu oranını dejenere eder (sıfır "
+            "ya da sonsuz bir payda); bu uygulama her iki durumu da hata vermek ya da ``inf``/"
+            "``NaN`` üretmek yerine ham EMV'ye ``0`` katkı olarak ele alır — `cmf`'nin Para Akışı "
+            "Çarpanı'nın kendi sıfır-aralık durumu için kullandığı aynı kural."
+        ),
+        "example": [
+            lambda df: zeonta.ease_of_movement(df["high"], df["low"], df["volume"]).tail(3),
+        ],
+    },
+    "ulcer_index": {
+        "title_en": "Ulcer Index",
+        "title_tr": "Ulcer Endeksi",
+        "formula_en": (
+            "PercentDrawdown = (Close - HighestClose(n)) / HighestClose(n) x 100; "
+            "UI = sqrt(mean(PercentDrawdown^2, n))"
+        ),
+        "formula_tr": (
+            "YüzdeGeriÇekilme = (Kapanış - EnYüksekKapanış(n)) / EnYüksekKapanış(n) x 100; "
+            "UI = sqrt(ortalama(YüzdeGeriÇekilme^2, n))"
+        ),
+        "about_en": (
+            "Unlike `atr` or `bbands`, which measure movement in *either* direction, the Ulcer "
+            "Index (Peter Martin, 1987) only measures how far price has fallen from its own recent "
+            "high — squaring the drawdown before averaging means a single deep decline dominates "
+            "the reading far more than several small ones of the same total size, mirroring how a "
+            "real drawdown actually feels to hold through."
+        ),
+        "about_tr": (
+            "Hareketi *her iki yönde* de ölçen `atr` ya da `bbands`'ın aksine, Ulcer Endeksi "
+            "(Peter Martin, 1987) yalnızca fiyatın kendi yakın zirvesinden ne kadar düştüğünü "
+            "ölçer — geri çekilmeyi ortalamadan önce karesini almak, tek bir derin düşüşün, aynı "
+            "toplam büyüklükteki birkaç küçük düşüşten çok daha fazla okumaya hakim olması "
+            "anlamına gelir; bu, gerçek bir geri çekilmeyi elde tutmanın gerçekte nasıl "
+            "hissettirdiğini yansıtır."
+        ),
+        "reading_en": (
+            "Higher readings mean deeper, more sustained drawdowns — a security a risk-averse "
+            "holder would find harder to sit through, even if its raw price swings (as measured by "
+            "`atr`) are not especially large. Comparing the Ulcer Index across candidate "
+            "investments is a way to rank them by how much drawdown pain they have historically "
+            "caused, independent of their average return."
+        ),
+        "reading_tr": (
+            "Daha yüksek okumalar, daha derin ve daha sürdürülen geri çekilmeler anlamına gelir — "
+            "riskten kaçınan bir yatırımcının, ham fiyat dalgalanmaları (`atr` ile ölçüldüğünde) "
+            "özellikle büyük olmasa bile katlanmakta zorlanacağı bir menkul kıymet. Aday "
+            "yatırımlar arasında Ulcer Endeksi'ni karşılaştırmak, ortalama getirilerinden bağımsız "
+            "olarak tarihsel olarak ne kadar geri çekilme acısına neden olduklarına göre "
+            "sıralamanın bir yoludur."
+        ),
+        "pitfalls_en": (
+            "Originally designed with mutual funds in mind and focused purely on downside risk — "
+            "it says nothing about upside potential, so it should complement a return measure, not "
+            "replace one."
+        ),
+        "pitfalls_tr": (
+            "Aslında yatırım fonları düşünülerek tasarlandı ve yalnızca aşağı yönlü riske "
+            "odaklanır — yukarı yönlü potansiyel hakkında hiçbir şey söylemez, bu yüzden bir "
+            "getiri ölçütünün yerine değil, onu tamamlayıcı olarak kullanılmalıdır."
+        ),
+        "example": [
+            lambda df: zeonta.ulcer_index(df["close"]).tail(3),
+        ],
+    },
+    "linreg": {
+        "title_en": "Linear Regression Slope & Forecast",
+        "title_tr": "Doğrusal Regresyon Eğimi ve Tahmini",
+        "formula_en": (
+            "Fits an ordinary-least-squares line y = mx + b to the last n closes; "
+            "Slope = m; Forecast = the fitted line's value at the most recent bar"
+        ),
+        "formula_tr": (
+            "Son n kapanışa en küçük kareler yöntemiyle y = mx + b doğrusu uydurulur; "
+            "Eğim = m; Tahmin = uydurulan doğrunun en son bardaki değeri"
+        ),
+        "about_en": (
+            "StockCharts documents these as two separate indicators — Slope (default 20) and "
+            "Linear Regression Forecast (default 14) — but both come from the exact same "
+            "regression fit this library already computes inside `trend_channel` and `squeeze`, so "
+            "they are exposed here as two columns from one call, sharing one length parameter, "
+            "following the convention most platforms with a combined `LINEARREG` indicator family "
+            "use."
+        ),
+        "about_tr": (
+            "StockCharts bunları iki ayrı indikatör olarak belgeler — Eğim (varsayılan 20) ve "
+            "Doğrusal Regresyon Tahmini (varsayılan 14) — ama ikisi de bu kütüphanenin "
+            "`trend_channel` ve `squeeze` içinde zaten hesapladığı tam olarak aynı regresyon "
+            "uydurmasından gelir; bu yüzden burada tek bir çağrıdan gelen, tek bir uzunluk "
+            "parametresini paylaşan iki sütun olarak sunulur — birleşik bir `LINEARREG` indikatör "
+            "ailesine sahip çoğu platformun kullandığı kurala uygun olarak."
+        ),
+        "reading_en": (
+            "``LRSlope`` reads like any trend-strength measure: its sign gives direction, its "
+            "magnitude gives steepness, directly comparable to `~zeonta.aroon`'s trend read from a "
+            "completely different angle. ``LRForecast`` tracks price closely, like a smoothed "
+            "moving average, but overshoots less on a sharp reversal since it fits a straight line "
+            "rather than weighting recent bars more heavily."
+        ),
+        "reading_tr": (
+            "``LRSlope`` herhangi bir trend-gücü ölçütü gibi okunur: işareti yön verir, "
+            "büyüklüğü diklik verir — tamamen farklı bir açıdan trend okuyan `~zeonta.aroon` ile "
+            "doğrudan karşılaştırılabilir. ``LRForecast``, yumuşatılmış bir hareketli ortalama "
+            "gibi fiyatı yakından takip eder, ama düz bir çizgi uydurduğu için (son barları daha "
+            "ağır tartmak yerine) keskin bir dönüşte daha az aşırı tepki verir."
+        ),
+        "pitfalls_en": (
+            '"Forecast" describes what the line represents (StockCharts\' own name for it), not '
+            "a claim about the future: ``LRForecast`` is the fitted value at the *current*, "
+            "already-known bar, not a projection beyond it — using it as an actual price "
+            "prediction is a misreading of the name."
+        ),
+        "pitfalls_tr": (
+            '"Tahmin" (Forecast) adı çizginin ne temsil ettiğini anlatır (StockCharts\'ın kendi '
+            "adlandırması), gelecek hakkında bir iddia değildir: ``LRForecast``, ötesine bir "
+            "projeksiyon değil, *geçerli*, zaten bilinen bardaki uydurulmuş değerdir — bunu gerçek "
+            "bir fiyat tahmini olarak kullanmak, adın yanlış okunmasıdır."
+        ),
+        "example": [
+            lambda df: zeonta.linreg(df["close"]).tail(3),
+        ],
+    },
 }

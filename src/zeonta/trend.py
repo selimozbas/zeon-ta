@@ -25,6 +25,7 @@ from ._core import (
     indicator,
     require_aligned_index,
     require_same_length,
+    rolling_linreg,
     rolling_max,
     rolling_min,
     rolling_sum,
@@ -41,6 +42,7 @@ __all__ = [
     "chandelier_exit",
     "donchian",
     "ichimoku",
+    "linreg",
     "parabolic_sar",
     "supertrend",
     "vortex",
@@ -867,5 +869,73 @@ def vortex(high: ArrayLike, low: ArrayLike, close: ArrayLike, length: int = 14) 
     return wrap_frame(
         dict(zip(order, (plus_vi, minus_vi), strict=True)),
         common_index(high, low, close),
+        order=order,
+    )
+
+
+@indicator(
+    category="trend",
+    summary="Linear regression fit over the window: its slope and its endpoint (forecast) value.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-overlays/linear-regression-forecast"
+    ),
+    outputs=("LRSlope", "LRForecast"),
+)
+def linreg(close: ArrayLike, length: int = 14) -> pd.DataFrame:
+    """Linear Regression Slope and Forecast.
+
+    Fits an ordinary-least-squares line to the last ``n`` closes and reports
+    two of its properties: the slope (rise over run — StockCharts' own
+    "Slope" indicator) and the endpoint (the fitted line's value at the
+    most recent bar — "Linear Regression Forecast", since that same fitted
+    line, read one bar further, is the naive forecast). Both come from the
+    same regression fit this library already uses inside
+    :func:`~zeonta.trend_channel` and :func:`~zeonta.squeeze`.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Regression window. StockCharts documents Slope and Linear
+        Regression Forecast as separate indicators with different defaults
+        (20 and 14 respectively); this shares one parameter for both,
+        following the convention most platforms with a combined
+        ``LINEARREG`` indicator family use (one shared period for slope,
+        intercept and forecast alike), defaulting to 14.
+
+    Returns
+    -------
+    pandas.DataFrame
+        ``LRSlope_{length}`` — price change per bar; ``LRForecast_{length}``
+        — the fitted line's value at the current bar.
+
+    Notes
+    -----
+    "Forecast" describes what the line represents (StockCharts' own name for
+    it), not a claim about the future: ``LRForecast`` is the fitted value at
+    the *current*, already-known bar, not a projection beyond it.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> out = zeonta.linreg([1.0, 2.0, 3.0, 4.0, 5.0], length=3)
+    >>> out.iloc[-1].tolist()
+    [1.0, 5.0]
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-overlays/linear-regression-forecast
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+
+    fit = rolling_linreg(values, length)
+
+    order = [f"LRSlope_{length}", f"LRForecast_{length}"]
+    return wrap_frame(
+        dict(zip(order, (fit.slope, fit.endpoint), strict=True)),
+        common_index(close),
         order=order,
     )

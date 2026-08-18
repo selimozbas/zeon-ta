@@ -231,3 +231,58 @@ def test_chaikin_oscillator_an_interior_gap_does_not_poison_the_underlying_adl()
     volume = [100.0, 50.0, 80.0, 60.0, 70.0, 90.0]
     result = zeonta.chaikin_oscillator(high, low, close, volume, fast=2, slow=3)
     assert not result.iloc[3:].isna().any()
+
+
+def test_force_index_matches_the_hand_computed_1_bar_value() -> None:
+    result = zeonta.force_index([10, 11, 10, 12], [100, 100, 100, 100], length=1)
+    np.testing.assert_allclose(result.to_numpy(), [np.nan, 100.0, -100.0, 200.0], equal_nan=True)
+
+
+def test_force_index_is_zero_on_a_flat_close() -> None:
+    result = zeonta.force_index([10.0] * 20, [100.0] * 20, length=5)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_force_index_is_the_ema_of_the_1_bar_force_index() -> None:
+    close = list(np.linspace(10, 20, 40))
+    volume = [1000.0] * 40
+    raw = zeonta.force_index(close, volume, length=1)
+    expected = zeonta.ema(raw, 13)
+    result = zeonta.force_index(close, volume, length=13)
+    np.testing.assert_allclose(result.to_numpy(), expected.to_numpy(), equal_nan=True)
+
+
+def test_force_index_rejects_negative_volume() -> None:
+    with pytest.raises(ValueError, match="'volume' must not contain negative values"):
+        zeonta.force_index([10.0, 11.0], [100.0, -1.0])
+
+
+def test_ease_of_movement_matches_the_hand_computed_value() -> None:
+    # midpoint bar1=11, bar0=10 -> distance=1; span=12-10=2;
+    # box_ratio=(100e6/100e6)/2=0.5 -> emv=1/0.5=2
+    high = [11.0, 12.0, 13.0]
+    low = [9.0, 10.0, 11.0]
+    volume = [100_000_000.0, 100_000_000.0, 200_000_000.0]
+    result = zeonta.ease_of_movement(high, low, volume, length=1)
+    np.testing.assert_allclose(result.to_numpy(), [np.nan, 2.0, 1.0], equal_nan=True)
+
+
+def test_ease_of_movement_treats_a_zero_range_bar_as_contributing_nothing() -> None:
+    high = [10.0, 10.0, 11.0]
+    low = [9.0, 10.0, 9.0]
+    volume = [100_000_000.0] * 3
+    result = zeonta.ease_of_movement(high, low, volume, length=1)
+    np.testing.assert_allclose(result.iloc[1], 0.0)
+
+
+def test_ease_of_movement_treats_zero_volume_as_contributing_nothing() -> None:
+    high = [11.0, 12.0]
+    low = [9.0, 10.0]
+    volume = [100_000_000.0, 0.0]
+    result = zeonta.ease_of_movement(high, low, volume, length=1)
+    np.testing.assert_allclose(result.iloc[1], 0.0)
+
+
+def test_ease_of_movement_rejects_negative_volume() -> None:
+    with pytest.raises(ValueError, match="'volume' must not contain negative values"):
+        zeonta.ease_of_movement([11.0, 12.0], [9.0, 10.0], [100.0, -1.0])

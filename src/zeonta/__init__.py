@@ -43,13 +43,18 @@ from .moving_averages import dema, ema, ema_ribbon, hma, kama, ma_cross, sma, sm
 from .oscillators import (
     awesome_oscillator,
     cci,
+    coppock_curve,
+    dpo,
     elder_ray,
     macd,
     momentum,
+    ppo,
     roc,
     rsi,
     stoch,
     stoch_rsi,
+    trix,
+    tsi,
     ultimate_oscillator,
     williams_r,
 )
@@ -59,12 +64,13 @@ from .trend import (
     chandelier_exit,
     donchian,
     ichimoku,
+    linreg,
     parabolic_sar,
     supertrend,
     vortex,
 )
-from .volatility import atr, bbands, keltner, squeeze, true_range
-from .volume import adl, chaikin_oscillator, cmf, mfi, obv
+from .volatility import atr, bbands, keltner, squeeze, true_range, ulcer_index
+from .volume import adl, chaikin_oscillator, cmf, ease_of_movement, force_index, mfi, obv
 
 try:
     # Single source of truth: read back the version hatchling wrote into the
@@ -90,18 +96,23 @@ __all__ = [
     "chaikin_oscillator",
     "chandelier_exit",
     "cmf",
+    "coppock_curve",
     "dema",
     "divergence",
     "donchian",
+    "dpo",
+    "ease_of_movement",
     "elder_ray",
     "ema",
     "ema_ribbon",
     "fib_retracement",
+    "force_index",
     "get_spec",
     "hma",
     "ichimoku",
     "kama",
     "keltner",
+    "linreg",
     "list_indicators",
     "ma_cross",
     "macd",
@@ -110,6 +121,7 @@ __all__ = [
     "obv",
     "parabolic_sar",
     "pivot_points",
+    "ppo",
     "relative_volume",
     "roc",
     "rsi",
@@ -123,7 +135,10 @@ __all__ = [
     "support_resistance",
     "tema",
     "trend_channel",
+    "trix",
     "true_range",
+    "tsi",
+    "ulcer_index",
     "ultimate_oscillator",
     "vortex",
     "vwap",

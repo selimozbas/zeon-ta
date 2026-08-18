@@ -84,6 +84,15 @@ def test_indicators_with_a_reference() -> None:
         "elder_ray",
         "pivot_points",
         "smma",
+        "trix",
+        "ppo",
+        "tsi",
+        "dpo",
+        "coppock_curve",
+        "force_index",
+        "ease_of_movement",
+        "ulcer_index",
+        "linreg",
     }
     with_reference = {spec.name for spec in iter_specs() if spec.reference is not None}
     assert with_reference == expected

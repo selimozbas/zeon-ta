@@ -115,13 +115,18 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | --- | --- | --- |
 | `awesome_oscillator` | Awesome Osilatör (AO) | [doküman](docs/tr/indicators/awesome_oscillator.md) |
 | `cci` | Emtia Kanal Endeksi (CCI) | [doküman](docs/tr/indicators/cci.md) |
+| `coppock_curve` | Coppock Eğrisi | [doküman](docs/tr/indicators/coppock_curve.md) |
+| `dpo` | Trendi Arındırılmış Fiyat Osilatörü (DPO) | [doküman](docs/tr/indicators/dpo.md) |
 | `elder_ray` | Elder Ray (Boğa Gücü / Ayı Gücü) | [doküman](docs/tr/indicators/elder_ray.md) |
 | `macd` | MACD (Hareketli Ortalama Yakınsama Iraksama) | [doküman](docs/tr/indicators/macd.md) |
 | `momentum` | Momentum | [doküman](docs/tr/indicators/momentum.md) |
+| `ppo` | Yüzde Fiyat Osilatörü (PPO) | [doküman](docs/tr/indicators/ppo.md) |
 | `roc` | Değişim Oranı (ROC) | [doküman](docs/tr/indicators/roc.md) |
 | `rsi` | Göreceli Güç Endeksi (RSI) | [doküman](docs/tr/indicators/rsi.md) |
 | `stoch` | Stokastik Osilatör | [doküman](docs/tr/indicators/stoch.md) |
 | `stoch_rsi` | Stokastik RSI (StochRSI) | [doküman](docs/tr/indicators/stoch_rsi.md) |
+| `trix` | TRIX (Üçlü Üssel Ortalama) | [doküman](docs/tr/indicators/trix.md) |
+| `tsi` | Gerçek Güç Endeksi (TSI) | [doküman](docs/tr/indicators/tsi.md) |
 | `ultimate_oscillator` | Ultimate Osilatör | [doküman](docs/tr/indicators/ultimate_oscillator.md) |
 | `williams_r` | Williams %R | [doküman](docs/tr/indicators/williams_r.md) |
 
@@ -132,6 +137,8 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `adl` | Birikim/Dağıtım Çizgisi (ADL) | [doküman](docs/tr/indicators/adl.md) |
 | `chaikin_oscillator` | Chaikin Osilatörü | [doküman](docs/tr/indicators/chaikin_oscillator.md) |
 | `cmf` | Chaikin Para Akışı (CMF) | [doküman](docs/tr/indicators/cmf.md) |
+| `ease_of_movement` | Hareket Kolaylığı (EMV) | [doküman](docs/tr/indicators/ease_of_movement.md) |
+| `force_index` | Force Index (Güç Endeksi) | [doküman](docs/tr/indicators/force_index.md) |
 | `mfi` | Para Akışı Endeksi (MFI) | [doküman](docs/tr/indicators/mfi.md) |
 | `obv` | Denge Hacmi (OBV) | [doküman](docs/tr/indicators/obv.md) |
 
@@ -144,6 +151,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `keltner` | Keltner Kanalları | [doküman](docs/tr/indicators/keltner.md) |
 | `squeeze` | Sıkışma (TTM Squeeze) | [doküman](docs/tr/indicators/squeeze.md) |
 | `true_range` | Gerçek Aralık | [doküman](docs/tr/indicators/true_range.md) |
+| `ulcer_index` | Ulcer Endeksi | [doküman](docs/tr/indicators/ulcer_index.md) |
 
 ### Trend Sistemleri
 
@@ -154,6 +162,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `chandelier_exit` | Chandelier Exit | [doküman](docs/tr/indicators/chandelier_exit.md) |
 | `donchian` | Donchian Kanalları | [doküman](docs/tr/indicators/donchian.md) |
 | `ichimoku` | Ichimoku | [doküman](docs/tr/indicators/ichimoku.md) |
+| `linreg` | Doğrusal Regresyon Eğimi ve Tahmini | [doküman](docs/tr/indicators/linreg.md) |
 | `parabolic_sar` | Parabolik SAR | [doküman](docs/tr/indicators/parabolic_sar.md) |
 | `supertrend` | SuperTrend | [doküman](docs/tr/indicators/supertrend.md) |
 | `vortex` | Vortex İndikatörü | [doküman](docs/tr/indicators/vortex.md) |

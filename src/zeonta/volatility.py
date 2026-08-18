@@ -1,4 +1,4 @@
-"""Volatility tools: True Range, ATR, Bollinger Bands, Keltner Channels, TTM Squeeze."""
+"""Volatility tools: True Range, ATR, Bollinger Bands, Keltner Channels, Squeeze, Ulcer Index."""
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ from ._core import (
     wrap_series,
 )
 
-__all__ = ["atr", "bbands", "keltner", "squeeze", "true_range"]
+__all__ = ["atr", "bbands", "keltner", "squeeze", "true_range", "ulcer_index"]
 
 
 def _true_range_values(high: np.ndarray, low: np.ndarray, close: np.ndarray) -> np.ndarray:
@@ -373,3 +373,60 @@ def squeeze(
         common_index(high, low, close),
         order=order,
     )
+
+
+@indicator(
+    category="volatility",
+    summary="Drawdown-based risk measure — the expected percentage decline, not price swing size.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/ulcer-index"
+    ),
+    outputs=("UI",),
+)
+def ulcer_index(close: ArrayLike, length: int = 14) -> pd.Series:
+    """Ulcer Index.
+
+    ``PercentDrawdown = (Close - HighestClose(n)) / HighestClose(n) * 100``;
+    ``UI = sqrt(mean(PercentDrawdown^2, n))``. Unlike :func:`atr` or
+    :func:`bbands`, which measure movement in *either* direction, the Ulcer
+    Index (Peter Martin, 1987) only measures how far price has fallen from
+    its own recent high — squaring the drawdown before averaging means a
+    single deep decline dominates the reading far more than several small
+    ones of the same total size, mirroring how a real drawdown actually
+    feels to hold through.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Look-back window for both the running high and the average.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``UI_{length}``. Always ``>= 0``; ``0`` only when price has
+        made a new high on every bar in the window.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> float(zeonta.ulcer_index([100.0, 100.0, 90.0, 90.0], length=2).iloc[-1])
+    7.0710678118654755
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/ulcer-index
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+
+    highest_close = rolling_max(values, length)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        percent_drawdown = (values - highest_close) / highest_close * 100.0
+    percent_drawdown = np.where(highest_close == 0.0, 0.0, percent_drawdown)
+
+    result = np.sqrt(rolling_mean(percent_drawdown**2, length))
+
+    return wrap_series(result, common_index(close), f"UI_{length}")

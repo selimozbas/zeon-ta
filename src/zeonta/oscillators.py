@@ -26,6 +26,7 @@ from ._core import (
     rolling_mean_abs_dev,
     rolling_min,
     rolling_sum,
+    rolling_wma,
     validate_length,
     wilder_values,
     wrap_frame,
@@ -35,13 +36,18 @@ from ._core import (
 __all__ = [
     "awesome_oscillator",
     "cci",
+    "coppock_curve",
+    "dpo",
     "elder_ray",
     "macd",
     "momentum",
+    "ppo",
     "roc",
     "rsi",
     "stoch",
     "stoch_rsi",
+    "trix",
+    "tsi",
     "ultimate_oscillator",
     "williams_r",
 ]
@@ -762,3 +768,335 @@ def elder_ray(high: ArrayLike, low: ArrayLike, close: ArrayLike, length: int = 1
         common_index(high, low, close),
         order=order,
     )
+
+
+@indicator(
+    category="oscillators",
+    summary="1-bar percent change of a triple-smoothed EMA — momentum with heavy noise filtering.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/trix"
+    ),
+    outputs=("TRIX", "TRIXs"),
+)
+def trix(close: ArrayLike, length: int = 15, signal: int = 9) -> pd.DataFrame:
+    """TRIX (Triple Exponential Average).
+
+    ``EMA1 = EMA(Close, n)``; ``EMA2 = EMA(EMA1, n)``; ``EMA3 = EMA(EMA2, n)``;
+    ``TRIX = (EMA3[t] - EMA3[t-1]) / EMA3[t-1] * 100``. Three passes of
+    smoothing before ever measuring a change is why TRIX filters out far
+    more noise than a single-EMA oscillator like :func:`roc` — the tradeoff
+    is proportionally more lag before it turns.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Period for each of the three EMA passes.
+    signal:
+        EMA period for the signal line.
+
+    Returns
+    -------
+    pandas.DataFrame
+        ``TRIX_{length}_{signal}`` and ``TRIXs_{length}_{signal}`` (its
+        signal line, an EMA of TRIX itself — the same construction
+        :func:`macd`'s signal line uses).
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> out = zeonta.trix(list(range(1, 60)), length=5, signal=3)
+    >>> bool(out['TRIX_5_3'].iloc[-1] > 0)
+    True
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/trix
+    """
+    length = validate_length(length)
+    signal = validate_length(signal, "signal")
+    values = as_array(close, "close")
+
+    ema1 = ema_values(values, length)
+    ema2 = ema_values(ema1, length)
+    ema3 = ema_values(ema2, length)
+
+    previous = _shift(ema3, 1)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        trix_line = (ema3 - previous) / previous * 100.0
+    trix_line = np.where(previous == 0.0, np.nan, trix_line)
+
+    signal_line = ema_values(trix_line, signal)
+
+    order = [f"TRIX_{length}_{signal}", f"TRIXs_{length}_{signal}"]
+    return wrap_frame(
+        dict(zip(order, (trix_line, signal_line), strict=True)),
+        common_index(close),
+        order=order,
+    )
+
+
+@indicator(
+    category="oscillators",
+    summary="MACD expressed as a percentage, comparable across symbols and price levels.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/percentage-price-oscillator-ppo"
+    ),
+    outputs=("PPO", "PPOs", "PPOh"),
+)
+def ppo(close: ArrayLike, fast: int = 12, slow: int = 26, signal: int = 9) -> pd.DataFrame:
+    """Percentage Price Oscillator.
+
+    ``PPO = (EMA(Close, fast) - EMA(Close, slow)) / EMA(Close, slow) * 100``;
+    ``Signal = EMA(PPO, signal)``; ``Histogram = PPO - Signal``. Exactly
+    :func:`macd`'s construction, normalised by the slow EMA so a PPO reading
+    means the same thing on a $5 stock and a $500 one — :func:`macd`'s own
+    absolute-price-difference output does not.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    fast, slow:
+        EMA lengths; ``fast`` must be smaller than ``slow``.
+    signal:
+        EMA length of the signal line.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``PPO_{f}_{s}_{sig}``, ``PPOs_{f}_{s}_{sig}``, ``PPOh_{f}_{s}_{sig}``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> list(zeonta.ppo(list(range(100))).columns)
+    ['PPO_12_26_9', 'PPOs_12_26_9', 'PPOh_12_26_9']
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/percentage-price-oscillator-ppo
+    """
+    fast = validate_length(fast, "fast")
+    slow = validate_length(slow, "slow")
+    signal = validate_length(signal, "signal")
+    if fast >= slow:
+        raise ValueError(f"'fast' must be smaller than 'slow', got fast={fast}, slow={slow}")
+
+    values = as_array(close, "close")
+    fast_ema = ema_values(values, fast)
+    slow_ema = ema_values(values, slow)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        ppo_line = (fast_ema - slow_ema) / slow_ema * 100.0
+    ppo_line = np.where(slow_ema == 0.0, np.nan, ppo_line)
+    signal_line = ema_values(ppo_line, signal)
+    histogram = ppo_line - signal_line
+
+    suffix = f"{fast}_{slow}_{signal}"
+    order = [f"PPO_{suffix}", f"PPOs_{suffix}", f"PPOh_{suffix}"]
+    return wrap_frame(
+        dict(zip(order, (ppo_line, signal_line, histogram), strict=True)),
+        common_index(close),
+        order=order,
+    )
+
+
+@indicator(
+    category="oscillators",
+    summary="Double-smoothed momentum, bounded and steadier than a single-pass oscillator.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/true-strength-index"
+    ),
+    outputs=("TSI", "TSIs"),
+)
+def tsi(close: ArrayLike, long: int = 25, short: int = 13, signal: int = 7) -> pd.DataFrame:
+    """True Strength Index.
+
+    ``PC = Close - Close[1 bar ago]``;
+    ``DoubleSmoothedPC = EMA(EMA(PC, long), short)``;
+    ``DoubleSmoothedAbsPC = EMA(EMA(|PC|, long), short)``;
+    ``TSI = 100 * DoubleSmoothedPC / DoubleSmoothedAbsPC``;
+    ``Signal = EMA(TSI, signal)``. William Blau's double smoothing of the
+    raw price change (rather than smoothing an already-derived ratio, the
+    way :func:`rsi` does) is meant to track the underlying trend closely
+    while still filtering out short-term noise.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    long, short:
+        The two EMA lengths applied in sequence to the raw price change.
+    signal:
+        EMA length of the signal line.
+
+    Returns
+    -------
+    pandas.DataFrame
+        ``TSI_{long}_{short}_{signal}`` (roughly -100 to 100) and
+        ``TSIs_{long}_{short}_{signal}``, its signal line.
+
+    Notes
+    -----
+    Neither StockCharts nor Fidelity's guide commits to one canonical
+    default signal-line period — TSI(25, 13, 7), TSI(25, 13, 13) and
+    TSI(40, 20, 10) are all cited across independent sources. ``signal=7``
+    is used here, the value repeated most often alongside the (25, 13) core
+    smoothing pair.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> list(zeonta.tsi(list(range(60))).columns)
+    ['TSI_25_13_7', 'TSIs_25_13_7']
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/true-strength-index
+    """
+    long = validate_length(long, "long")
+    short = validate_length(short, "short")
+    signal = validate_length(signal, "signal")
+    values = as_array(close, "close")
+
+    price_change = np.diff(values, prepend=np.nan)
+    double_pc = ema_values(ema_values(price_change, long), short)
+    double_abs_pc = ema_values(ema_values(np.abs(price_change), long), short)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        tsi_line = 100.0 * double_pc / double_abs_pc
+    # A perfectly flat run of recent price changes makes the denominator
+    # zero; TSI is centred on zero, so "no measurable change" is 0, not NaN.
+    tsi_line = np.where(double_abs_pc == 0.0, 0.0, tsi_line)
+    tsi_line = np.where(np.isfinite(double_abs_pc), tsi_line, np.nan)
+
+    signal_line = ema_values(tsi_line, signal)
+
+    suffix = f"{long}_{short}_{signal}"
+    order = [f"TSI_{suffix}", f"TSIs_{suffix}"]
+    return wrap_frame(
+        dict(zip(order, (tsi_line, signal_line), strict=True)),
+        common_index(close),
+        order=order,
+    )
+
+
+@indicator(
+    category="oscillators",
+    summary="Price from n/2+1 bars ago minus the current n-bar SMA, built to expose cycles.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/detrended-price-oscillator-dpo"
+    ),
+    outputs=("DPO",),
+)
+def dpo(close: ArrayLike, length: int = 20) -> pd.Series:
+    """Detrended Price Oscillator.
+
+    ``DPO = Close[n/2 + 1 bars ago] - SMA(Close, n)``. Subtracting an
+    *older* price from the *current* moving average — rather than the
+    current price, the way every other oscillator in this library works —
+    is deliberate: it removes the trend component so the leftover
+    oscillation lines up with the market's actual cycle peaks and troughs,
+    at the cost of the line no longer reacting to the most recent bars at
+    all.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        SMA window; also sets how far back the compared price is taken
+        (``length // 2 + 1`` bars).
+
+    Returns
+    -------
+    pandas.Series
+        Named ``DPO_{length}``.
+
+    Notes
+    -----
+    A cycle-identification tool, not a momentum or trend signal — it should
+    not be read the way :func:`macd` or :func:`rsi` are.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> float(zeonta.dpo([float(i) for i in range(1, 30)], length=10).iloc[-1])
+    -1.5
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/detrended-price-oscillator-dpo
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+
+    shift = length // 2 + 1
+    sma = rolling_mean(values, length)
+    shifted_close = _shift(values, shift)
+    result = shifted_close - sma
+
+    return wrap_series(result, common_index(close), f"DPO_{length}")
+
+
+@indicator(
+    category="oscillators",
+    summary="A WMA of two summed rate-of-change measures, built to spot major long-term bottoms.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/coppock-curve"
+    ),
+    outputs=("COPC",),
+)
+def coppock_curve(
+    close: ArrayLike, long: int = 14, short: int = 11, wma_length: int = 10
+) -> pd.Series:
+    """Coppock Curve.
+
+    ``Coppock = WMA(ROC(Close, long) + ROC(Close, short), wma_length)``.
+    Edwin Coppock built the two ROC periods around how long, in his
+    research, it took investor sentiment to recover from a loss —
+    unconventional inputs, but the result is a slow, heavily-smoothed
+    long-term momentum line, originally meant for monthly charts and major
+    market bottoms rather than everyday trading.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    long, short:
+        The two Rate-of-Change lengths that get summed.
+    wma_length:
+        Length of the final weighted-moving-average smoothing.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``COPC_{long}_{short}_{wma_length}``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> prices = [float(i) for i in range(1, 60)]
+    >>> float(zeonta.coppock_curve(prices, long=5, short=3, wma_length=3).iloc[-1])
+    14.79952699292322
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/coppock-curve
+    """
+    long = validate_length(long, "long")
+    short = validate_length(short, "short")
+    wma_length = validate_length(wma_length, "wma_length")
+    values = as_array(close, "close")
+
+    combined = roc(values, length=long).to_numpy() + roc(values, length=short).to_numpy()
+    result = rolling_wma(combined, wma_length)
+
+    suffix = f"{long}_{short}_{wma_length}"
+    return wrap_series(result, common_index(close), f"COPC_{suffix}")

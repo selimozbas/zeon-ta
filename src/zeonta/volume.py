@@ -25,12 +25,13 @@ from ._core import (
     require_aligned_index,
     require_non_negative,
     require_same_length,
+    rolling_mean,
     rolling_sum,
     validate_length,
     wrap_series,
 )
 
-__all__ = ["adl", "chaikin_oscillator", "cmf", "mfi", "obv"]
+__all__ = ["adl", "chaikin_oscillator", "cmf", "ease_of_movement", "force_index", "mfi", "obv"]
 
 
 def _money_flow_multiplier(high: np.ndarray, low: np.ndarray, close: np.ndarray) -> np.ndarray:
@@ -459,3 +460,149 @@ def mfi(
     result = np.where(np.isfinite(sum_positive) & np.isfinite(sum_negative), result, np.nan)
 
     return wrap_series(result, common_index(high, low, close, volume), f"MFI_{length}")
+
+
+@indicator(
+    category="volume",
+    summary="Volume-weighted price change: Elder's Force Index.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/force-index"
+    ),
+    outputs=("FI",),
+)
+def force_index(close: ArrayLike, volume: ArrayLike, length: int = 13) -> pd.Series:
+    """Force Index.
+
+    ``FI(1) = (Close - PriorClose) * Volume``; ``FI(n) = EMA(FI(1), n)``.
+    Alexander Elder's combination of price direction, price magnitude and
+    volume into one line — a bar that moves further on more volume produces
+    a proportionally larger reading than the same move on light volume,
+    something a pure price indicator like :func:`~zeonta.momentum` cannot see.
+
+    Parameters
+    ----------
+    close, volume:
+        Series of equal length.
+    length:
+        EMA smoothing period. ``length=1`` returns the unsmoothed raw
+        1-bar Force Index.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``FI_{length}``. Only its sign and slope are meaningful, not
+        its absolute level, since that scales directly with the security's
+        own share volume.
+
+    Raises
+    ------
+    ValueError
+        If ``volume`` contains a negative value.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> zeonta.force_index([10, 11, 10, 12], [100, 100, 100, 100], length=1).tolist()
+    [nan, 100.0, -100.0, 200.0]
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/force-index
+    """
+    length = validate_length(length)
+    require_aligned_index(close=close, volume=volume)
+    close_values = as_array(close, "close")
+    volume_values = as_array(volume, "volume")
+    require_same_length(close=close_values, volume=volume_values)
+    require_non_negative(volume=volume_values)
+
+    raw = np.diff(close_values, prepend=np.nan) * volume_values
+    result = ema_values(raw, length)
+
+    return wrap_series(result, common_index(close, volume), f"FI_{length}")
+
+
+@indicator(
+    category="volume",
+    summary="How much price moves per unit of volume — Arms' Ease of Movement.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/ease-of-movement-emv"
+    ),
+    outputs=("EOM",),
+)
+def ease_of_movement(
+    high: ArrayLike, low: ArrayLike, volume: ArrayLike, length: int = 14
+) -> pd.Series:
+    """Ease of Movement (EMV).
+
+    ``DistanceMoved = (High+Low)/2 - (PriorHigh+PriorLow)/2``;
+    ``BoxRatio = (Volume/100,000,000) / (High-Low)``;
+    ``EMV(1) = DistanceMoved / BoxRatio``; ``EOM = SMA(EMV(1), n)``. Richard
+    Arms' box-ratio idea directly compares a bar's price movement against
+    how much volume that movement needed — the same underlying question
+    :func:`chaikin_oscillator` and :func:`mfi` ask, from a different angle.
+
+    Parameters
+    ----------
+    high, low, volume:
+        Series of equal length.
+    length:
+        SMA smoothing period applied to the raw 1-bar EMV.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``EOM_{length}``. Positive readings mean price is advancing
+        easily (little volume needed per unit of price movement); readings
+        near zero mean price is struggling against volume to move at all.
+
+    Raises
+    ------
+    ValueError
+        If ``volume`` contains a negative value.
+
+    Notes
+    -----
+    A zero-range bar (``High == Low``) or a zero-volume bar makes the box
+    ratio degenerate (a zero or infinite denominator); either case is
+    treated as contributing ``0`` to the raw EMV rather than raising or
+    producing ``inf``/``NaN``, the same convention :func:`cmf`'s Money Flow
+    Multiplier uses for its own zero-range case.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> high = [11.0, 12.0, 13.0]
+    >>> low = [9.0, 10.0, 11.0]
+    >>> volume = [100_000_000.0, 100_000_000.0, 200_000_000.0]
+    >>> zeonta.ease_of_movement(high, low, volume, length=1).tolist()
+    [nan, 2.0, 1.0]
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/ease-of-movement-emv
+    """
+    length = validate_length(length)
+    require_aligned_index(high=high, low=low, volume=volume)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    volume_values = as_array(volume, "volume")
+    require_same_length(high=high_values, low=low_values, volume=volume_values)
+    require_non_negative(volume=volume_values)
+
+    midpoint = (high_values + low_values) / 2.0
+    prior_midpoint = np.concatenate(([np.nan], midpoint[:-1]))
+    distance_moved = midpoint - prior_midpoint
+    span = high_values - low_values
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        box_ratio = (volume_values / 100_000_000.0) / span
+        raw_emv = distance_moved / box_ratio
+    degenerate = (span == 0.0) | (volume_values == 0.0)
+    raw_emv = np.where(degenerate & np.isfinite(distance_moved), 0.0, raw_emv)
+
+    result = rolling_mean(raw_emv, length)
+
+    return wrap_series(result, common_index(high, low, volume), f"EOM_{length}")

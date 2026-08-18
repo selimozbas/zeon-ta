@@ -34,13 +34,18 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | --- | --- |
 | [`awesome_oscillator`](indicators/awesome_oscillator.md) | Awesome Oscillator (AO) |
 | [`cci`](indicators/cci.md) | Commodity Channel Index (CCI) |
+| [`coppock_curve`](indicators/coppock_curve.md) | Coppock Curve |
+| [`dpo`](indicators/dpo.md) | Detrended Price Oscillator (DPO) |
 | [`elder_ray`](indicators/elder_ray.md) | Elder Ray (Bull Power / Bear Power) |
 | [`macd`](indicators/macd.md) | MACD (Moving Average Convergence Divergence) |
 | [`momentum`](indicators/momentum.md) | Momentum |
+| [`ppo`](indicators/ppo.md) | Percentage Price Oscillator (PPO) |
 | [`roc`](indicators/roc.md) | Rate of Change (ROC) |
 | [`rsi`](indicators/rsi.md) | Relative Strength Index (RSI) |
 | [`stoch`](indicators/stoch.md) | Stochastic Oscillator |
 | [`stoch_rsi`](indicators/stoch_rsi.md) | Stochastic RSI (StochRSI) |
+| [`trix`](indicators/trix.md) | TRIX (Triple Exponential Average) |
+| [`tsi`](indicators/tsi.md) | True Strength Index (TSI) |
 | [`ultimate_oscillator`](indicators/ultimate_oscillator.md) | Ultimate Oscillator |
 | [`williams_r`](indicators/williams_r.md) | Williams %R |
 
@@ -51,6 +56,8 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`adl`](indicators/adl.md) | Accumulation/Distribution Line (ADL) |
 | [`chaikin_oscillator`](indicators/chaikin_oscillator.md) | Chaikin Oscillator |
 | [`cmf`](indicators/cmf.md) | Chaikin Money Flow (CMF) |
+| [`ease_of_movement`](indicators/ease_of_movement.md) | Ease of Movement (EMV) |
+| [`force_index`](indicators/force_index.md) | Force Index |
 | [`mfi`](indicators/mfi.md) | Money Flow Index (MFI) |
 | [`obv`](indicators/obv.md) | On-Balance Volume (OBV) |
 
@@ -63,6 +70,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`keltner`](indicators/keltner.md) | Keltner Channels |
 | [`squeeze`](indicators/squeeze.md) | The Squeeze (TTM Squeeze) |
 | [`true_range`](indicators/true_range.md) | True Range |
+| [`ulcer_index`](indicators/ulcer_index.md) | Ulcer Index |
 
 ## Trend Systems
 
@@ -73,6 +81,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`chandelier_exit`](indicators/chandelier_exit.md) | Chandelier Exit |
 | [`donchian`](indicators/donchian.md) | Donchian Channels |
 | [`ichimoku`](indicators/ichimoku.md) | Ichimoku |
+| [`linreg`](indicators/linreg.md) | Linear Regression Slope & Forecast |
 | [`parabolic_sar`](indicators/parabolic_sar.md) | Parabolic SAR |
 | [`supertrend`](indicators/supertrend.md) | SuperTrend |
 | [`vortex`](indicators/vortex.md) | Vortex Indicator |

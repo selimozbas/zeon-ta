@@ -187,3 +187,26 @@ def test_squeeze_widening_the_keltner_makes_squeezes_more_frequent(ohlcv: pd.Dat
     tight = zeonta.squeeze(ohlcv["high"], ohlcv["low"], ohlcv["close"], kc_multiplier=1.5)
     wide = zeonta.squeeze(ohlcv["high"], ohlcv["low"], ohlcv["close"], kc_multiplier=3.0)
     assert wide.filter(like="SQZ_ON").sum().iloc[0] > tight.filter(like="SQZ_ON").sum().iloc[0]
+
+
+def test_ulcer_index_matches_the_hand_computed_value() -> None:
+    # highest close over window [90,90]=90 -> drawdown at idx3=(90-90)/90*100=0
+    # window [100,90]=100 -> drawdown at idx2=(90-100)/100*100=-10
+    # mean(0^2,(-10)^2)/... sqrt(mean(0,100))=sqrt(50)
+    result = zeonta.ulcer_index([100.0, 100.0, 90.0, 90.0], length=2)
+    np.testing.assert_allclose(result.iloc[-1], (50.0) ** 0.5)
+
+
+def test_ulcer_index_is_zero_when_every_bar_is_a_new_high() -> None:
+    result = zeonta.ulcer_index(list(range(1, 30)), length=10)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_ulcer_index_is_never_negative(ohlcv: pd.DataFrame) -> None:
+    result = zeonta.ulcer_index(ohlcv["close"]).dropna()
+    assert (result >= 0.0).all()
+
+
+def test_ulcer_index_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.ulcer_index([1.0, 2.0, 3.0], length=0)

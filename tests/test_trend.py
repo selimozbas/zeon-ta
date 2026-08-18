@@ -413,3 +413,31 @@ def test_vortex_minus_leads_in_a_clean_downtrend() -> None:
 def test_vortex_rejects_non_positive_length() -> None:
     with pytest.raises(ValueError, match="must be >="):
         zeonta.vortex([2.0] * 20, [1.0] * 20, [1.5] * 20, length=0)
+
+
+def test_linreg_slope_is_the_ols_slope_of_a_perfect_line() -> None:
+    out = zeonta.linreg([1.0, 2.0, 3.0, 4.0, 5.0], length=3)
+    np.testing.assert_allclose(out["LRSlope_3"].dropna().to_numpy(), 1.0)
+
+
+def test_linreg_forecast_equals_price_on_a_perfect_line() -> None:
+    """A perfectly linear series has zero residual, so the fitted line's
+    endpoint exactly equals the actual (already-known) current price."""
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    out = zeonta.linreg(values, length=3)
+    np.testing.assert_allclose(out["LRForecast_3"].dropna().to_numpy()[-1], values[-1])
+
+
+def test_linreg_slope_is_negative_in_a_downtrend() -> None:
+    out = zeonta.linreg(list(range(30, 0, -1)), length=10)
+    assert (out["LRSlope_10"].dropna() < 0.0).all()
+
+
+def test_linreg_slope_is_flat_on_a_constant_series() -> None:
+    out = zeonta.linreg([5.0] * 20, length=10)
+    np.testing.assert_allclose(out["LRSlope_10"].dropna().to_numpy(), 0.0, atol=1e-10)
+
+
+def test_linreg_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.linreg([1.0, 2.0, 3.0], length=0)

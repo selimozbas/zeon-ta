@@ -116,6 +116,6 @@ module = ["pandas.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-addopts = "-q --strict-markers"
+testpaths = ["tests", "src/zeonta"]
+addopts = "-q --strict-markers --doctest-modules"
 filterwarnings = ["error"]

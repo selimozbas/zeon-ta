@@ -210,3 +210,41 @@ def test_ulcer_index_is_never_negative(ohlcv: pd.DataFrame) -> None:
 def test_ulcer_index_rejects_non_positive_length() -> None:
     with pytest.raises(ValueError, match="must be >="):
         zeonta.ulcer_index([1.0, 2.0, 3.0], length=0)
+
+
+def test_wavelet_variance_warmup_is_exactly_window_minus_one_bars() -> None:
+    rng = np.random.default_rng(7)
+    values = np.cumsum(rng.normal(size=80)) + 100.0
+    result = zeonta.wavelet_variance(values, window=32, level=3)
+    assert result.iloc[:31].isna().all().all()
+    assert result.iloc[31:].notna().all().all()
+
+
+def test_wavelet_variance_is_causal_new_bars_never_change_past_values() -> None:
+    """The same non-repaint requirement as wavelet_denoise: a bar's value
+    must never depend on bars that arrive after it."""
+    rng = np.random.default_rng(42)
+    prices = np.cumsum(rng.normal(size=100)) + 100.0
+    full = zeonta.wavelet_variance(prices, window=32, level=3)
+    prefix = zeonta.wavelet_variance(prices[:60], window=32, level=3)
+    np.testing.assert_allclose(full.iloc[:60].to_numpy(), prefix.to_numpy(), equal_nan=True)
+
+
+def test_wavelet_variance_is_near_zero_on_a_flat_series() -> None:
+    result = zeonta.wavelet_variance([100.0] * 64, window=32, level=2)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0, atol=1e-20)
+
+
+def test_wavelet_variance_columns_are_named_by_level() -> None:
+    result = zeonta.wavelet_variance([1.0] * 32, window=16, level=3)
+    assert list(result.columns) == ["WVAR_1", "WVAR_2", "WVAR_3"]
+
+
+def test_wavelet_variance_rejects_a_window_not_a_multiple_of_2_pow_level() -> None:
+    with pytest.raises(ValueError, match="must be an exact multiple"):
+        zeonta.wavelet_variance(list(range(40)), window=30, level=3)
+
+
+def test_wavelet_variance_rejects_non_positive_level() -> None:
+    with pytest.raises(ValueError, match="'level' must be >= 1"):
+        zeonta.wavelet_variance(list(range(40)), level=0)

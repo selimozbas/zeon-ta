@@ -76,6 +76,7 @@
 | [`squeeze`](indicators/squeeze.md) | Sıkışma (TTM Squeeze) |
 | [`true_range`](indicators/true_range.md) | Gerçek Aralık |
 | [`ulcer_index`](indicators/ulcer_index.md) | Ulcer Endeksi |
+| [`wavelet_variance`](indicators/wavelet_variance.md) | Çok Ölçekli Dalgacık Varyansı (MODWT) |
 
 ## Trend Sistemleri
 

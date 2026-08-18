@@ -3296,4 +3296,84 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.wavelet_denoise(df["close"]).tail(3),
         ],
     },
+    "wavelet_variance": {
+        "title_en": "Multi-Scale Wavelet Variance (MODWT)",
+        "title_tr": "Çok Ölçekli Dalgacık Varyansı (MODWT)",
+        "formula_en": (
+            "For each rolling window: MODWT-decompose (norm=True, trim_approx=True) into "
+            "`level` detail bands; WVAR_j = mean(detail_band_j ** 2) for each level j, "
+            "1 (finest) through `level` (coarsest)"
+        ),
+        "formula_tr": (
+            "Her yuvarlanan pencere için: MODWT ile (norm=True, trim_approx=True) `level` "
+            "sayıda detay bandına ayrıştır; her j seviyesi için WVAR_j = "
+            "ortalama(detay_bandı_j ** 2), 1 (en ince) ile `level` (en kaba) arasında"
+        ),
+        "about_en": (
+            "atr() and a rolling standard deviation both answer 'how much did price move' "
+            "with a single blended number. Percival & Walden's 'Wavelet Methods for Time "
+            "Series Analysis' (2000) — the standard reference for this technique — splits "
+            "that number apart by timescale using the Maximal Overlap DWT: because it is "
+            "energy-conserving (unlike a plain DWT), the resulting per-scale variances are a "
+            "genuine decomposition of total variance, not independent or overlapping "
+            "readings. `wavelet_denoise` in this library uses an ordinary DWT to reconstruct "
+            "a filtered price; this instead keeps the raw per-scale energy to describe the "
+            "shape of the volatility itself."
+        ),
+        "about_tr": (
+            "atr() ve yuvarlanan standart sapmanın ikisi de 'fiyat ne kadar hareket etti' "
+            "sorusuna tek, karıştırılmış bir sayıyla cevap verir. Percival & Walden'ın "
+            "'Wavelet Methods for Time Series Analysis' (2000) kitabı — bu tekniğin standart "
+            "referans kaynağı — bu sayıyı Maksimal Örtüşmeli DWT (MODWT) kullanarak zaman "
+            "ölçeğine göre ayırır: enerji-koruyucu olduğu için (sıradan bir DWT'den farklı "
+            "olarak), ortaya çıkan ölçek-başı varyanslar toplam varyansın gerçek bir "
+            "ayrışımıdır, bağımsız veya örtüşen okumalar değildir. Bu kütüphanedeki "
+            "`wavelet_denoise`, filtrelenmiş bir fiyat yeniden inşa etmek için sıradan bir "
+            "DWT kullanır; bu ise oynaklığın şeklini tanımlamak için ham ölçek-başı enerjiyi "
+            "korur."
+        ),
+        "reading_en": (
+            "Each `WVAR_j` column covers a doubling band of bars (`WVAR_1` ~ 2-4 bars, "
+            "`WVAR_2` ~ 4-8, and so on up to `WVAR_{level}`). A bar where the finest bands "
+            "dominate is mostly high-frequency noise (thin books, HFT churn); one where the "
+            "coarsest bands dominate reflects a genuine slower move — a distinction a single "
+            "ATR reading cannot make since it always blends every timescale into one number. "
+            "Traders use this as a regime read: which kind of volatility is currently driving "
+            "the tape."
+        ),
+        "reading_tr": (
+            "Her `WVAR_j` kolonu, ikişer katlanan bir bar bandını kapsar (`WVAR_1` ~ 2-4 bar, "
+            "`WVAR_2` ~ 4-8 bar, ve `WVAR_{level}`'e kadar böyle devam eder). En ince "
+            "bantların baskın olduğu bir bar çoğunlukla yüksek frekanslı gürültüdür (ince "
+            "emir defterleri, HFT çalkantısı); en kaba bantların baskın olduğu bir bar ise "
+            "gerçek, daha yavaş bir hareketi yansıtır — tek bir ATR okumasının yapamayacağı "
+            "bir ayrım, çünkü o her zaman tüm zaman ölçeklerini tek bir sayıda karıştırır. "
+            "Yatırımcılar bunu bir rejim okuması olarak kullanır: şu anda fiyat hareketini "
+            "hangi tür oynaklığın sürüklediği."
+        ),
+        "pitfalls_en": (
+            "This uses the *biased* wavelet-variance estimator (average over every "
+            "coefficient in the window) rather than Percival & Walden's *unbiased* one "
+            "(which excludes boundary-affected coefficients) — simpler and always defined "
+            "for any window/level pair, at the cost of a small bias the academic literature "
+            "documents. `window` must be an exact multiple of `2**level`, a hard MODWT "
+            "requirement, not a tunable default. And like `wavelet_denoise`, every bar "
+            "re-runs its own decomposition rather than one pass over the whole series — "
+            "measure it on your own data before a large history (see `BENCHMARKS.md`)."
+        ),
+        "pitfalls_tr": (
+            "Bu, Percival & Walden'ın *yansız* tahmin edicisi (sınır etkisindeki katsayıları "
+            "dışlayan) yerine *yanlı* dalgacık-varyans tahmin edicisini kullanır (penceredeki "
+            "her katsayının ortalaması) — daha basittir ve her window/level çifti için her "
+            "zaman tanımlıdır, bedeli ise akademik literatürün belgelediği küçük bir "
+            "yanlılıktır. `window`, `2**level`'in tam katı olmak zorundadır — bu, ayarlanabilir "
+            "bir varsayılan değil, sert bir MODWT gereksinimidir. Ve `wavelet_denoise` gibi, "
+            "her bar tüm seri üzerinde tek bir geçiş yerine kendi ayrıştırmasını yeniden "
+            "çalıştırır — büyük bir geçmiş üzerinde kullanmadan önce kendi verinizde ölçün "
+            "(bkz. `BENCHMARKS.md`)."
+        ),
+        "example": [
+            lambda df: zeonta.wavelet_variance(df["close"]).tail(3),
+        ],
+    },
 }

@@ -17,6 +17,27 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Volatility** — `wavelet_variance`: multi-scale volatility via the
+  Maximal Overlap DWT (MODWT) — splits the single blended number `atr()`
+  or a rolling standard deviation gives into `level` per-scale bands
+  (`WVAR_1` covering 2-4 bar swings up through `WVAR_{level}`, doubling
+  each level), so a bar dominated by high-frequency noise can be told
+  apart from one driven by a genuine slower move. Verified against
+  Percival & Walden's *Wavelet Methods for Time Series Analysis* (2000),
+  the standard reference for this technique, and against `pywt.swt`'s own
+  documented energy-conservation property (confirmed numerically: total
+  coefficient energy equals input energy to float precision) — without
+  `norm=True` the transform does *not* have the variance-partitioning
+  property this indicator relies on, easy to miss since `pywt.swt` works
+  and returns plausible-looking numbers either way. Uses the *biased*
+  wavelet-variance estimator (mean over every coefficient in the window)
+  rather than Percival & Walden's *unbiased* one (which excludes
+  boundary-affected coefficients), documented as a deliberate
+  simplicity/always-defined tradeoff in its own docstring. Same causal,
+  rolling, non-repaint design as `wavelet_denoise` below, for the same
+  reason — verified by the same kind of prefix-vs-full-series test.
+  Registered indicators: 62 -> 63.
+
 - **Moving averages** — `wavelet_denoise`: causal, rolling Discrete Wavelet
   Transform denoising (`db4`, level 2 by default), soft-thresholded with
   the Donoho & Johnstone (1994) universal threshold

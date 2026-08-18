@@ -158,6 +158,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `squeeze` | Sıkışma (TTM Squeeze) | [doküman](docs/tr/indicators/squeeze.md) |
 | `true_range` | Gerçek Aralık | [doküman](docs/tr/indicators/true_range.md) |
 | `ulcer_index` | Ulcer Endeksi | [doküman](docs/tr/indicators/ulcer_index.md) |
+| `wavelet_variance` | Çok Ölçekli Dalgacık Varyansı (MODWT) | [doküman](docs/tr/indicators/wavelet_variance.md) |
 
 ### Trend Sistemleri
 

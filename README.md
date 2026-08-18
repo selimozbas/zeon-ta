@@ -154,6 +154,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | `squeeze` | The Squeeze (TTM Squeeze) | [docs](docs/en/indicators/squeeze.md) |
 | `true_range` | True Range | [docs](docs/en/indicators/true_range.md) |
 | `ulcer_index` | Ulcer Index | [docs](docs/en/indicators/ulcer_index.md) |
+| `wavelet_variance` | Multi-Scale Wavelet Variance (MODWT) | [docs](docs/en/indicators/wavelet_variance.md) |
 
 ### Trend Systems
 

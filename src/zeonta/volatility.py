@@ -6,6 +6,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
+import pywt
 
 from ._core import (
     ArrayLike,
@@ -28,7 +29,15 @@ from ._core import (
     wrap_series,
 )
 
-__all__ = ["atr", "bbands", "keltner", "squeeze", "true_range", "ulcer_index"]
+__all__ = [
+    "atr",
+    "bbands",
+    "keltner",
+    "squeeze",
+    "true_range",
+    "ulcer_index",
+    "wavelet_variance",
+]
 
 
 def _true_range_values(high: np.ndarray, low: np.ndarray, close: np.ndarray) -> np.ndarray:
@@ -430,3 +439,119 @@ def ulcer_index(close: ArrayLike, length: int = 14) -> pd.Series:
     result = np.sqrt(rolling_mean(percent_drawdown**2, length))
 
     return wrap_series(result, common_index(close), f"UI_{length}")
+
+
+@indicator(
+    category="volatility",
+    summary="Multi-scale volatility (MODWT): how much movement lives at each timescale.",
+    reference="https://staff.washington.edu/dbp/wmtsa.html",
+    outputs=("WVAR",),
+    returns_frame=True,
+)
+def wavelet_variance(
+    close: ArrayLike, window: int = 64, wavelet: str = "db4", level: int = 5
+) -> pd.DataFrame:
+    """Multi-Scale Wavelet Variance (Percival & Walden, MODWT).
+
+    :func:`atr` and rolling standard deviation answer "how much did price
+    move", lumping every timescale into one number. This splits that
+    movement by scale instead: each rolling *window* of price is
+    decomposed with a Maximal Overlap DWT into *level* detail bands —
+    ``WVAR_1`` covers 2-4 bar swings, ``WVAR_2`` covers 4-8 bars, doubling
+    up to ``WVAR_{level}`` covering ``2^level`` to ``2^(level+1)`` bars —
+    and each column is that band's mean squared coefficient (the *biased*
+    wavelet-variance estimator; Percival & Walden also give an *unbiased*
+    one that excludes boundary-affected coefficients, which this simpler,
+    always-defined form does not attempt). Because an MODWT (unlike a
+    plain DWT) is energy-conserving, the columns are a genuine
+    decomposition: summed together (plus what the coarsest band's
+    approximation leaves out) they reconstruct the window's total
+    variance, rather than being independent, possibly-overlapping
+    readings.
+
+    Splitting volatility apart like this is a *regime* read: a bar where
+    ``WVAR_1`` dominates is mostly high-frequency noise (thin order books,
+    HFT churn), while one where ``WVAR_4``/``WVAR_5`` dominate reflects a
+    genuine slower move — the kind :func:`atr` cannot distinguish, since it
+    only ever reports a single blended number.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    window:
+        Bars per rolling decomposition. Must be an exact multiple of
+        ``2**level`` (a hard MODWT requirement — see ``pywt.swt``); the
+        defaults (64, level 5) satisfy this with ``2**5 = 32``.
+    wavelet:
+        Any discrete wavelet name PyWavelets recognises. ``"db4"`` matches
+        this library's other wavelet-based indicator, :func:`wavelet_denoise`;
+        published wavelet-variance software (e.g. MATLAB's ``modwtvar``)
+        more often defaults to ``"sym4"`` — both are valid choices, the
+        difference is which filter shape is assumed for the finest scale.
+    level:
+        Number of scales to compute. Must be >= 1 and satisfy the
+        *window* constraint above.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``WVAR_1`` (finest) through ``WVAR_{level}`` (coarsest).
+        The first ``window - 1`` rows are ``NaN``.
+
+    Notes
+    -----
+    Like :func:`wavelet_denoise`, this recomputes its decomposition from
+    scratch on every rolling *window* rather than once over the whole
+    series, so that a bar's value never depends on bars that come after
+    it — see that function's own docstring for why a single whole-series
+    pass is unsuitable for anything meant to generate a live signal.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import zeonta
+    >>> rng = np.random.default_rng(0)
+    >>> noisy = np.cumsum(rng.normal(size=32)) + 100.0
+    >>> result = zeonta.wavelet_variance(noisy, window=16, level=2)
+    >>> list(result.columns)
+    ['WVAR_1', 'WVAR_2']
+    >>> result.iloc[:15].isna().all().all()
+    np.True_
+    >>> [round(v, 6) for v in result.iloc[-1]]
+    [0.076275, 0.061968]
+
+    References
+    ----------
+    https://staff.washington.edu/dbp/wmtsa.html
+    """
+    window = validate_length(window, "window", minimum=2)
+    if level < 1:
+        raise ValueError(f"'level' must be >= 1, got {level}")
+    span = 2**level
+    if window % span != 0:
+        raise ValueError(
+            f"'window' ({window}) must be an exact multiple of 2**level ({span}) "
+            "for a MODWT decomposition"
+        )
+
+    values = as_array(close, "close")
+    size = values.shape[0]
+    columns = {f"WVAR_{lvl}": np.full(size, np.nan, dtype="float64") for lvl in range(1, level + 1)}
+
+    for i in range(window - 1, size):
+        segment = values[i - window + 1 : i + 1]
+        if not np.all(np.isfinite(segment)):
+            continue
+        # pywt's Cython core needs a writable buffer; a slice of the
+        # caller's array may not be (e.g. a read-only view from
+        # DataFrame.to_numpy()).
+        coeffs = pywt.swt(
+            np.array(segment, dtype="float64"), wavelet, level=level, trim_approx=True, norm=True
+        )
+        # trim_approx=True orders coeffs as [cA_level, cD_level, ..., cD_1];
+        # reversing the detail bands puts them in level order, 1..level.
+        for lvl, detail in enumerate(reversed(coeffs[1:]), start=1):
+            columns[f"WVAR_{lvl}"][i] = float(np.mean(detail**2))
+
+    return wrap_frame(columns, common_index(close), order=list(columns))

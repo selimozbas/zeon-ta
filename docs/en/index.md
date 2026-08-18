@@ -76,6 +76,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`squeeze`](indicators/squeeze.md) | The Squeeze (TTM Squeeze) |
 | [`true_range`](indicators/true_range.md) | True Range |
 | [`ulcer_index`](indicators/ulcer_index.md) | Ulcer Index |
+| [`wavelet_variance`](indicators/wavelet_variance.md) | Multi-Scale Wavelet Variance (MODWT) |
 
 ## Trend Systems
 

@@ -86,7 +86,7 @@ from .trend import (
     supertrend,
     vortex,
 )
-from .volatility import atr, bbands, keltner, squeeze, true_range, ulcer_index
+from .volatility import atr, bbands, keltner, squeeze, true_range, ulcer_index, wavelet_variance
 from .volume import adl, chaikin_oscillator, cmf, ease_of_movement, force_index, mfi, obv
 
 try:
@@ -165,6 +165,7 @@ __all__ = [
     "vortex",
     "vwap",
     "wavelet_denoise",
+    "wavelet_variance",
     "williams_r",
     "wma",
 ]

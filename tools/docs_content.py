@@ -4401,4 +4401,88 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.mcgd(df["close"]).tail(3),
         ],
     },
+    "natr": {
+        "title_en": "Normalized Average True Range (NATR)",
+        "title_tr": "Normalize Edilmiş Ortalama Gerçek Aralık (NATR)",
+        "formula_en": "NATR = ATR(n) / Close * 100",
+        "formula_tr": "NATR = ATR(n) / Kapanış * 100",
+        "about_en": (
+            "[atr](atr.md) reports a raw price amount — a $2 ATR is huge for a $10 stock and tiny "
+            "for a $2,000 one. NATR expresses the same measurement as a percentage of price "
+            "instead, so different symbols (or the same symbol at very different price levels "
+            "over time) become directly comparable."
+        ),
+        "about_tr": (
+            "[atr](atr.md) ham bir fiyat miktarı bildirir — 2 dolarlık bir ATR, 10 dolarlık bir "
+            "hisse için devasa, 2.000 dolarlık bir hisse için ise önemsizdir. NATR aynı ölçümü "
+            "bunun yerine fiyatın yüzdesi olarak ifade eder, böylece farklı semboller (ya da zaman "
+            "içinde çok farklı fiyat seviyelerindeki aynı sembol) doğrudan karşılaştırılabilir "
+            "hale gelir."
+        ),
+        "reading_en": (
+            "Read the same way as ATR — rising means volatility is increasing — but compare its "
+            "*level* across symbols or across a long price history the way you never would with "
+            "raw ATR."
+        ),
+        "reading_tr": (
+            "ATR ile aynı şekilde okunur — yükselmesi oynaklığın arttığı anlamına gelir — ama "
+            "*seviyesini* semboller arasında ya da uzun bir fiyat geçmişi boyunca, ham ATR ile "
+            "asla yapamayacağınız şekilde karşılaştırabilirsiniz."
+        ),
+        "pitfalls_en": "`NaN` when `Close` is exactly `0`, rather than an undefined division.",
+        "pitfalls_tr": "`Kapanış` tam olarak `0` olduğunda, tanımsız bir bölüm yerine `NaN` olur.",
+        "example": [
+            lambda df: zeonta.natr(df["high"], df["low"], df["close"]).tail(3),
+        ],
+    },
+    "mass_index": {
+        "title_en": "Mass Index",
+        "title_tr": "Kütle Endeksi",
+        "formula_en": (
+            "SingleEMA = EMA(High-Low, ema_length); DoubleEMA = EMA(SingleEMA, ema_length); "
+            "Ratio = SingleEMA/DoubleEMA; MASS = Sum(Ratio, sum_length)"
+        ),
+        "formula_tr": (
+            "TekEMA = EMA(Yüksek-Düşük, ema_length); ÇiftEMA = EMA(TekEMA, ema_length); "
+            "Oran = TekEMA/ÇiftEMA; MASS = Toplam(Oran, sum_length)"
+        ),
+        "about_en": (
+            "Donald Dorsey built this entirely from the bar-to-bar *range*, not price direction: "
+            "an EMA reacts faster than an EMA-of-that-EMA, so their ratio grows whenever the range "
+            "is widening, whether that widening comes from an up move or a down move. Dorsey's own "
+            "claim was that this range expansion tends to appear before a trend reversal, without "
+            "saying which direction the reversal goes."
+        ),
+        "about_tr": (
+            "Donald Dorsey bunu tamamen bar-başı *aralıktan* inşa etti, fiyat yönünden değil: bir "
+            "EMA, o EMA'nın EMA'sından daha hızlı tepki verir, bu yüzden aralık genişledikçe "
+            "oranları büyür — bu genişleme yukarı bir hareketten mi aşağı bir hareketten mi "
+            "geldiği fark etmez. Dorsey'in kendi savı, bu aralık genişlemesinin bir trend "
+            "dönüşünden önce ortaya çıkma eğiliminde olduğuydu, dönüşün hangi yöne olacağını "
+            "söylemeden."
+        ),
+        "reading_en": (
+            "Dorsey's own 'reversal bulge' threshold is a reading of 27 followed by a drop back "
+            "below 26.5 — a specific level pattern to watch for, not a zero-line crossing or a "
+            "bounded oscillator the way most indicators in this library work."
+        ),
+        "reading_tr": (
+            "Dorsey'in kendi 'dönüş şişkinliği' eşiği, 27 okumasının ardından 26,5'in altına geri "
+            "düşmesidir — bu kütüphanedeki çoğu indikatörün çalıştığı gibi bir sıfır-çizgisi "
+            "geçişi ya da sınırlı bir osilatör değil, izlenecek belirli bir seviye desenidir."
+        ),
+        "pitfalls_en": (
+            "Reads in the mid-20s during ordinary conditions by construction (it is a 25-bar sum "
+            "of a ratio that hovers near 1), so it needs its own specific threshold rather than a "
+            "0/50/100-style intuition."
+        ),
+        "pitfalls_tr": (
+            "Yapısı gereği sıradan koşullarda 20'lerin ortasında okunur (1'e yakın gezinen bir "
+            "oranın 25-barlık toplamıdır), bu yüzden 0/50/100 tarzı bir sezgi yerine kendi belirli "
+            "eşiğine ihtiyaç duyar."
+        ),
+        "example": [
+            lambda df: zeonta.mass_index(df["high"], df["low"]).tail(3),
+        ],
+    },
 }

@@ -175,6 +175,8 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `atr` | Ortalama Gerçek Aralık (ATR) | [doküman](docs/tr/indicators/atr.md) |
 | `bbands` | Bollinger Bantları | [doküman](docs/tr/indicators/bbands.md) |
 | `keltner` | Keltner Kanalları | [doküman](docs/tr/indicators/keltner.md) |
+| `mass_index` | Kütle Endeksi | [doküman](docs/tr/indicators/mass_index.md) |
+| `natr` | Normalize Edilmiş Ortalama Gerçek Aralık (NATR) | [doküman](docs/tr/indicators/natr.md) |
 | `squeeze` | Sıkışma (TTM Squeeze) | [doküman](docs/tr/indicators/squeeze.md) |
 | `true_range` | Gerçek Aralık | [doküman](docs/tr/indicators/true_range.md) |
 | `ulcer_index` | Ulcer Endeksi | [doküman](docs/tr/indicators/ulcer_index.md) |

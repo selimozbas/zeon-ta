@@ -82,6 +82,8 @@
 | [`atr`](indicators/atr.md) | Ortalama Gerçek Aralık (ATR) |
 | [`bbands`](indicators/bbands.md) | Bollinger Bantları |
 | [`keltner`](indicators/keltner.md) | Keltner Kanalları |
+| [`mass_index`](indicators/mass_index.md) | Kütle Endeksi |
+| [`natr`](indicators/natr.md) | Normalize Edilmiş Ortalama Gerçek Aralık (NATR) |
 | [`squeeze`](indicators/squeeze.md) | Sıkışma (TTM Squeeze) |
 | [`true_range`](indicators/true_range.md) | Gerçek Aralık |
 | [`ulcer_index`](indicators/ulcer_index.md) | Ulcer Endeksi |

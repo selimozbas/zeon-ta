@@ -82,6 +82,8 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`atr`](indicators/atr.md) | Average True Range (ATR) |
 | [`bbands`](indicators/bbands.md) | Bollinger Bands |
 | [`keltner`](indicators/keltner.md) | Keltner Channels |
+| [`mass_index`](indicators/mass_index.md) | Mass Index |
+| [`natr`](indicators/natr.md) | Normalized Average True Range (NATR) |
 | [`squeeze`](indicators/squeeze.md) | The Squeeze (TTM Squeeze) |
 | [`true_range`](indicators/true_range.md) | True Range |
 | [`ulcer_index`](indicators/ulcer_index.md) | Ulcer Index |

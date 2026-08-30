@@ -248,3 +248,35 @@ def test_wavelet_variance_rejects_a_window_not_a_multiple_of_2_pow_level() -> No
 def test_wavelet_variance_rejects_non_positive_level() -> None:
     with pytest.raises(ValueError, match="'level' must be >= 1"):
         zeonta.wavelet_variance(list(range(40)), level=0)
+
+
+def test_natr_matches_atr_divided_by_close() -> None:
+    high, low, close = [2.0] * 20, [1.0] * 20, [1.5] * 20
+    atr_result = zeonta.atr(high, low, close, length=14)
+    natr_result = zeonta.natr(high, low, close, length=14)
+    np.testing.assert_allclose(natr_result.iloc[-1], atr_result.iloc[-1] / 1.5 * 100.0)
+
+
+def test_natr_is_nan_when_close_is_zero() -> None:
+    high, low, close = [2.0] * 20, [1.0] * 20, [0.0] * 20
+    result = zeonta.natr(high, low, close, length=14)
+    assert result.dropna().empty
+
+
+def test_mass_index_is_flat_on_a_perfectly_constant_range() -> None:
+    """Single and double EMA of a constant range both converge to that same
+    constant exactly (no gradual approach, since the SMA seed of a constant
+    input equals the constant), so the ratio is 1.0 everywhere it's defined
+    and the 25-bar sum settles at exactly 25."""
+    result = zeonta.mass_index([2.0] * 50, [1.0] * 50, ema_length=9, sum_length=25)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 25.0)
+
+
+def test_mass_index_rejects_non_positive_ema_length() -> None:
+    with pytest.raises(ValueError, match="'ema_length' must be >="):
+        zeonta.mass_index([2.0] * 10, [1.0] * 10, ema_length=0)
+
+
+def test_mass_index_rejects_non_positive_sum_length() -> None:
+    with pytest.raises(ValueError, match="'sum_length' must be >="):
+        zeonta.mass_index([2.0] * 10, [1.0] * 10, sum_length=0)

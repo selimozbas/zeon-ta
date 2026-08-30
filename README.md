@@ -169,6 +169,8 @@ the cloud that projects past the last bar, rather than discarding it.
 | `atr` | Average True Range (ATR) | [docs](docs/en/indicators/atr.md) |
 | `bbands` | Bollinger Bands | [docs](docs/en/indicators/bbands.md) |
 | `keltner` | Keltner Channels | [docs](docs/en/indicators/keltner.md) |
+| `mass_index` | Mass Index | [docs](docs/en/indicators/mass_index.md) |
+| `natr` | Normalized Average True Range (NATR) | [docs](docs/en/indicators/natr.md) |
 | `squeeze` | The Squeeze (TTM Squeeze) | [docs](docs/en/indicators/squeeze.md) |
 | `true_range` | True Range | [docs](docs/en/indicators/true_range.md) |
 | `ulcer_index` | Ulcer Index | [docs](docs/en/indicators/ulcer_index.md) |

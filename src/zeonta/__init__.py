@@ -104,7 +104,17 @@ from .trend import (
     supertrend,
     vortex,
 )
-from .volatility import atr, bbands, keltner, squeeze, true_range, ulcer_index, wavelet_variance
+from .volatility import (
+    atr,
+    bbands,
+    keltner,
+    mass_index,
+    natr,
+    squeeze,
+    true_range,
+    ulcer_index,
+    wavelet_variance,
+)
 from .volume import (
     adl,
     bop,
@@ -174,9 +184,11 @@ __all__ = [
     "ma_cross",
     "macd",
     "mad",
+    "mass_index",
     "mcgd",
     "mfi",
     "momentum",
+    "natr",
     "nvi",
     "obv",
     "ou_half_life",

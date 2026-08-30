@@ -17,6 +17,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Volatility** — two more gap-filling indicators from the same coverage
+  review: `natr` (Normalized ATR — `atr()` expressed as a percentage of
+  price, composed directly from the existing `atr()` rather than
+  reimplementing Wilder's smoothing a second time, so different symbols
+  or price levels become comparable the way raw ATR never is) and
+  `mass_index` (Donald Dorsey — an EMA-of-an-EMA ratio of the bar-to-bar
+  range, summed over a window; built entirely from range expansion, not
+  price direction, to flag a *possible* reversal without saying which way
+  it goes). Registered indicators: 83 -> 85.
+
 - **Moving averages** — four more gap-filling indicators from the same
   coverage review: `vwma` (Volume-Weighted Moving Average — `sma` with
   each bar weighted by its own volume), `zlema` (Zero-Lag EMA, Ehlers &

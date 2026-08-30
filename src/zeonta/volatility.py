@@ -22,6 +22,7 @@ from ._core import (
     rolling_mean,
     rolling_min,
     rolling_std,
+    rolling_sum,
     validate_length,
     validate_multiplier,
     wilder_values,
@@ -33,6 +34,8 @@ __all__ = [
     "atr",
     "bbands",
     "keltner",
+    "mass_index",
+    "natr",
     "squeeze",
     "true_range",
     "ulcer_index",
@@ -555,3 +558,121 @@ def wavelet_variance(
             columns[f"WVAR_{lvl}"][i] = float(np.mean(detail**2))
 
     return wrap_frame(columns, common_index(close), order=list(columns))
+
+
+@indicator(
+    category="volatility",
+    summary="ATR expressed as a percentage of price, so different symbols become comparable.",
+    reference="https://www.tradingview.com/support/solutions/43000501823-average-true-range-natr/",
+    outputs=("NATR",),
+)
+def natr(high: ArrayLike, low: ArrayLike, close: ArrayLike, length: int = 14) -> pd.Series:
+    """Normalized Average True Range.
+
+    ``NATR = ATR(n) / Close * 100``. :func:`atr` reports a raw price
+    amount, which means a $2 ATR is huge for a $10 stock and tiny for a
+    $2,000 one — NATR expresses the same measurement as a percentage of
+    price instead, so different symbols (or the same symbol at very
+    different price levels over time) become directly comparable.
+
+    Parameters
+    ----------
+    high, low, close:
+        Price series of equal length.
+    length:
+        Wilder smoothing period, passed straight through to :func:`atr`.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``NATR_{length}``; the first ``length - 1`` bars are ``NaN``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> float(zeonta.natr([2] * 20, [1] * 20, [1.5] * 20, length=14).iloc[-1])
+    66.66666666666666
+
+    References
+    ----------
+    https://www.tradingview.com/support/solutions/43000501823-average-true-range-natr/
+    """
+    length = validate_length(length)
+    close_values = as_array(close, "close")
+    atr_values = atr(high, low, close, length=length).to_numpy()
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = np.where(close_values != 0.0, atr_values / close_values * 100.0, np.nan)
+
+    return wrap_series(result, common_index(high, low, close), f"NATR_{length}")
+
+
+@indicator(
+    category="volatility",
+    summary="Range-expansion measure built to flag reversals, from EMA-of-EMA ratio of the range.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/mass-index"
+    ),
+    outputs=("MASS",),
+)
+def mass_index(
+    high: ArrayLike, low: ArrayLike, ema_length: int = 9, sum_length: int = 25
+) -> pd.Series:
+    """Mass Index (Donald Dorsey).
+
+    ``SingleEMA = EMA(High - Low, ema_length)``;
+    ``DoubleEMA = EMA(SingleEMA, ema_length)``;
+    ``Ratio = SingleEMA / DoubleEMA``;
+    ``MASS = Sum(Ratio, sum_length)``.
+
+    Built entirely from the bar-to-bar *range*, not price direction — the
+    EMA-of-an-EMA ratio picks up on the range widening (a single EMA
+    reacts faster than a double one, so the ratio grows) regardless of
+    whether that widening comes from an up move or a down move. Dorsey's
+    own claim was that this range expansion tends to appear before a
+    trend reversal, without saying which direction the reversal goes.
+
+    Parameters
+    ----------
+    high, low:
+        Price series of equal length.
+    ema_length:
+        Period for both EMA passes. Must be >= 1.
+    sum_length:
+        Window for the final sum. Must be >= 1.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``MASS_{ema_length}_{sum_length}``.
+
+    Notes
+    -----
+    Dorsey's own commonly cited "reversal bulge" threshold is 27,
+    dropping back below 26.5 — a level read, not a zero-line or bounded
+    oscillator the way most indicators in this library are.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> float(zeonta.mass_index([2.0] * 50, [1.0] * 50, ema_length=9, sum_length=25).iloc[-1])
+    25.0
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/mass-index
+    """
+    ema_length = validate_length(ema_length, "ema_length")
+    sum_length = validate_length(sum_length, "sum_length")
+    require_aligned_index(high=high, low=low)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    require_same_length(high=high_values, low=low_values)
+
+    single_ema = ema_values(high_values - low_values, ema_length)
+    double_ema = ema_values(single_ema, ema_length)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        ratio = np.where(double_ema != 0.0, single_ema / double_ema, 0.0)
+    result = rolling_sum(ratio, sum_length)
+
+    return wrap_series(result, common_index(high, low), f"MASS_{ema_length}_{sum_length}")

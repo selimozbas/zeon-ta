@@ -44,6 +44,7 @@ from .advanced import (
 )
 from .foundations import candles, relative_volume, sr_levels, support_resistance, trend_channel
 from .moving_averages import (
+    alma,
     dema,
     ema,
     ema_ribbon,
@@ -52,13 +53,16 @@ from .moving_averages import (
     instantaneous_trendline,
     kama,
     ma_cross,
+    mcgd,
     sma,
     smma,
     super_smoother,
     t3,
     tema,
+    vwma,
     wavelet_denoise,
     wma,
+    zlema,
 )
 from .oscillators import (
     awesome_oscillator,
@@ -130,6 +134,7 @@ __all__ = [
     "__version__",
     "adl",
     "adx",
+    "alma",
     "aroon",
     "atr",
     "awesome_oscillator",
@@ -169,6 +174,7 @@ __all__ = [
     "ma_cross",
     "macd",
     "mad",
+    "mcgd",
     "mfi",
     "momentum",
     "nvi",
@@ -205,10 +211,12 @@ __all__ = [
     "variance",
     "vortex",
     "vwap",
+    "vwma",
     "wavelet_denoise",
     "wavelet_variance",
     "williams_r",
     "wma",
+    "zlema",
     "zscore",
 ]
 

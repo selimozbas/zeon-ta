@@ -20,6 +20,9 @@ from ._core import (
     common_index,
     ema_values,
     indicator,
+    require_aligned_index,
+    require_non_negative,
+    require_same_length,
     rolling_mean,
     rolling_sum,
     rolling_wma,
@@ -31,6 +34,7 @@ from ._core import (
 )
 
 __all__ = [
+    "alma",
     "dema",
     "ema",
     "ema_ribbon",
@@ -39,13 +43,16 @@ __all__ = [
     "instantaneous_trendline",
     "kama",
     "ma_cross",
+    "mcgd",
     "sma",
     "smma",
     "super_smoother",
     "t3",
     "tema",
+    "vwma",
     "wavelet_denoise",
     "wma",
+    "zlema",
 ]
 
 
@@ -1181,3 +1188,249 @@ def emd_imf1(
             result[i] = imf1[-1]
 
     return wrap_series(result, common_index(close), f"EMDIMF1_{window}")
+
+
+@indicator(
+    category="moving_averages",
+    summary="Simple moving average, but each bar weighted by its own volume.",
+    reference="https://www.tradingview.com/support/solutions/43000592293-volume-weighted-moving-average-vwma/",
+    outputs=("VWMA",),
+)
+def vwma(close: ArrayLike, volume: ArrayLike, length: int = 20) -> pd.Series:
+    """Volume-Weighted Moving Average.
+
+    ``VWMA = Sum(Close * Volume, n) / Sum(Volume, n)``. A plain
+    :func:`sma` treats every bar equally regardless of how much traded on
+    it; VWMA instead lets a heavy-volume bar pull the average toward its
+    own close more than a quiet bar does.
+
+    Parameters
+    ----------
+    close, volume:
+        Series of equal length.
+    length:
+        Look-back window for both sums.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``VWMA_{length}``. ``NaN`` wherever the window's total
+        volume is exactly ``0``, rather than an undefined division.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> float(zeonta.vwma([10.0, 11.0, 12.0], [100.0, 200.0, 300.0], length=3).iloc[-1])
+    11.333333333333334
+
+    References
+    ----------
+    https://www.tradingview.com/support/solutions/43000592293-volume-weighted-moving-average-vwma/
+    """
+    length = validate_length(length)
+    require_aligned_index(close=close, volume=volume)
+    close_values = as_array(close, "close")
+    volume_values = as_array(volume, "volume")
+    require_same_length(close=close_values, volume=volume_values)
+    require_non_negative(volume=volume_values)
+
+    sum_volume = rolling_sum(volume_values, length)
+    sum_price_volume = rolling_sum(close_values * volume_values, length)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = np.where(sum_volume > 0.0, sum_price_volume / sum_volume, np.nan)
+
+    return wrap_series(result, common_index(close, volume), f"VWMA_{length}")
+
+
+@indicator(
+    category="moving_averages",
+    summary="An EMA fed de-lagged data, to track price with less delay than a plain EMA.",
+    reference="https://user42.tuxfamily.org/chart/manual/Zero_002dLag-Exponential-Moving-Average.html",
+    outputs=("ZLEMA",),
+)
+def zlema(close: ArrayLike, length: int = 20) -> pd.Series:
+    """Zero-Lag Exponential Moving Average (Ehlers & Way, 2001).
+
+    A plain EMA run not on price itself but on price with its own lag
+    subtracted out first::
+
+        lag = floor((n - 1) / 2)
+        data[t] = Close[t] + (Close[t] - Close[t - lag])
+        ZLEMA = EMA(data, n)
+
+    A straight line's EMA always lags it by exactly ``lag`` bars; adding
+    ``Close[t] - Close[t-lag]`` back in is designed to cancel that lag out
+    (exactly, on a straight line — real price is not one, so some lag
+    still remains in practice).
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        EMA period. Must be >= 1.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``ZLEMA_{length}``. Bars before ``lag`` use ``Close`` itself
+        (no prior bar far enough back yet to de-lag against).
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> zeonta.zlema([10.0, 11.0, 9.0, 12.0, 13.0], length=3).tolist()
+    [nan, nan, 9.666666666666666, 12.333333333333332, 13.166666666666666]
+
+    References
+    ----------
+    https://user42.tuxfamily.org/chart/manual/Zero_002dLag-Exponential-Moving-Average.html
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+    lag = (length - 1) // 2
+
+    data = values.copy()
+    if lag > 0 and values.shape[0] > lag:
+        data[lag:] = values[lag:] + (values[lag:] - values[:-lag])
+
+    result = ema_values(data, length)
+    return wrap_series(result, common_index(close), f"ZLEMA_{length}")
+
+
+@indicator(
+    category="moving_averages",
+    summary="Gaussian-weighted moving average tuned by an offset (lag vs. smoothness) and sigma.",
+    reference="https://www.tradingview.com/support/solutions/43000594683-arnaud-legoux-moving-average/",
+    outputs=("ALMA",),
+)
+def alma(
+    close: ArrayLike, length: int = 9, offset: Number = 0.85, sigma: Number = 6.0
+) -> pd.Series:
+    """Arnaud Legoux Moving Average (Legoux & Ossanna, 2009).
+
+    Weights each bar in the window by a Gaussian curve rather than
+    uniformly (:func:`sma`) or linearly (:func:`wma`)::
+
+        m = floor(offset * (n - 1));  s = n / sigma
+        w[j] = exp(-(j - m)^2 / (2 * s^2))     for j = 0 .. n-1
+        ALMA = sum(w[j] * Close[t-n+1+j]) / sum(w[j])
+
+    ``offset`` slides the Gaussian's peak within the window — toward the
+    most recent bar (``offset`` near ``1``) for less lag, or toward the
+    middle (``offset`` near ``0``) for more smoothing. ``sigma`` widens or
+    narrows the curve itself.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Window size. Must be >= 2.
+    offset:
+        Where the Gaussian peak sits within the window, in ``[0, 1]``.
+        ``0.85`` (the default) is Legoux's own most commonly cited value.
+    sigma:
+        Gaussian width control. ``6`` (the default) is Legoux's own
+        cited value. Must be > 0.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``ALMA_{length}_{offset}_{sigma}``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> float(zeonta.alma([10.0, 11.0, 9.0, 12.0, 13.0], length=5).iloc[-1])
+    11.491571199166234
+
+    References
+    ----------
+    https://www.tradingview.com/support/solutions/43000594683-arnaud-legoux-moving-average/
+    """
+    length = validate_length(length, minimum=2)
+    offset = validate_multiplier(offset, "offset", minimum=-1.0)
+    if offset > 1.0:
+        raise ValueError(f"'offset' must be <= 1, got {offset}")
+    sigma = validate_multiplier(sigma, "sigma")
+
+    values = as_array(close, "close")
+    size = values.shape[0]
+
+    m = np.floor(offset * (length - 1))
+    s = length / sigma
+    j = np.arange(length, dtype="float64")
+    weights = np.exp(-((j - m) ** 2) / (2.0 * s * s))
+    weight_sum = weights.sum()
+
+    result = np.full(size, np.nan, dtype="float64")
+    for i in range(length - 1, size):
+        window = values[i - length + 1 : i + 1]
+        if not np.all(np.isfinite(window)):
+            continue
+        result[i] = np.dot(window, weights) / weight_sum
+
+    return wrap_series(result, common_index(close), f"ALMA_{length}_{offset}_{sigma}")
+
+
+@indicator(
+    category="moving_averages",
+    summary="A moving average that speeds up in fast markets and slows down in quiet ones.",
+    reference="https://www.tradingview.com/support/solutions/43000589175-mcginley-dynamic/",
+    outputs=("MCGD",),
+)
+def mcgd(close: ArrayLike, length: int = 10) -> pd.Series:
+    """McGinley Dynamic (John R. McGinley, 1997).
+
+    ``MD[0] = Close[0]``; for every following bar,
+    ``MD[i] = MD[i-1] + (Close[i] - MD[i-1]) / (N * (Close[i] / MD[i-1])^4)``,
+    with ``N = length``. The ``(Close/MD)^4`` term is the whole idea: it
+    grows quickly whenever price pulls away from the average, which
+    speeds the average up to catch up in a fast market, and shrinks back
+    toward ``1`` when price and the average are close, which slows the
+    average back down in a quiet one — self-adjusting in a way a fixed-
+    period :func:`ema` is not.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        The ``N`` constant. McGinley's own convention treats it the same
+        way an EMA/SMA period is chosen. Must be >= 1.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``MCGD_{length}``. Never ``NaN`` past the first bar — a
+        recursive running value, not a windowed statistic.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> zeonta.mcgd([10.0, 11.0, 9.0, 12.0], length=10).tolist()
+    [10.0, 10.068301345536508, 9.900981074320383, 9.998256757959089]
+
+    References
+    ----------
+    https://www.tradingview.com/support/solutions/43000589175-mcginley-dynamic/
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+    size = values.shape[0]
+    result = np.full(size, np.nan, dtype="float64")
+    result[0] = values[0]
+    for i in range(1, size):
+        previous = result[i - 1]
+        current = values[i]
+        # The (Close/MD)^4 term is 0 whenever current is exactly 0, which
+        # would divide by zero below — the formula has no real answer at
+        # that singular point, so this bar is held flat instead, the same
+        # convention used when there is no finite previous value to build on.
+        if not np.isfinite(previous + current) or previous == 0.0 or current == 0.0:
+            result[i] = previous
+            continue
+        result[i] = previous + (current - previous) / (length * (current / previous) ** 4)
+
+    return wrap_series(result, common_index(close), f"MCGD_{length}")

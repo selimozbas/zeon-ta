@@ -17,6 +17,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 
 | Indicator | Summary |
 | --- | --- |
+| [`alma`](indicators/alma.md) | Arnaud Legoux Moving Average (ALMA) |
 | [`dema`](indicators/dema.md) | Double Exponential Moving Average (DEMA) |
 | [`ema`](indicators/ema.md) | Exponential Moving Average (EMA) |
 | [`ema_ribbon`](indicators/ema_ribbon.md) | EMA Ribbon |
@@ -25,13 +26,16 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`instantaneous_trendline`](indicators/instantaneous_trendline.md) | Instantaneous Trendline (Ehlers) |
 | [`kama`](indicators/kama.md) | Kaufman's Adaptive Moving Average (KAMA) |
 | [`ma_cross`](indicators/ma_cross.md) | Moving Average Crossovers |
+| [`mcgd`](indicators/mcgd.md) | McGinley Dynamic |
 | [`sma`](indicators/sma.md) | Simple Moving Average (SMA) |
 | [`smma`](indicators/smma.md) | Smoothed Moving Average (SMMA) |
 | [`super_smoother`](indicators/super_smoother.md) | Super Smoother Filter (Ehlers) |
 | [`t3`](indicators/t3.md) | T3 Moving Average (Tillson) |
 | [`tema`](indicators/tema.md) | Triple Exponential Moving Average (TEMA) |
+| [`vwma`](indicators/vwma.md) | Volume-Weighted Moving Average (VWMA) |
 | [`wavelet_denoise`](indicators/wavelet_denoise.md) | Wavelet-Denoised Price (Discrete Wavelet Transform) |
 | [`wma`](indicators/wma.md) | Weighted Moving Average (WMA) |
+| [`zlema`](indicators/zlema.md) | Zero-Lag Exponential Moving Average (ZLEMA) |
 
 ## Oscillators
 

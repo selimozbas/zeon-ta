@@ -17,6 +17,27 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Moving averages** — four more gap-filling indicators from the same
+  coverage review: `vwma` (Volume-Weighted Moving Average — `sma` with
+  each bar weighted by its own volume), `zlema` (Zero-Lag EMA, Ehlers &
+  Way 2001 — an EMA fed price with its own lag pre-subtracted, rather
+  than a change to the smoothing formula itself), `alma` (Arnaud Legoux
+  Moving Average, Legoux & Ossanna 2009 — Gaussian-weighted with
+  independently tunable peak position and width), and `mcgd` (McGinley
+  Dynamic, John McGinley 1997 — self-adjusting via a `(Close/MD)^4` term
+  that speeds the average up whenever price pulls away from it).
+
+  Found and fixed a real division-by-zero bug in `mcgd` before
+  finalizing: `(Close/MD)^4` is exactly `0` whenever `Close` is `0`, which
+  divides by zero in the update step — the initial guard only checked
+  for a zero *prior* MD value, missing this case entirely (caught by a
+  `RuntimeWarning` surfacing during testing rather than being asserted
+  away). Now held at the prior bar's value instead, since the formula has
+  no real answer at that singular point; a dedicated test with
+  warnings-as-errors pins this down.
+
+  Registered indicators: 79 -> 83.
+
 - **Volume** — four more gap-filling indicators from the same coverage
   review: `bop` (Balance of Power, Igor Livshin 2001 — left unsmoothed to
   match TA-Lib's own zero-parameter convention rather than StockCharts'

@@ -110,6 +110,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 
 | İndikatör | Ne yapar | Doküman |
 | --- | --- | --- |
+| `alma` | Arnaud Legoux Hareketli Ortalaması (ALMA) | [doküman](docs/tr/indicators/alma.md) |
 | `dema` | Çift Üssel Hareketli Ortalama (DEMA) | [doküman](docs/tr/indicators/dema.md) |
 | `ema` | Üssel Hareketli Ortalama (EMA) | [doküman](docs/tr/indicators/ema.md) |
 | `ema_ribbon` | EMA Şeridi | [doküman](docs/tr/indicators/ema_ribbon.md) |
@@ -118,13 +119,16 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `instantaneous_trendline` | Anlık Trend Çizgisi (Ehlers) | [doküman](docs/tr/indicators/instantaneous_trendline.md) |
 | `kama` | Kaufman Uyarlanabilir Hareketli Ortalama (KAMA) | [doküman](docs/tr/indicators/kama.md) |
 | `ma_cross` | Hareketli Ortalama Kesişimleri | [doküman](docs/tr/indicators/ma_cross.md) |
+| `mcgd` | McGinley Dinamik | [doküman](docs/tr/indicators/mcgd.md) |
 | `sma` | Basit Hareketli Ortalama (SMA) | [doküman](docs/tr/indicators/sma.md) |
 | `smma` | Düzeltilmiş Hareketli Ortalama (SMMA) | [doküman](docs/tr/indicators/smma.md) |
 | `super_smoother` | Super Smoother Filtresi (Ehlers) | [doküman](docs/tr/indicators/super_smoother.md) |
 | `t3` | T3 Hareketli Ortalaması (Tillson) | [doküman](docs/tr/indicators/t3.md) |
 | `tema` | Üçlü Üssel Hareketli Ortalama (TEMA) | [doküman](docs/tr/indicators/tema.md) |
+| `vwma` | Hacim Ağırlıklı Hareketli Ortalama (VWMA) | [doküman](docs/tr/indicators/vwma.md) |
 | `wavelet_denoise` | Dalgacık ile Gürültüsü Giderilmiş Fiyat (Ayrık Dalgacık Dönüşümü) | [doküman](docs/tr/indicators/wavelet_denoise.md) |
 | `wma` | Ağırlıklı Hareketli Ortalama (WMA) | [doküman](docs/tr/indicators/wma.md) |
+| `zlema` | Sıfır Gecikmeli Üssel Hareketli Ortalama (ZLEMA) | [doküman](docs/tr/indicators/zlema.md) |
 
 ### Osilatörler
 

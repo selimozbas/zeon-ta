@@ -104,6 +104,7 @@ the cloud that projects past the last bar, rather than discarding it.
 
 | Indicator | What it does | Docs |
 | --- | --- | --- |
+| `alma` | Arnaud Legoux Moving Average (ALMA) | [docs](docs/en/indicators/alma.md) |
 | `dema` | Double Exponential Moving Average (DEMA) | [docs](docs/en/indicators/dema.md) |
 | `ema` | Exponential Moving Average (EMA) | [docs](docs/en/indicators/ema.md) |
 | `ema_ribbon` | EMA Ribbon | [docs](docs/en/indicators/ema_ribbon.md) |
@@ -112,13 +113,16 @@ the cloud that projects past the last bar, rather than discarding it.
 | `instantaneous_trendline` | Instantaneous Trendline (Ehlers) | [docs](docs/en/indicators/instantaneous_trendline.md) |
 | `kama` | Kaufman's Adaptive Moving Average (KAMA) | [docs](docs/en/indicators/kama.md) |
 | `ma_cross` | Moving Average Crossovers | [docs](docs/en/indicators/ma_cross.md) |
+| `mcgd` | McGinley Dynamic | [docs](docs/en/indicators/mcgd.md) |
 | `sma` | Simple Moving Average (SMA) | [docs](docs/en/indicators/sma.md) |
 | `smma` | Smoothed Moving Average (SMMA) | [docs](docs/en/indicators/smma.md) |
 | `super_smoother` | Super Smoother Filter (Ehlers) | [docs](docs/en/indicators/super_smoother.md) |
 | `t3` | T3 Moving Average (Tillson) | [docs](docs/en/indicators/t3.md) |
 | `tema` | Triple Exponential Moving Average (TEMA) | [docs](docs/en/indicators/tema.md) |
+| `vwma` | Volume-Weighted Moving Average (VWMA) | [docs](docs/en/indicators/vwma.md) |
 | `wavelet_denoise` | Wavelet-Denoised Price (Discrete Wavelet Transform) | [docs](docs/en/indicators/wavelet_denoise.md) |
 | `wma` | Weighted Moving Average (WMA) | [docs](docs/en/indicators/wma.md) |
+| `zlema` | Zero-Lag Exponential Moving Average (ZLEMA) | [docs](docs/en/indicators/zlema.md) |
 
 ### Oscillators
 

@@ -116,6 +116,10 @@ def test_indicators_with_a_reference() -> None:
         "pvt",
         "nvi",
         "pvi",
+        "vwma",
+        "zlema",
+        "alma",
+        "mcgd",
     }
     with_reference = {spec.name for spec in iter_specs() if spec.reference is not None}
     assert with_reference == expected

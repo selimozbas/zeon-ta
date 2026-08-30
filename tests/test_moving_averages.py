@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -577,3 +579,79 @@ def test_emd_imf1_handles_a_window_with_exactly_two_extrema_of_each_kind() -> No
     signal = np.sin(2 * np.pi * t / 8)
     result = zeonta.emd_imf1(signal, window=16)
     assert np.isfinite(result.iloc[-1])
+
+
+def test_vwma_matches_the_hand_computed_ratio() -> None:
+    result = zeonta.vwma([10.0, 11.0, 12.0], [100.0, 200.0, 300.0], length=3)
+    np.testing.assert_allclose(result.iloc[-1], 11.333333333333334)
+
+
+def test_vwma_is_nan_when_the_windows_total_volume_is_zero() -> None:
+    result = zeonta.vwma([10.0, 11.0], [0.0, 0.0], length=2)
+    assert result.isna().all()
+
+
+def test_vwma_equals_sma_when_volume_is_constant() -> None:
+    close = [10.0, 12.0, 9.0, 14.0]
+    vwma_result = zeonta.vwma(close, [50.0] * 4, length=4)
+    sma_result = zeonta.sma(close, length=4)
+    np.testing.assert_allclose(vwma_result.iloc[-1], sma_result.iloc[-1])
+
+
+def test_zlema_matches_the_hand_computed_de_lagged_ema() -> None:
+    result = zeonta.zlema([10.0, 11.0, 9.0, 12.0, 13.0], length=3)
+    np.testing.assert_allclose(
+        result.dropna().to_numpy(), [9.666666666666666, 12.333333333333332, 13.166666666666666]
+    )
+
+
+def test_zlema_is_exact_on_a_flat_series() -> None:
+    result = zeonta.zlema([7.0] * 20, length=5)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 7.0)
+
+
+def test_alma_matches_the_hand_computed_gaussian_weights() -> None:
+    result = zeonta.alma([10.0, 11.0, 9.0, 12.0, 13.0], length=5)
+    np.testing.assert_allclose(result.iloc[-1], 11.491571199166234)
+
+
+def test_alma_is_exact_on_a_flat_series() -> None:
+    result = zeonta.alma([7.0] * 20, length=9)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 7.0)
+
+
+def test_alma_rejects_a_length_below_two() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.alma([1.0, 2.0, 3.0], length=1)
+
+
+def test_alma_rejects_offset_outside_zero_one() -> None:
+    with pytest.raises(ValueError, match="'offset' must be <= 1"):
+        zeonta.alma([1.0, 2.0, 3.0], offset=1.5)
+
+
+def test_alma_rejects_non_positive_sigma() -> None:
+    with pytest.raises(ValueError, match="'sigma' must be > 0"):
+        zeonta.alma([1.0, 2.0, 3.0], sigma=0.0)
+
+
+def test_mcgd_matches_the_hand_computed_recursion() -> None:
+    result = zeonta.mcgd([10.0, 11.0, 9.0, 12.0], length=10)
+    np.testing.assert_allclose(
+        result.to_numpy(), [10.0, 10.068301345536508, 9.900981074320383, 9.998256757959089]
+    )
+
+
+def test_mcgd_starts_at_the_first_close() -> None:
+    result = zeonta.mcgd([42.0, 43.0, 41.0], length=10)
+    assert result.iloc[0] == 42.0
+
+
+def test_mcgd_holds_flat_rather_than_dividing_by_zero_when_price_hits_zero() -> None:
+    """(Close/MD)^4 is exactly 0 when Close is 0, which would divide by
+    zero in the update step — must hold the prior value instead, silently,
+    and keep computing normally once price moves away from zero again."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", category=RuntimeWarning)
+        result = zeonta.mcgd([10.0, 0.0, 5.0], length=10)
+    np.testing.assert_allclose(result.to_numpy(), [10.0, 10.0, 2.0])

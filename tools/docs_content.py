@@ -4214,4 +4214,191 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.pvi(df["close"], df["volume"]).tail(3),
         ],
     },
+    "vwma": {
+        "title_en": "Volume-Weighted Moving Average (VWMA)",
+        "title_tr": "Hacim Ağırlıklı Hareketli Ortalama (VWMA)",
+        "formula_en": "VWMA = Sum(Close * Volume, n) / Sum(Volume, n)",
+        "formula_tr": "VWMA = Toplam(Kapanış * Hacim, n) / Toplam(Hacim, n)",
+        "about_en": (
+            "[sma](sma.md) treats every bar in the window equally regardless of how much traded "
+            "on it; VWMA instead lets a heavy-volume bar pull the average toward its own close "
+            "more than a quiet bar does — the same volume-weighting idea [vwap](vwap.md) uses, "
+            "but over a fixed rolling window instead of resetting each session."
+        ),
+        "about_tr": (
+            "[sma](sma.md), o barda ne kadar işlem gördüğüne bakmaksızın penceredeki her barı eşit "
+            "muamele eder; VWMA ise ağır-hacimli bir barın ortalamayı kendi kapanışına doğru, "
+            "sakin bir bardan daha fazla çekmesine izin verir — [vwap](vwap.md)'ın kullandığı aynı "
+            "hacim-ağırlıklandırma fikri, ama her seansta sıfırlanmak yerine sabit bir yuvarlanan "
+            "pencere üzerinden."
+        ),
+        "reading_en": (
+            "Read the same way as any moving average — price crossing above/below it, or its own "
+            "slope — with the difference that a break on unusually heavy volume shows up more "
+            "prominently here than in a plain SMA of the same length."
+        ),
+        "reading_tr": (
+            "Herhangi bir hareketli ortalama gibi okunur — fiyatın üstünden/altından geçmesi ya da "
+            "kendi eğimi — farkı, alışılmadık derecede ağır hacimdeki bir kırılmanın burada aynı "
+            "uzunluktaki düz bir SMA'dan daha belirgin görünmesidir."
+        ),
+        "pitfalls_en": (
+            "`NaN` whenever the window's total volume is exactly `0` (no trading at all in that "
+            "window) rather than an undefined division."
+        ),
+        "pitfalls_tr": (
+            "Pencerenin toplam hacmi tam olarak `0` olduğunda (o pencerede hiç işlem olmamış) "
+            "tanımsız bir bölüm yerine `NaN` olur."
+        ),
+        "example": [
+            lambda df: zeonta.vwma(df["close"], df["volume"]).tail(3),
+        ],
+    },
+    "zlema": {
+        "title_en": "Zero-Lag Exponential Moving Average (ZLEMA)",
+        "title_tr": "Sıfır Gecikmeli Üssel Hareketli Ortalama (ZLEMA)",
+        "formula_en": (
+            "lag = floor((n-1)/2); data[t] = Close[t] + (Close[t] - Close[t-lag]); "
+            "ZLEMA = EMA(data, n)"
+        ),
+        "formula_tr": (
+            "lag = taban((n-1)/2); veri[t] = Kapanış[t] + (Kapanış[t] - Kapanış[t-lag]); "
+            "ZLEMA = EMA(veri, n)"
+        ),
+        "about_en": (
+            "Ehlers & Way's answer to [ema](ema.md)'s built-in lag: rather than changing the "
+            "smoothing formula itself, they modify what goes *into* it — feeding the EMA a "
+            "de-lagged version of price (today's close plus how far it has moved from `lag` bars "
+            "ago) rather than the raw close."
+        ),
+        "about_tr": (
+            "Ehlers & Way'in [ema](ema.md)'nın kendi içindeki gecikmeye cevabı: düzleştirme "
+            "formülünün kendisini değiştirmek yerine, *içine giren* şeyi değiştirirler — EMA'ya "
+            "ham kapanış yerine fiyatın gecikmesi giderilmiş bir sürümünü (bugünün kapanışı artı "
+            "`lag` bar önceden ne kadar hareket ettiği) besler."
+        ),
+        "reading_en": (
+            "Read the same way as any EMA-family line — a faster-reacting alternative to `ema` of "
+            "the same length, at the cost of overshooting more on a sharp reversal (removing lag "
+            "makes the line more willing to move, in either direction)."
+        ),
+        "reading_tr": (
+            "EMA ailesinden herhangi bir çizgi gibi okunur — aynı uzunluktaki `ema`'ya daha hızlı "
+            "tepki veren bir alternatif, bedeli ise keskin bir dönüşte daha fazla aşırı tepki "
+            "vermesidir (gecikmeyi kaldırmak çizgiyi her iki yönde de hareket etmeye daha istekli "
+            "yapar)."
+        ),
+        "pitfalls_en": (
+            "The lag-cancellation is exact only on a straight line; real price is not one, so some "
+            "lag remains and the 'zero' in the name is aspirational rather than literal."
+        ),
+        "pitfalls_tr": (
+            "Gecikme-iptali yalnızca düz bir çizgide tamdır; gerçek fiyat düz bir çizgi değildir, "
+            "bu yüzden bir miktar gecikme kalır ve isimdeki 'sıfır' harfiyen değil, hedeflenen bir "
+            "şeydir."
+        ),
+        "example": [
+            lambda df: zeonta.zlema(df["close"]).tail(3),
+        ],
+    },
+    "alma": {
+        "title_en": "Arnaud Legoux Moving Average (ALMA)",
+        "title_tr": "Arnaud Legoux Hareketli Ortalaması (ALMA)",
+        "formula_en": (
+            "m = floor(offset*(n-1)); s = n/sigma; w[j] = exp(-(j-m)^2/(2*s^2)) for j=0..n-1; "
+            "ALMA = sum(w[j] * Close[t-n+1+j]) / sum(w[j])"
+        ),
+        "formula_tr": (
+            "m = taban(offset*(n-1)); s = n/sigma; w[j] = exp(-(j-m)^2/(2*s^2)), j=0..n-1; "
+            "ALMA = toplam(w[j] * Kapanış[t-n+1+j]) / toplam(w[j])"
+        ),
+        "about_en": (
+            "Where [wma](wma.md) weights the window linearly and [ema](ema.md) weights it "
+            "exponentially, ALMA weights it with a Gaussian bell curve whose peak position "
+            "(`offset`) and width (`sigma`) are both separately tunable — two independent knobs "
+            "for the same lag-versus-smoothness tradeoff every moving average makes."
+        ),
+        "about_tr": (
+            "[wma](wma.md) pencereyi doğrusal, [ema](ema.md) ise üssel olarak ağırlıklandırırken, "
+            "ALMA onu, tepe konumu (`offset`) ve genişliği (`sigma`) ayrı ayrı ayarlanabilen bir "
+            "Gauss çan eğrisiyle ağırlıklandırır — her hareketli ortalamanın yaptığı aynı "
+            "gecikme-karşı-pürüzsüzlük ödünleşimi için iki bağımsız düğme."
+        ),
+        "reading_en": (
+            "Read the same way as any moving average. `offset` near `1` behaves more like a "
+            "responsive EMA; `offset` near `0` behaves more like a smooth, centered average — "
+            "`0.85` is a starting point tuned toward responsiveness, not a midpoint."
+        ),
+        "reading_tr": (
+            "Herhangi bir hareketli ortalama gibi okunur. `1`'e yakın bir `offset`, daha duyarlı "
+            "bir EMA gibi davranır; `0`'a yakın bir `offset` ise daha pürüzsüz, merkezlenmiş bir "
+            "ortalama gibi davranır — `0,85`, bir orta nokta değil, duyarlılığa doğru ayarlanmış "
+            "bir başlangıç noktasıdır."
+        ),
+        "pitfalls_en": (
+            "Two extra parameters beyond `length` (`offset`, `sigma`) that meaningfully change "
+            "the result — treat the defaults as Legoux's own starting point, not universal "
+            "constants, the same caveat this library gives Ehlers' own tunable filters."
+        ),
+        "pitfalls_tr": (
+            "Sonucu anlamlı şekilde değiştiren, `length`'in ötesinde iki ek parametre (`offset`, "
+            "`sigma`) — varsayılanları evrensel sabitler değil, Legoux'nun kendi başlangıç noktası "
+            "olarak ele alın; bu kütüphanenin Ehlers'in kendi ayarlanabilir filtrelerine verdiği "
+            "aynı uyarı."
+        ),
+        "example": [
+            lambda df: zeonta.alma(df["close"]).tail(3),
+        ],
+    },
+    "mcgd": {
+        "title_en": "McGinley Dynamic",
+        "title_tr": "McGinley Dinamik",
+        "formula_en": (
+            "MD[0] = Close[0]; "
+            "MD[i] = MD[i-1] + (Close[i] - MD[i-1]) / (N * (Close[i]/MD[i-1])^4), N = length"
+        ),
+        "formula_tr": (
+            "MD[0] = Kapanış[0]; "
+            "MD[i] = MD[i-1] + (Kapanış[i] - MD[i-1]) / (N * (Kapanış[i]/MD[i-1])^4), N = length"
+        ),
+        "about_en": (
+            "John McGinley built this specifically to fix a complaint about ordinary moving "
+            "averages: a fixed-period EMA/SMA lags badly in a fast market and whipsaws in a slow "
+            "one, because its speed never changes. The `(Close/MD)^4` term makes McGinley Dynamic "
+            "self-adjusting instead — it speeds up automatically whenever price pulls away from "
+            "it, and slows back down once price and the average are close again."
+        ),
+        "about_tr": (
+            "John McGinley bunu, sıradan hareketli ortalamalar hakkındaki özel bir şikayeti "
+            "gidermek için geliştirdi: sabit periyotlu bir EMA/SMA, hızlı bir piyasada kötü "
+            "gecikir ve yavaş bir piyasada yalancı sinyaller verir, çünkü hızı hiç değişmez. "
+            "`(Kapanış/MD)^4` terimi, McGinley Dinamik'i bunun yerine kendi kendine ayarlanır hale "
+            "getirir — fiyat kendisinden her uzaklaştığında otomatik olarak hızlanır, fiyat ve "
+            "ortalama tekrar yakınlaştığında yavaşlar."
+        ),
+        "reading_en": (
+            "Read the same way as any moving average (price crossing it, its own slope) — "
+            "McGinley's own pitch is that it needs less re-tuning across changing market "
+            "conditions than a fixed-period EMA/SMA would, not that it reads differently."
+        ),
+        "reading_tr": (
+            "Herhangi bir hareketli ortalama gibi okunur (fiyatın üstünden geçmesi, kendi eğimi) "
+            "— McGinley'nin kendi savı, farklı okunması değil, değişen piyasa koşulları boyunca "
+            "sabit periyotlu bir EMA/SMA'nın ihtiyaç duyacağından daha az yeniden ayara ihtiyaç "
+            "duymasıdır."
+        ),
+        "pitfalls_en": (
+            "The `(Close/MD)^4` term is exactly `0` when `Close` is `0`, which would divide by "
+            "zero in the update step — held at the prior value for that one bar instead, since "
+            "the formula has no real answer at that singular point."
+        ),
+        "pitfalls_tr": (
+            "`Kapanış` `0` olduğunda `(Kapanış/MD)^4` terimi tam olarak `0` olur, bu da güncelleme "
+            "adımında sıfıra bölüme yol açar — bu tekil noktada formülün gerçek bir cevabı "
+            "olmadığı için, o bar için önceki değerde tutulur."
+        ),
+        "example": [
+            lambda df: zeonta.mcgd(df["close"]).tail(3),
+        ],
+    },
 }

@@ -17,6 +17,7 @@
 
 | İndikatör | Özet |
 | --- | --- |
+| [`alma`](indicators/alma.md) | Arnaud Legoux Hareketli Ortalaması (ALMA) |
 | [`dema`](indicators/dema.md) | Çift Üssel Hareketli Ortalama (DEMA) |
 | [`ema`](indicators/ema.md) | Üssel Hareketli Ortalama (EMA) |
 | [`ema_ribbon`](indicators/ema_ribbon.md) | EMA Şeridi |
@@ -25,13 +26,16 @@
 | [`instantaneous_trendline`](indicators/instantaneous_trendline.md) | Anlık Trend Çizgisi (Ehlers) |
 | [`kama`](indicators/kama.md) | Kaufman Uyarlanabilir Hareketli Ortalama (KAMA) |
 | [`ma_cross`](indicators/ma_cross.md) | Hareketli Ortalama Kesişimleri |
+| [`mcgd`](indicators/mcgd.md) | McGinley Dinamik |
 | [`sma`](indicators/sma.md) | Basit Hareketli Ortalama (SMA) |
 | [`smma`](indicators/smma.md) | Düzeltilmiş Hareketli Ortalama (SMMA) |
 | [`super_smoother`](indicators/super_smoother.md) | Super Smoother Filtresi (Ehlers) |
 | [`t3`](indicators/t3.md) | T3 Hareketli Ortalaması (Tillson) |
 | [`tema`](indicators/tema.md) | Üçlü Üssel Hareketli Ortalama (TEMA) |
+| [`vwma`](indicators/vwma.md) | Hacim Ağırlıklı Hareketli Ortalama (VWMA) |
 | [`wavelet_denoise`](indicators/wavelet_denoise.md) | Dalgacık ile Gürültüsü Giderilmiş Fiyat (Ayrık Dalgacık Dönüşümü) |
 | [`wma`](indicators/wma.md) | Ağırlıklı Hareketli Ortalama (WMA) |
+| [`zlema`](indicators/zlema.md) | Sıfır Gecikmeli Üssel Hareketli Ortalama (ZLEMA) |
 
 ## Osilatörler
 

@@ -8,6 +8,8 @@ that covers and what counts as a patch, minor, or major change.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-31
+
 ### Changed
 
 - **Relicensed from GPL-3.0-or-later to MIT.** GPL's copyleft terms cap

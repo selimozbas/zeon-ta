@@ -4,12 +4,13 @@
 [![Python](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
 [![License](https://img.shields.io/github/license/selimozbas/zeon-ta)](LICENSE)
 
-Technical analysis for Python, from RSI to a causal cross-wavelet lead-lag
-transform. Alongside the standard indicator set, zeon-ta implements newer,
-academically-sourced tools — Ehlers' cycle-analysis filters, the Hurst
-exponent, wavelet-based denoising and multi-scale volatility, a
-cross-asset lead-lag transform — each one traced to the specific paper it
-comes from, not to a folklore formula.
+Technical analysis for Python — the widely used classics (RSI, MACD,
+Bollinger Bands, Ichimoku, and the rest of the standard toolkit) alongside
+modern, academically-sourced tools most TA libraries skip: Ehlers'
+cycle-analysis filters, the Hurst exponent, wavelet-based denoising and
+multi-scale volatility, OHLC volatility estimators standard in
+quantitative finance (Parkinson, Garman-Klass, Rogers-Satchell,
+Yang-Zhang), and a causal cross-wavelet lead-lag transform.
 
 Formulas follow standard, widely published technical-analysis definitions
 where one exists. Where a formula's own academic paper is the source
@@ -19,6 +20,9 @@ why.
 
 ## Why another TA library
 
+- **Broad on purpose.** 127 indicators across 8 categories
+  (moving averages, oscillators, volatility, trend, volume, statistics)
+  — not just the popular dozen.
 - **Classic and modern, both formula-verified.** Every indicator — whether
   it is RSI or a MODWT wavelet-variance decomposition — cites what its
   formula was checked against, and a proposed indicator with no single

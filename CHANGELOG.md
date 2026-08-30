@@ -2,7 +2,9 @@
 
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
-adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — see
+[CONTRIBUTING.md#versioning](CONTRIBUTING.md#versioning) for exactly what
+that covers and what counts as a patch, minor, or major change.
 
 ## [Unreleased]
 
@@ -15,6 +17,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   so the switch required no outside consent. `LICENSE`, `pyproject.toml`'s
   classifier, `CONTRIBUTING.md`'s contribution terms, and the generated
   README were all updated together.
+- **Documented a versioning policy** in `CONTRIBUTING.md#versioning`:
+  what counts as the public API, and — the one genuinely debatable
+  point — that a formula correction against a cited source is a patch
+  release even though it changes output, not a major one. Linked from
+  `CHANGELOG.md`'s own header.
+- **`CODE_OF_CONDUCT.md`'s enforcement contact is now a GitHub profile
+  link instead of an email address**, keeping the reporting channel
+  intact without publishing a personal email in a public file.
 
 ### Added
 

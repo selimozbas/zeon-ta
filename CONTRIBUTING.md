@@ -168,6 +168,29 @@ python tools/gen_docs.py --check  # verifies nothing is stale, no writes (what C
 form automatically, so a docs update committed alongside a code change is
 required, not optional.
 
+## Versioning
+
+This project follows [Semantic Versioning](https://semver.org/). The
+public API is every name exported from `zeonta.__all__` — each function's
+signature and default parameter values, and each indicator's output
+column-naming convention (`RSI_14`, `MACD_12_26_9`, and so on).
+
+- Adding a new indicator, or a new optional parameter with a
+  backward-compatible default, is a **minor** release.
+- Raising the minimum supported Python, NumPy or pandas version is a
+  **minor** release — this project deliberately tracks recent dependency
+  versions rather than pinning to old floors.
+- Correcting a formula that was verifiably wrong against its cited
+  source — the same class of bug `docs/methodology.md` describes for
+  `trend_channel` and `squeeze` — is a **patch** release, even though it
+  changes output values for existing callers. This project treats
+  correctness as the thing semver protects, not bit-for-bit output
+  stability; every such fix is called out explicitly in `CHANGELOG.md`
+  rather than folded in silently.
+- Removing or renaming an indicator, renaming an output column, or
+  changing a default value for a reason other than a correctness fix, is
+  a **major** release.
+
 ## Before opening a pull request
 
 ```bash

@@ -4583,4 +4583,37 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.vertical_horizontal_filter(df["close"]).tail(3),
         ],
     },
+    "cmo": {
+        "title_en": "Chande Momentum Oscillator (CMO)",
+        "title_tr": "Chande Momentum Osilatörü (CMO)",
+        "formula_en": "CMO = 100 * (SumUp(n) - SumDown(n)) / (SumUp(n) + SumDown(n))",
+        "formula_tr": "CMO = 100 * (ArtışToplamı(n) - DüşüşToplamı(n)) / (ArtışToplamı(n) + DüşüşToplamı(n))",
+        "about_en": (
+            "Built from the same up-move/down-move split as [rsi](rsi.md), but combined "
+            "differently (a normalised difference rather than a ratio) and, unlike RSI, never "
+            "smoothed — a gain or loss drops out of the window completely once it ages past "
+            "`length` bars rather than fading gradually the way Wilder smoothing does."
+        ),
+        "about_tr": (
+            "[rsi](rsi.md) ile aynı yukarı-hareket/aşağı-hareket ayrımından inşa edilir, ama "
+            "farklı birleştirilir (bir oran yerine normalize edilmiş bir fark) ve RSI'ın aksine "
+            "hiç yumuşatılmaz — bir kazanç ya da kayıp, `length` barı geçtikten sonra Wilder "
+            "yumuşatmasının yaptığı gibi kademeli olarak sönmek yerine pencereden tamamen düşer."
+        ),
+        "reading_en": (
+            "Reads on the same -100/+100 scale and the same overbought/oversold intuition as "
+            "other bounded oscillators, but because it is never smoothed it reacts more abruptly "
+            "than RSI to an old extreme move finally aging out of the window."
+        ),
+        "reading_tr": (
+            "Diğer sınırlı osilatörlerle aynı -100/+100 ölçeğinde ve aynı aşırı-alım/aşırı-satım "
+            "sezgisiyle okunur, ama hiç yumuşatılmadığı için, eski bir uç hareketin nihayet "
+            "pencereden düşmesine RSI'dan daha ani tepki verir."
+        ),
+        "pitfalls_en": "`0` on a perfectly flat window (both sums are `0`), not an undefined `0/0`.",
+        "pitfalls_tr": "Tamamen düz bir pencerede (her iki toplam da `0`) tanımsız bir `0/0` değil, `0` olur.",
+        "example": [
+            lambda df: zeonta.cmo(df["close"]).tail(3),
+        ],
+    },
 }

@@ -17,6 +17,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Oscillators** — `cmo` (Chande Momentum Oscillator, Tushar Chande
+  1994), the sixth and last indicator of the coverage-review batch. Built
+  from the same up-move/down-move split as `rsi`, but combined
+  differently (a normalised difference rather than a ratio) and never
+  smoothed, unlike RSI's Wilder averaging — a gain or loss drops out of
+  the window completely once it ages past `length` bars rather than
+  fading gradually. This closes out the full coverage review: every
+  named gap originally identified (momentum, trend, volatility, overlap,
+  volume, statistics) is now filled, aside from `APO` and `THERM`,
+  declined earlier in this same review for being a duplicate of `macd`
+  and lacking a single authoritative source, respectively. Registered
+  indicators: 87 -> 88.
+
 - **Trend** — two more gap-filling indicators from the same coverage
   review: `choppiness_index` (E.W. Dreiss — sum of every bar's own True
   Range against the window's net high-low range, log-scaled to `[0,

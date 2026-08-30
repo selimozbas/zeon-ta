@@ -36,6 +36,7 @@ from ._core import (
 __all__ = [
     "awesome_oscillator",
     "cci",
+    "cmo",
     "coppock_curve",
     "dpo",
     "elder_ray",
@@ -520,6 +521,72 @@ def cci(
     result = np.where(np.isfinite(average), result, np.nan)
 
     return wrap_series(result, common_index(high, low, close), f"CCI_{length}")
+
+
+@indicator(
+    category="oscillators",
+    summary="Sum of gains vs. losses over a plain window, unlike RSI's Wilder smoothing.",
+    reference=(
+        "https://www.fidelity.com/learning-center/trading-investing/"
+        "technical-analysis/technical-indicator-guide/cmo"
+    ),
+    outputs=("CMO",),
+)
+def cmo(close: ArrayLike, length: int = 14) -> pd.Series:
+    """Chande Momentum Oscillator (Tushar Chande, 1994).
+
+    ``CMO = 100 * (SumUp(n) - SumDown(n)) / (SumUp(n) + SumDown(n))``,
+    where ``SumUp``/``SumDown`` are plain rolling sums of each bar's gain
+    or loss. Built from the same up-move/down-move split as :func:`rsi`,
+    but combined differently (a normalised difference rather than a
+    ratio) and — unlike RSI — never smoothed, so a gain or loss drops out
+    of the window completely once it ages past ``length`` bars rather
+    than fading gradually.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Look-back window. Chande's own book and various platforms cite
+        ``9``, ``14`` and ``20`` as common choices; ``14`` (the default)
+        matches this library's other Wilder-family oscillators.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``CMO_{length}``, ranging -100 to +100. ``0`` wherever both
+        sums are zero (a perfectly flat window), rather than an undefined
+        ``0/0``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> float(zeonta.cmo([10.0, 11.0, 10.5, 12.0, 11.5], length=4).iloc[-1])
+    42.857142857142854
+
+    References
+    ----------
+    https://www.fidelity.com/learning-center/trading-investing/technical-analysis/technical-indicator-guide/cmo
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+
+    change = np.diff(values, prepend=np.nan)
+    gains = np.where(np.isfinite(change), np.maximum(change, 0.0), np.nan)
+    losses = np.where(np.isfinite(change), np.maximum(-change, 0.0), np.nan)
+
+    sum_up = np.full(values.shape[0], np.nan, dtype="float64")
+    sum_down = np.full(values.shape[0], np.nan, dtype="float64")
+    sum_up[1:] = rolling_sum(gains[1:], length)
+    sum_down[1:] = rolling_sum(losses[1:], length)
+
+    total = sum_up + sum_down
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = np.where(total > 0.0, 100.0 * (sum_up - sum_down) / total, 0.0)
+    result = np.where(np.isfinite(total), result, np.nan)
+
+    return wrap_series(result, common_index(close), f"CMO_{length}")
 
 
 @indicator(

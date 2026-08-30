@@ -43,6 +43,7 @@
 | --- | --- |
 | [`awesome_oscillator`](indicators/awesome_oscillator.md) | Awesome Osilatör (AO) |
 | [`cci`](indicators/cci.md) | Emtia Kanal Endeksi (CCI) |
+| [`cmo`](indicators/cmo.md) | Chande Momentum Osilatörü (CMO) |
 | [`coppock_curve`](indicators/coppock_curve.md) | Coppock Eğrisi |
 | [`dpo`](indicators/dpo.md) | Trendi Arındırılmış Fiyat Osilatörü (DPO) |
 | [`elder_ray`](indicators/elder_ray.md) | Elder Ray (Boğa Gücü / Ayı Gücü) |

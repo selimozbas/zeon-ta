@@ -43,6 +43,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | --- | --- |
 | [`awesome_oscillator`](indicators/awesome_oscillator.md) | Awesome Oscillator (AO) |
 | [`cci`](indicators/cci.md) | Commodity Channel Index (CCI) |
+| [`cmo`](indicators/cmo.md) | Chande Momentum Oscillator (CMO) |
 | [`coppock_curve`](indicators/coppock_curve.md) | Coppock Curve |
 | [`dpo`](indicators/dpo.md) | Detrended Price Oscillator (DPO) |
 | [`elder_ray`](indicators/elder_ray.md) | Elder Ray (Bull Power / Bear Power) |

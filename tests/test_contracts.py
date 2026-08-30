@@ -124,6 +124,7 @@ def test_indicators_with_a_reference() -> None:
         "mass_index",
         "choppiness_index",
         "vertical_horizontal_filter",
+        "cmo",
     }
     with_reference = {spec.name for spec in iter_specs() if spec.reference is not None}
     assert with_reference == expected

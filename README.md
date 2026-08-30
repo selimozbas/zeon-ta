@@ -130,6 +130,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | --- | --- | --- |
 | `awesome_oscillator` | Awesome Oscillator (AO) | [docs](docs/en/indicators/awesome_oscillator.md) |
 | `cci` | Commodity Channel Index (CCI) | [docs](docs/en/indicators/cci.md) |
+| `cmo` | Chande Momentum Oscillator (CMO) | [docs](docs/en/indicators/cmo.md) |
 | `coppock_curve` | Coppock Curve | [docs](docs/en/indicators/coppock_curve.md) |
 | `dpo` | Detrended Price Oscillator (DPO) | [docs](docs/en/indicators/dpo.md) |
 | `elder_ray` | Elder Ray (Bull Power / Bear Power) | [docs](docs/en/indicators/elder_ray.md) |

@@ -112,6 +112,47 @@ def test_cci_rejects_non_positive_constant() -> None:
         zeonta.cci([2.0] * 25, [1.0] * 25, [1.5] * 25, constant=0.0)
 
 
+def test_cmo_matches_the_hand_computed_ratio() -> None:
+    result = zeonta.cmo([10.0, 11.0, 10.5, 12.0, 11.5], length=4)
+    np.testing.assert_allclose(result.iloc[-1], 42.857142857142854)
+
+
+def test_cmo_is_100_when_every_bar_gains() -> None:
+    np.testing.assert_allclose(zeonta.cmo(list(range(1, 40)), length=14).iloc[-1], 100.0)
+
+
+def test_cmo_is_negative_100_when_every_bar_loses() -> None:
+    np.testing.assert_allclose(zeonta.cmo(list(range(40, 1, -1)), length=14).iloc[-1], -100.0)
+
+
+def test_cmo_is_zero_on_a_perfectly_flat_series() -> None:
+    """No gains and no losses is genuinely neutral, not undefined."""
+    np.testing.assert_allclose(zeonta.cmo([25.0] * 40, length=14).iloc[-1], 0.0)
+
+
+def test_cmo_stays_within_bounds(ohlcv: pd.DataFrame) -> None:
+    result = zeonta.cmo(ohlcv["close"]).dropna()
+    assert result.between(-100.0, 100.0).all()
+
+
+def test_cmo_does_not_smooth_a_gain_out_of_the_window_gradually() -> None:
+    """Unlike RSI's Wilder smoothing, a gain drops out completely once it
+    ages past `length` bars rather than fading gradually - the whole
+    point of using plain sums instead."""
+    prices = [10.0] * 30
+    prices[1] = 20.0  # one big up-move at bar 1, flat everywhere else
+    result = zeonta.cmo(prices, length=5)
+    # Once bar 1's gain ages out of the 5-bar window, both sums are back
+    # to zero -> the flat-market convention (0), not a lingering positive
+    # reading the way RSI's Wilder smoothing would still show.
+    np.testing.assert_allclose(result.iloc[10], 0.0)
+
+
+def test_cmo_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.cmo([1.0, 2.0, 3.0], length=0)
+
+
 def test_momentum_is_the_raw_n_bar_difference() -> None:
     result = zeonta.momentum([10, 11, 12, 15], length=3)
     assert np.isnan(result.iloc[:3]).all()

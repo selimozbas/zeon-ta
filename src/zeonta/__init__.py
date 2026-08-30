@@ -67,6 +67,7 @@ from .moving_averages import (
 from .oscillators import (
     awesome_oscillator,
     cci,
+    cmo,
     coppock_curve,
     dpo,
     elder_ray,
@@ -158,6 +159,7 @@ __all__ = [
     "chandelier_exit",
     "choppiness_index",
     "cmf",
+    "cmo",
     "coppock_curve",
     "cumulative_return",
     "dema",

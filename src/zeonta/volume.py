@@ -31,7 +31,19 @@ from ._core import (
     wrap_series,
 )
 
-__all__ = ["adl", "chaikin_oscillator", "cmf", "ease_of_movement", "force_index", "mfi", "obv"]
+__all__ = [
+    "adl",
+    "bop",
+    "chaikin_oscillator",
+    "cmf",
+    "ease_of_movement",
+    "force_index",
+    "mfi",
+    "nvi",
+    "obv",
+    "pvi",
+    "pvt",
+]
 
 
 def _money_flow_multiplier(high: np.ndarray, low: np.ndarray, close: np.ndarray) -> np.ndarray:
@@ -606,3 +618,242 @@ def ease_of_movement(
     result = rolling_mean(raw_emv, length)
 
     return wrap_series(result, common_index(high, low, volume), f"EOM_{length}")
+
+
+@indicator(
+    category="volume",
+    summary="Where the close landed between open and the bar's range, unweighted by volume.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/balance-of-power-bop"
+    ),
+    outputs=("BOP",),
+)
+def bop(open: ArrayLike, high: ArrayLike, low: ArrayLike, close: ArrayLike) -> pd.Series:
+    """Balance of Power (Igor Livshin, 2001).
+
+    ``BOP = (Close - Open) / (High - Low)`` — ``+1`` when the close sits at
+    the top of the bar's own open-to-range move, ``-1`` at the bottom.
+    Similar in shape to :func:`~zeonta.cmf`'s Money Flow Multiplier, but
+    measured from the *open* rather than volume-weighted, and returned raw
+    per bar rather than summed over a window.
+
+    Left unsmoothed to match the plain per-bar ratio most implementations
+    (including TA-Lib's) use; StockCharts' own page describes smoothing it
+    with a moving average for a less choppy line — pipe the result into
+    :func:`~zeonta.sma` yourself if you want that.
+
+    Parameters
+    ----------
+    open, high, low, close:
+        Series of equal length.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``BOP``. ``0`` on a zero-range bar (``High == Low``), rather
+        than an undefined division.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> zeonta.bop([10.0], [12.0], [9.0], [11.0]).tolist()
+    [0.3333333333333333]
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/balance-of-power-bop
+    """
+    require_aligned_index(open=open, high=high, low=low, close=close)
+    open_values = as_array(open, "open")
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    require_same_length(open=open_values, high=high_values, low=low_values, close=close_values)
+
+    span = high_values - low_values
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = (close_values - open_values) / span
+    result = np.where(span == 0.0, 0.0, result)
+
+    return wrap_series(result, common_index(open, high, low, close), "BOP")
+
+
+@indicator(
+    category="volume",
+    summary="Running total of volume-scaled percentage price change.",
+    reference="https://www.tradingview.com/support/solutions/43000502345-price-volume-trend-pvt/",
+    outputs=("PVT",),
+)
+def pvt(close: ArrayLike, volume: ArrayLike) -> pd.Series:
+    """Price Volume Trend.
+
+    ``PVT[0] = 0``; for every following bar,
+    ``PVT[i] = PVT[i-1] + Volume[i] * (Close[i] - Close[i-1]) / Close[i-1]``.
+    Where :func:`~zeonta.obv` adds or subtracts a bar's *entire* volume
+    based only on which direction the close moved, PVT scales the volume
+    it adds by *how much* the close moved (as a percentage) — a 3% up day
+    contributes three times as much as a 1% up day, rather than the same
+    full volume either way.
+
+    Parameters
+    ----------
+    close, volume:
+        Series of equal length.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``PVT``. Never ``NaN`` — a running total, not a windowed
+        statistic. The absolute level is arbitrary; only its slope and its
+        divergence from price are meaningful.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> zeonta.pvt([10.0, 11.0, 10.0], [100.0, 200.0, 150.0]).tolist()
+    [0.0, 20.0, 6.363636363636363]
+
+    References
+    ----------
+    https://www.tradingview.com/support/solutions/43000502345-price-volume-trend-pvt/
+    """
+    require_aligned_index(close=close, volume=volume)
+    close_values = as_array(close, "close")
+    volume_values = as_array(volume, "volume")
+    require_same_length(close=close_values, volume=volume_values)
+    require_non_negative(volume=volume_values)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        percent_change = np.diff(close_values, prepend=close_values[0]) / np.concatenate(
+            ([np.nan], close_values[:-1])
+        )
+        raw_contribution = percent_change * volume_values
+    # A missing close or volume anywhere in the pair must not poison every
+    # later bar the way an unguarded NaN would once it hits cumsum (the
+    # exact bug adl() was fixed for) — held at 0 for that one bar instead.
+    contribution = np.where(np.isfinite(raw_contribution), raw_contribution, 0.0)
+    contribution[0] = 0.0
+    result = np.cumsum(contribution)
+
+    return wrap_series(result, common_index(close, volume), "PVT")
+
+
+def _volume_conditioned_index(close: np.ndarray, volume: np.ndarray, *, rises: bool) -> np.ndarray:
+    """Shared engine for :func:`nvi`/:func:`pvi`.
+
+    Starts at ``1000`` (StockCharts' convention); on a bar where *volume*
+    moved in the direction *rises* asks for relative to the bar before it,
+    scales by that bar's percentage price change; otherwise carries the
+    previous value forward unchanged.
+    """
+    size = close.shape[0]
+    result = np.full(size, np.nan, dtype="float64")
+    result[0] = 1000.0
+    for i in range(1, size):
+        moved = volume[i] > volume[i - 1] if rises else volume[i] < volume[i - 1]
+        if not moved or close[i - 1] == 0.0 or not np.isfinite(close[i - 1] + close[i]):
+            result[i] = result[i - 1]
+        else:
+            result[i] = result[i - 1] * (1.0 + (close[i] - close[i - 1]) / close[i - 1])
+    return result
+
+
+@indicator(
+    category="volume",
+    summary="Cumulative index that only moves on a bar where volume fell versus the prior bar.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-indicators/negative-volume-index-nvi"
+    ),
+    outputs=("NVI",),
+)
+def nvi(close: ArrayLike, volume: ArrayLike) -> pd.Series:
+    """Negative Volume Index.
+
+    Starts at ``1000``. On a bar where ``Volume`` *fell* versus the bar
+    before it, ``NVI[i] = NVI[i-1] * (1 + (Close[i]-Close[i-1])/Close[i-1])``;
+    otherwise ``NVI[i] = NVI[i-1]`` unchanged. Built on the idea (Paul
+    Dysart, 1930s-40s; popularised by Norman Fosback) that price moves on
+    *quiet* volume days carry more informed-money signal than moves on
+    heavy, crowd-driven volume days — the mirror-image complement of
+    :func:`pvi`.
+
+    Parameters
+    ----------
+    close, volume:
+        Series of equal length.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``NVI``, starting at ``1000``. Never ``NaN`` past the first
+        bar — a running index, not a windowed statistic.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> zeonta.nvi([10.0, 11.0, 9.0, 9.5], [100.0, 80.0, 120.0, 90.0]).tolist()
+    [1000.0, 1100.0, 1100.0, 1161.111111111111]
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-indicators/negative-volume-index-nvi
+    """
+    require_aligned_index(close=close, volume=volume)
+    close_values = as_array(close, "close")
+    volume_values = as_array(volume, "volume")
+    require_same_length(close=close_values, volume=volume_values)
+    require_non_negative(volume=volume_values)
+
+    result = _volume_conditioned_index(close_values, volume_values, rises=False)
+    return wrap_series(result, common_index(close, volume), "NVI")
+
+
+@indicator(
+    category="volume",
+    summary="Cumulative index that only moves on a bar where volume rose versus the prior bar.",
+    reference=(
+        "https://www.fidelity.com/learning-center/trading-investing/technical-analysis/"
+        "technical-indicator-guide/positive-volume-index"
+    ),
+    outputs=("PVI",),
+)
+def pvi(close: ArrayLike, volume: ArrayLike) -> pd.Series:
+    """Positive Volume Index.
+
+    Starts at ``1000``. On a bar where ``Volume`` *rose* versus the bar
+    before it, ``PVI[i] = PVI[i-1] * (1 + (Close[i]-Close[i-1])/Close[i-1])``;
+    otherwise ``PVI[i] = PVI[i-1]`` unchanged — the mirror-image complement
+    of :func:`nvi`, built on the idea that price moves on *heavy* volume
+    days reflect crowd-driven rather than informed-money activity.
+
+    Parameters
+    ----------
+    close, volume:
+        Series of equal length.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``PVI``, starting at ``1000``. Never ``NaN`` past the first
+        bar — a running index, not a windowed statistic.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> zeonta.pvi([10.0, 11.0, 9.0, 9.5], [100.0, 80.0, 120.0, 90.0]).tolist()
+    [1000.0, 1000.0, 818.1818181818181, 818.1818181818181]
+
+    References
+    ----------
+    https://www.fidelity.com/learning-center/trading-investing/technical-analysis/technical-indicator-guide/positive-volume-index
+    """
+    require_aligned_index(close=close, volume=volume)
+    close_values = as_array(close, "close")
+    volume_values = as_array(volume, "volume")
+    require_same_length(close=close_values, volume=volume_values)
+    require_non_negative(volume=volume_values)
+
+    result = _volume_conditioned_index(close_values, volume_values, rises=True)
+    return wrap_series(result, common_index(close, volume), "PVI")

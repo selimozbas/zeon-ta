@@ -101,7 +101,19 @@ from .trend import (
     vortex,
 )
 from .volatility import atr, bbands, keltner, squeeze, true_range, ulcer_index, wavelet_variance
-from .volume import adl, chaikin_oscillator, cmf, ease_of_movement, force_index, mfi, obv
+from .volume import (
+    adl,
+    bop,
+    chaikin_oscillator,
+    cmf,
+    ease_of_movement,
+    force_index,
+    mfi,
+    nvi,
+    obv,
+    pvi,
+    pvt,
+)
 
 try:
     # Single source of truth: read back the version hatchling wrote into the
@@ -122,6 +134,7 @@ __all__ = [
     "atr",
     "awesome_oscillator",
     "bbands",
+    "bop",
     "candles",
     "cci",
     "chaikin_oscillator",
@@ -158,11 +171,14 @@ __all__ = [
     "mad",
     "mfi",
     "momentum",
+    "nvi",
     "obv",
     "ou_half_life",
     "parabolic_sar",
     "pivot_points",
     "ppo",
+    "pvi",
+    "pvt",
     "relative_volume",
     "roc",
     "rsi",

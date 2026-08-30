@@ -4030,4 +4030,188 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.cumulative_return(df["close"]).tail(3),
         ],
     },
+    "bop": {
+        "title_en": "Balance of Power (BOP)",
+        "title_tr": "Güç Dengesi (BOP)",
+        "formula_en": "BOP = (Close - Open) / (High - Low)",
+        "formula_tr": "BOP = (Kapanış - Açılış) / (Yüksek - Düşük)",
+        "about_en": (
+            "Igor Livshin's 2001 measure of who won the bar outright: buyers pushed the close up "
+            "from the open (positive), or sellers pushed it down (negative), scaled by how wide "
+            "the bar's own range was. Similar in shape to [cmf](cmf.md)'s Money Flow Multiplier, "
+            "but measured from the open rather than volume-weighted, and left as a raw per-bar "
+            "ratio rather than summed over a window."
+        ),
+        "about_tr": (
+            "Igor Livshin'in 2001'deki, barı kimin doğrudan kazandığının ölçüsü: alıcılar "
+            "kapanışı açılıştan yukarı mı itti (pozitif), yoksa satıcılar aşağı mı itti (negatif) "
+            "— barın kendi aralığının genişliğine göre ölçeklenmiş. [cmf](cmf.md)'nin Para Akışı "
+            "Çarpanına benzer şekle sahiptir, ama hacimle ağırlıklandırmak yerine açılıştan "
+            "ölçülür ve bir pencere üzerinden toplanmak yerine ham bar-başı oran olarak bırakılır."
+        ),
+        "reading_en": (
+            "Raw values are choppy bar to bar; many traders pipe this into `sma()` themselves for "
+            "a smoother line, which is how StockCharts' own page presents it — this function "
+            "returns the unsmoothed ratio to match TA-Lib's own zero-parameter convention."
+        ),
+        "reading_tr": (
+            "Ham değerler bardan bara çalkantılıdır; birçok yatırımcı daha düzgün bir çizgi için "
+            "bunu kendisi `sma()`'ya besler — StockCharts'ın kendi sayfasının sunduğu biçim de "
+            "budur; bu fonksiyon, TA-Lib'in kendi parametresiz geleneğine uymak için yumuşatılmamış "
+            "oranı döndürür."
+        ),
+        "pitfalls_en": (
+            "Zero-range bars (`High == Low`) would divide by zero; treated as `0` rather than "
+            "raising or producing a warning."
+        ),
+        "pitfalls_tr": (
+            "Sıfır-aralıklı barlar (`Yüksek == Düşük`) sıfıra bölüm yaratır; hata fırlatmak ya da "
+            "uyarı üretmek yerine `0` olarak ele alınır."
+        ),
+        "example": [
+            lambda df: zeonta.bop(df["open"], df["high"], df["low"], df["close"]).tail(3),
+        ],
+    },
+    "pvt": {
+        "title_en": "Price Volume Trend (PVT)",
+        "title_tr": "Fiyat Hacim Trendi (PVT)",
+        "formula_en": (
+            "PVT[0] = 0; PVT[i] = PVT[i-1] + Volume[i] * (Close[i] - Close[i-1]) / Close[i-1]"
+        ),
+        "formula_tr": (
+            "PVT[0] = 0; PVT[i] = PVT[i-1] + Hacim[i] * (Kapanış[i] - Kapanış[i-1]) / Kapanış[i-1]"
+        ),
+        "about_en": (
+            "[obv](obv.md)'s more graded cousin: OBV adds a bar's *entire* volume based only on "
+            "which direction the close moved; PVT scales the volume it adds by *how much* the "
+            "close moved as a percentage, so a 3% up day contributes three times as much as a 1% "
+            "up day rather than the same full volume either way."
+        ),
+        "about_tr": (
+            "[obv](obv.md)'nin daha kademeli kuzeni: OBV, kapanışın yalnızca hangi yöne hareket "
+            "ettiğine göre bir barın *tüm* hacmini ekler; PVT ise eklediği hacmi kapanışın yüzde "
+            "olarak *ne kadar* hareket ettiğine göre ölçeklendirir, böylece %3'lük bir yukarı gün, "
+            "%1'lik bir yukarı günün üç katı katkı sağlar, ikisinde de aynı tam hacim yerine."
+        ),
+        "reading_en": (
+            "Read the same way as OBV — a rising line alongside rising price confirms the trend "
+            "with real participation behind it; a PVT that fails to make a new high alongside "
+            "price is a classic bearish divergence warning."
+        ),
+        "reading_tr": (
+            "OBV ile aynı şekilde okunur — yükselen fiyatla birlikte yükselen bir çizgi, arkasında "
+            "gerçek katılım olan trendi doğrular; fiyatla birlikte yeni bir zirve yapamayan bir "
+            "PVT, klasik bir düşüş yönlü uyumsuzluk uyarısıdır."
+        ),
+        "pitfalls_en": (
+            "A running total with an arbitrary starting level, like `obv`/`adl` — only its slope "
+            "and its divergence from price carry meaning, never its absolute value."
+        ),
+        "pitfalls_tr": (
+            "`obv`/`adl` gibi keyfi bir başlangıç seviyesine sahip süregelen bir toplam — yalnızca "
+            "eğimi ve fiyattan sapması anlam taşır, mutlak değeri asla."
+        ),
+        "example": [
+            lambda df: zeonta.pvt(df["close"], df["volume"]).tail(3),
+        ],
+    },
+    "nvi": {
+        "title_en": "Negative Volume Index (NVI)",
+        "title_tr": "Negatif Hacim Endeksi (NVI)",
+        "formula_en": (
+            "Starts at 1000. When Volume[i] < Volume[i-1]: "
+            "NVI[i] = NVI[i-1] * (1 + (Close[i]-Close[i-1])/Close[i-1]); otherwise unchanged"
+        ),
+        "formula_tr": (
+            "1000'den başlar. Hacim[i] < Hacim[i-1] olduğunda: "
+            "NVI[i] = NVI[i-1] * (1 + (Kapanış[i]-Kapanış[i-1])/Kapanış[i-1]); aksi halde değişmez"
+        ),
+        "about_en": (
+            "Paul Dysart's idea from the 1930s-40s, popularised by Norman Fosback: price moves on "
+            "*quiet* (falling) volume days are more likely to reflect informed money moving "
+            "without drawing a crowd, while moves on heavy volume days reflect crowd-driven "
+            "activity. NVI only updates on the quiet days, holding flat through every heavy-volume "
+            "bar — the mirror-image complement of [pvi](pvi.md)."
+        ),
+        "about_tr": (
+            "Paul Dysart'ın 1930'lar-40'lardan kalma, Norman Fosback tarafından popülerleştirilen "
+            "fikri: fiyatın *sakin* (düşen) hacim günlerindeki hareketleri, bir kalabalık çekmeden "
+            "hareket eden bilgili paranın yansıması olma ihtimali daha yüksektir, ağır hacim "
+            "günlerindeki hareketler ise kalabalık güdümlü etkinliği yansıtır. NVI yalnızca sakin "
+            "günlerde güncellenir, her ağır-hacim barında düz kalır — [pvi](pvi.md)'nin "
+            "aynanın-tersi tamamlayıcısıdır."
+        ),
+        "reading_en": (
+            "StockCharts' own long-run study found the market was more often in a bull market "
+            "when NVI sat above its own 255-day moving average than below it — used as a "
+            "long-term, low-frequency regime read rather than a short-term signal."
+        ),
+        "reading_tr": (
+            "StockCharts'ın kendi uzun vadeli çalışması, NVI kendi 255-günlük hareketli "
+            "ortalamasının üstünde otururken piyasanın altında oturmasına göre daha sık boğa "
+            "piyasasında olduğunu buldu — kısa vadeli bir sinyal yerine uzun vadeli, düşük "
+            "frekanslı bir rejim okuması olarak kullanılır."
+        ),
+        "pitfalls_en": (
+            "The starting value of `1000` is a convention (StockCharts'), not a law of the "
+            "formula — some other implementations start at `100` or `1`. Only ever compare an "
+            "NVI series against itself (its own moving average, or its own history), never its "
+            "absolute level against a different symbol's."
+        ),
+        "pitfalls_tr": (
+            "Başlangıç değeri olan `1000`, formülün bir yasası değil bir gelenektir "
+            "(StockCharts'ın) — bazı diğer uygulamalar `100` ya da `1`'den başlar. Bir NVI "
+            "serisini yalnızca kendisiyle karşılaştırın (kendi hareketli ortalaması ya da kendi "
+            "geçmişi), asla mutlak seviyesini farklı bir sembolünkiyle karşılaştırmayın."
+        ),
+        "example": [
+            lambda df: zeonta.nvi(df["close"], df["volume"]).tail(3),
+        ],
+    },
+    "pvi": {
+        "title_en": "Positive Volume Index (PVI)",
+        "title_tr": "Pozitif Hacim Endeksi (PVI)",
+        "formula_en": (
+            "Starts at 1000. When Volume[i] > Volume[i-1]: "
+            "PVI[i] = PVI[i-1] * (1 + (Close[i]-Close[i-1])/Close[i-1]); otherwise unchanged"
+        ),
+        "formula_tr": (
+            "1000'den başlar. Hacim[i] > Hacim[i-1] olduğunda: "
+            "PVI[i] = PVI[i-1] * (1 + (Kapanış[i]-Kapanış[i-1])/Kapanış[i-1]); aksi halde değişmez"
+        ),
+        "about_en": (
+            "The mirror-image complement of [nvi](nvi.md): only updates on a bar where volume "
+            "*rose* versus the bar before it, holding flat through every quiet-volume bar. Built "
+            "on the same Dysart/Fosback idea, from the opposite side — heavy volume days reflect "
+            "crowd-driven activity rather than informed money."
+        ),
+        "about_tr": (
+            "[nvi](nvi.md)'nin aynanın-tersi tamamlayıcısı: yalnızca hacmin bir önceki bara göre "
+            "*yükseldiği* bir barda güncellenir, her sakin-hacim barında düz kalır. Aynı "
+            "Dysart/Fosback fikri üzerine, ters taraftan kurulmuştur — ağır hacim günleri, bilgili "
+            "para yerine kalabalık güdümlü etkinliği yansıtır."
+        ),
+        "reading_en": (
+            "Read the opposite way from NVI in the classic Fosback framework: PVI is treated as "
+            "the noisier, crowd-driven half of the pair, so less weight is typically put on it "
+            "alone than on NVI's own long-run signal."
+        ),
+        "reading_tr": (
+            "Klasik Fosback çerçevesinde NVI'nin tersi yönde okunur: PVI, çiftin daha gürültülü, "
+            "kalabalık güdümlü yarısı olarak ele alınır, bu yüzden genellikle tek başına NVI'nin "
+            "kendi uzun vadeli sinyalinden daha az ağırlık verilir."
+        ),
+        "pitfalls_en": (
+            "Same starting-value caveat as `nvi`: `1000` is StockCharts'/Fidelity's convention, "
+            "not a universal constant — compare a PVI series only against itself."
+        ),
+        "pitfalls_tr": (
+            "`nvi` ile aynı başlangıç-değeri uyarısı: `1000`, StockCharts'ın/Fidelity'nin "
+            "geleneğidir, evrensel bir sabit değil — bir PVI serisini yalnızca kendisiyle "
+            "karşılaştırın."
+        ),
+        "example": [
+            lambda df: zeonta.pvi(df["close"], df["volume"]).tail(3),
+        ],
+    },
 }

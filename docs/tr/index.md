@@ -60,12 +60,16 @@
 | İndikatör | Özet |
 | --- | --- |
 | [`adl`](indicators/adl.md) | Birikim/Dağıtım Çizgisi (ADL) |
+| [`bop`](indicators/bop.md) | Güç Dengesi (BOP) |
 | [`chaikin_oscillator`](indicators/chaikin_oscillator.md) | Chaikin Osilatörü |
 | [`cmf`](indicators/cmf.md) | Chaikin Para Akışı (CMF) |
 | [`ease_of_movement`](indicators/ease_of_movement.md) | Hareket Kolaylığı (EMV) |
 | [`force_index`](indicators/force_index.md) | Force Index (Güç Endeksi) |
 | [`mfi`](indicators/mfi.md) | Para Akışı Endeksi (MFI) |
+| [`nvi`](indicators/nvi.md) | Negatif Hacim Endeksi (NVI) |
 | [`obv`](indicators/obv.md) | Denge Hacmi (OBV) |
+| [`pvi`](indicators/pvi.md) | Pozitif Hacim Endeksi (PVI) |
+| [`pvt`](indicators/pvt.md) | Fiyat Hacim Trendi (PVT) |
 
 ## Oynaklık
 

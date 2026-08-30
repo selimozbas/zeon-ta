@@ -153,12 +153,16 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | İndikatör | Ne yapar | Doküman |
 | --- | --- | --- |
 | `adl` | Birikim/Dağıtım Çizgisi (ADL) | [doküman](docs/tr/indicators/adl.md) |
+| `bop` | Güç Dengesi (BOP) | [doküman](docs/tr/indicators/bop.md) |
 | `chaikin_oscillator` | Chaikin Osilatörü | [doküman](docs/tr/indicators/chaikin_oscillator.md) |
 | `cmf` | Chaikin Para Akışı (CMF) | [doküman](docs/tr/indicators/cmf.md) |
 | `ease_of_movement` | Hareket Kolaylığı (EMV) | [doküman](docs/tr/indicators/ease_of_movement.md) |
 | `force_index` | Force Index (Güç Endeksi) | [doküman](docs/tr/indicators/force_index.md) |
 | `mfi` | Para Akışı Endeksi (MFI) | [doküman](docs/tr/indicators/mfi.md) |
+| `nvi` | Negatif Hacim Endeksi (NVI) | [doküman](docs/tr/indicators/nvi.md) |
 | `obv` | Denge Hacmi (OBV) | [doküman](docs/tr/indicators/obv.md) |
+| `pvi` | Pozitif Hacim Endeksi (PVI) | [doküman](docs/tr/indicators/pvi.md) |
+| `pvt` | Fiyat Hacim Trendi (PVT) | [doküman](docs/tr/indicators/pvt.md) |
 
 ### Oynaklık
 

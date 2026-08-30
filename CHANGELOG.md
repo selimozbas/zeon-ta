@@ -17,6 +17,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Volume** — four more gap-filling indicators from the same coverage
+  review: `bop` (Balance of Power, Igor Livshin 2001 — left unsmoothed to
+  match TA-Lib's own zero-parameter convention rather than StockCharts'
+  moving-average-smoothed presentation of it), `pvt` (Price Volume Trend
+  — `obv`'s more graded cousin, scaling the volume it adds by *how much*
+  the close moved rather than adding the same full volume on any up/down
+  bar), and the Dysart/Fosback pair `nvi`/`pvi` (Negative/Positive Volume
+  Index, starting at 1000, each only updating on a bar where volume moved
+  the opposite way from the other). Found and fixed a real gap-handling
+  bug in `pvt` before finalizing: the original guard only checked whether
+  the *percentage change* was finite, missing the case where volume
+  itself was `NaN` — the exact class of bug that a single bad tick, once
+  it hit `cumsum`, would have turned into a permanent `NaN` for every bar
+  after it (the same failure mode `adl()` was fixed for previously); a
+  dedicated gap-recovery test now pins this down. Registered indicators:
+  75 -> 79.
+
 - **New `statistics` category** — eight generic statistical indicators,
   filling gaps found by cross-checking against other libraries' coverage
   (TA-Lib/pandas-ta-style categories): `stddev`, `variance`, `zscore`,

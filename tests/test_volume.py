@@ -286,3 +286,48 @@ def test_ease_of_movement_treats_zero_volume_as_contributing_nothing() -> None:
 def test_ease_of_movement_rejects_negative_volume() -> None:
     with pytest.raises(ValueError, match="'volume' must not contain negative values"):
         zeonta.ease_of_movement([11.0, 12.0], [9.0, 10.0], [100.0, -1.0])
+
+
+def test_bop_matches_the_hand_computed_ratio() -> None:
+    result = zeonta.bop([10.0], [12.0], [9.0], [11.0])
+    np.testing.assert_allclose(result.iloc[-1], (11.0 - 10.0) / (12.0 - 9.0))
+
+
+def test_bop_is_zero_on_a_zero_range_bar() -> None:
+    result = zeonta.bop([10.0], [10.0], [10.0], [10.0])
+    np.testing.assert_allclose(result.iloc[-1], 0.0)
+
+
+def test_pvt_matches_the_hand_computed_running_total() -> None:
+    result = zeonta.pvt([10.0, 11.0, 10.0], [100.0, 200.0, 150.0])
+    np.testing.assert_allclose(result.to_numpy(), [0.0, 20.0, 6.363636363636363])
+
+
+def test_pvt_a_missing_bar_recovers_rather_than_staying_nan_forever() -> None:
+    close = [10.0, 11.0, np.nan, 12.0, 13.0]
+    volume = [100.0] * 5
+    result = zeonta.pvt(close, volume)
+    assert result.iloc[2] == result.iloc[1]  # held flat through the gap
+    assert result.iloc[4] > result.iloc[3]  # and resumes moving afterward
+
+
+def test_nvi_only_moves_when_volume_falls() -> None:
+    result = zeonta.nvi([10.0, 11.0, 9.0, 9.5], [100.0, 80.0, 120.0, 90.0])
+    np.testing.assert_allclose(result.to_numpy(), [1000.0, 1100.0, 1100.0, 1161.111111111111])
+
+
+def test_pvi_only_moves_when_volume_rises() -> None:
+    result = zeonta.pvi([10.0, 11.0, 9.0, 9.5], [100.0, 80.0, 120.0, 90.0])
+    np.testing.assert_allclose(
+        result.to_numpy(), [1000.0, 1000.0, 818.1818181818181, 818.1818181818181]
+    )
+
+
+def test_nvi_and_pvi_start_at_one_thousand() -> None:
+    assert zeonta.nvi([10.0], [100.0]).iloc[0] == 1000.0
+    assert zeonta.pvi([10.0], [100.0]).iloc[0] == 1000.0
+
+
+def test_nvi_never_moves_when_volume_is_perfectly_flat() -> None:
+    result = zeonta.nvi([10.0, 11.0, 9.0, 12.0], [100.0] * 4)
+    np.testing.assert_allclose(result.to_numpy(), [1000.0] * 4)

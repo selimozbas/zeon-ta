@@ -60,12 +60,16 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | Indicator | Summary |
 | --- | --- |
 | [`adl`](indicators/adl.md) | Accumulation/Distribution Line (ADL) |
+| [`bop`](indicators/bop.md) | Balance of Power (BOP) |
 | [`chaikin_oscillator`](indicators/chaikin_oscillator.md) | Chaikin Oscillator |
 | [`cmf`](indicators/cmf.md) | Chaikin Money Flow (CMF) |
 | [`ease_of_movement`](indicators/ease_of_movement.md) | Ease of Movement (EMV) |
 | [`force_index`](indicators/force_index.md) | Force Index |
 | [`mfi`](indicators/mfi.md) | Money Flow Index (MFI) |
+| [`nvi`](indicators/nvi.md) | Negative Volume Index (NVI) |
 | [`obv`](indicators/obv.md) | On-Balance Volume (OBV) |
+| [`pvi`](indicators/pvi.md) | Positive Volume Index (PVI) |
+| [`pvt`](indicators/pvt.md) | Price Volume Trend (PVT) |
 
 ## Volatility
 

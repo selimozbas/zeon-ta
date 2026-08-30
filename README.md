@@ -147,12 +147,16 @@ the cloud that projects past the last bar, rather than discarding it.
 | Indicator | What it does | Docs |
 | --- | --- | --- |
 | `adl` | Accumulation/Distribution Line (ADL) | [docs](docs/en/indicators/adl.md) |
+| `bop` | Balance of Power (BOP) | [docs](docs/en/indicators/bop.md) |
 | `chaikin_oscillator` | Chaikin Oscillator | [docs](docs/en/indicators/chaikin_oscillator.md) |
 | `cmf` | Chaikin Money Flow (CMF) | [docs](docs/en/indicators/cmf.md) |
 | `ease_of_movement` | Ease of Movement (EMV) | [docs](docs/en/indicators/ease_of_movement.md) |
 | `force_index` | Force Index | [docs](docs/en/indicators/force_index.md) |
 | `mfi` | Money Flow Index (MFI) | [docs](docs/en/indicators/mfi.md) |
+| `nvi` | Negative Volume Index (NVI) | [docs](docs/en/indicators/nvi.md) |
 | `obv` | On-Balance Volume (OBV) | [docs](docs/en/indicators/obv.md) |
+| `pvi` | Positive Volume Index (PVI) | [docs](docs/en/indicators/pvi.md) |
+| `pvt` | Price Volume Trend (PVT) | [docs](docs/en/indicators/pvt.md) |
 
 ### Volatility
 

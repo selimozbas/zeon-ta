@@ -1,6 +1,7 @@
 # zeon-ta
 
 [![CI](https://github.com/selimozbas/zeon-ta/actions/workflows/ci.yml/badge.svg)](https://github.com/selimozbas/zeon-ta/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/zeon-ta)](https://pypi.org/project/zeon-ta/)
 [![Python](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
 [![License](https://img.shields.io/github/license/selimozbas/zeon-ta)](LICENSE)
 
@@ -43,7 +44,11 @@ why.
 
 ## Install
 
-Not on PyPI yet — install straight from GitHub:
+```bash
+pip install zeon-ta
+```
+
+Or install the latest commit straight from GitHub, ahead of the next release:
 
 ```bash
 pip install git+https://github.com/selimozbas/zeon-ta.git

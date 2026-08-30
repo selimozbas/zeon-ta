@@ -8,6 +8,14 @@ that covers and what counts as a patch, minor, or major change.
 
 ## [Unreleased]
 
+### Changed
+
+- README's Install section now leads with `pip install zeon-ta` — the
+  package is live on PyPI as of the 0.3.0 release — and a PyPI version
+  badge was added alongside the existing CI/Python/License ones. The
+  GitHub-install and clone-and-install instructions stay as fallbacks
+  for anyone wanting the latest unreleased commit.
+
 ## [0.3.0] - 2026-08-31
 
 ### Changed

@@ -159,6 +159,11 @@ def test_indicators_with_a_reference() -> None:
         "frama",
         "gmma",
         "williams_fractals",
+        "roofing_filter",
+        "even_better_sinewave",
+        "cyber_cycle",
+        "voss_predictive_filter",
+        "reflex_trendflex",
     }
     with_reference = {spec.name for spec in iter_specs() if spec.reference is not None}
     assert with_reference == expected

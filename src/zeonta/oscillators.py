@@ -28,6 +28,7 @@ from ._core import (
     rolling_min,
     rolling_sum,
     rolling_wma,
+    super_smoother_values,
     validate_length,
     validate_multiplier,
     wilder_values,
@@ -43,8 +44,10 @@ __all__ = [
     "cmo",
     "connors_rsi",
     "coppock_curve",
+    "cyber_cycle",
     "dpo",
     "elder_ray",
+    "even_better_sinewave",
     "fisher_transform",
     "ift_rsi",
     "kdj",
@@ -55,7 +58,9 @@ __all__ = [
     "ppo",
     "psl",
     "qqe",
+    "reflex_trendflex",
     "roc",
+    "roofing_filter",
     "rsi",
     "rvgi",
     "smi",
@@ -64,6 +69,7 @@ __all__ = [
     "trix",
     "tsi",
     "ultimate_oscillator",
+    "voss_predictive_filter",
     "williams_r",
 ]
 
@@ -2241,3 +2247,480 @@ def ift_rsi(close: ArrayLike, length: int = 14, smooth: int = 9) -> pd.Series:
     result = (exponent - 1.0) / (exponent + 1.0)
 
     return wrap_series(result, common_index(close), f"IFTRSI_{length}_{smooth}")
+
+
+def _two_pole_highpass_values(values: np.ndarray, period: int) -> np.ndarray:
+    """Ehlers' 2-pole high-pass filter (the "2PHP" recipe from his own Swiss Army Knife paper).
+
+    Zeroed for the first *period* bars rather than left undefined — his
+    own EasyLanguage bootstrap convention.
+    """
+    size = values.shape[0]
+    angle = 2.0 * np.pi / period
+    alpha1 = (np.cos(angle) + np.sin(angle) - 1.0) / np.cos(angle)
+    c0 = (1.0 - alpha1 / 2.0) ** 2
+    a1 = 2.0 * (1.0 - alpha1)
+    a2 = -((1.0 - alpha1) ** 2)
+
+    result = np.zeros(size, dtype="float64")
+    for i in range(period, size):
+        window = values[i - 2 : i + 1]
+        previous = result[i - 2 : i]
+        if not np.all(np.isfinite(window)) or not np.all(np.isfinite(previous)):
+            result[i] = result[i - 1]  # freeze through a gap rather than propagate NaN
+            continue
+        result[i] = c0 * (values[i] - 2.0 * values[i - 1] + values[i - 2]) + (
+            a1 * result[i - 1] + a2 * result[i - 2]
+        )
+    return result
+
+
+@indicator(
+    category="oscillators",
+    summary="2-pole highpass then a SuperSmoother low-pass, isolating a chosen band of cycles.",
+    outputs=("ROOF",),
+    reference="https://www.mesasoftware.com/papers/SwissArmyKnifeIndicator.pdf",
+)
+def roofing_filter(close: ArrayLike, hp_length: int = 48, lp_length: int = 10) -> pd.Series:
+    """Roofing Filter (John Ehlers).
+
+    Removes both ends of the spectrum from price: a 2-pole high-pass
+    filter removes cycles longer than ``hp_length`` (the slow drift an
+    oscillator doesn't want to react to), and :func:`super_smoother` then
+    removes cycles shorter than ``lp_length`` (the aliasing noise an
+    ordinary moving average lets through). What is left is only the band
+    of cycles between the two — the same "roof and floor" both ends of a
+    building keep out, hence the name. Ehlers designed this specifically
+    to precede oscillators like :func:`stoch` or :func:`rsi`, replacing
+    raw price as their input so they react to genuine cycles rather than
+    trend or noise.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    hp_length:
+        High-pass cutoff, in bars — cycles longer than this are removed.
+        Ehlers' own default is ``48``.
+    lp_length:
+        Low-pass cutoff, in bars — cycles shorter than this are removed.
+        Ehlers' own default is ``10``.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``ROOF_{hp_length}_{lp_length}``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> import numpy as np
+    >>> t = np.arange(100.0)
+    >>> close = 100.0 + 5.0 * np.sin(2.0 * np.pi * t / 20.0)
+    >>> result = zeonta.roofing_filter(close, hp_length=48, lp_length=10)
+    >>> bool(result.iloc[60:].abs().max() < 10.0)
+    True
+
+    References
+    ----------
+    https://www.mesasoftware.com/papers/SwissArmyKnifeIndicator.pdf
+    """
+    hp_length = validate_length(hp_length, "hp_length", minimum=2)
+    lp_length = validate_length(lp_length, "lp_length", minimum=2)
+    values = as_array(close, "close")
+
+    high_passed = _two_pole_highpass_values(values, hp_length)
+    result = super_smoother_values(high_passed, lp_length)
+
+    return wrap_series(result, common_index(close), f"ROOF_{hp_length}_{lp_length}")
+
+
+@indicator(
+    category="oscillators",
+    summary="A highpass-then-smoothed cycle, self-normalized to trace out an actual sine wave.",
+    outputs=("EBSW",),
+    reference="https://www.tradingview.com/script/thzgGKyQ-Ehlers-Even-Better-Sinewave-EBSW/",
+)
+def even_better_sinewave(close: ArrayLike, hp_length: int = 40, lp_length: int = 10) -> pd.Series:
+    """Even Better Sinewave (John Ehlers).
+
+    A 1-pole high-pass removes the trend, :func:`super_smoother` then
+    removes short-term noise, and the result is divided by its own
+    recent RMS amplitude::
+
+        alpha1 = (1 - sin(2*pi/hp_length)) / cos(2*pi/hp_length)
+        HP = 0.5*(1+alpha1)*(Price - Price[-1]) + alpha1*HP[-1]
+        Filt = SuperSmoother(HP, lp_length)
+        Wave = mean(Filt, Filt[-1], Filt[-2])
+        Pwr = mean(Filt^2, Filt[-1]^2, Filt[-2]^2)
+        EBSW = Wave / sqrt(Pwr)
+
+    Where a plain oscillator's amplitude drifts with volatility, dividing
+    by the local RMS amplitude (``Pwr``) keeps this one's swings a
+    genuine sine wave regardless of how big the underlying cycle
+    currently is — the whole point of the "even better" in the name,
+    versus Ehlers' earlier, unnormalized Sinewave Indicator.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    hp_length:
+        High-pass cutoff removing the trend. Ehlers' own default is ``40``.
+    lp_length:
+        SuperSmoother cutoff removing short-term noise. Ehlers' own
+        default is ``10``.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``EBSW_{hp_length}_{lp_length}``, ranging roughly -1 to 1.
+        Exactly ``0`` wherever the filtered signal has been flat for
+        three bars running, rather than an undefined ``0/0``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> import numpy as np
+    >>> t = np.arange(150.0)
+    >>> close = 100.0 + 5.0 * np.sin(2.0 * np.pi * t / 20.0)
+    >>> result = zeonta.even_better_sinewave(close, hp_length=40, lp_length=10)
+    >>> bool(result.iloc[80:].abs().max() <= 1.01)
+    True
+
+    References
+    ----------
+    https://www.tradingview.com/script/thzgGKyQ-Ehlers-Even-Better-Sinewave-EBSW/
+    """
+    hp_length = validate_length(hp_length, "hp_length", minimum=2)
+    lp_length = validate_length(lp_length, "lp_length", minimum=2)
+    values = as_array(close, "close")
+    size = values.shape[0]
+
+    angle = 2.0 * np.pi / hp_length
+    alpha1 = (1.0 - np.sin(angle)) / np.cos(angle)
+    high_passed = np.zeros(size, dtype="float64")
+    for i in range(1, size):
+        pair = values[i - 1 : i + 1]
+        if not np.all(np.isfinite(pair)) or not np.isfinite(high_passed[i - 1]):
+            high_passed[i] = high_passed[i - 1]
+            continue
+        high_passed[i] = (
+            0.5 * (1.0 + alpha1) * (values[i] - values[i - 1]) + alpha1 * high_passed[i - 1]
+        )
+
+    filt = super_smoother_values(high_passed, lp_length)
+    filt_1 = np.concatenate(([np.nan], filt[:-1]))
+    filt_2 = np.concatenate(([np.nan, np.nan], filt[:-2]))
+
+    wave = (filt + filt_1 + filt_2) / 3.0
+    power = (filt**2 + filt_1**2 + filt_2**2) / 3.0
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = np.where(power != 0.0, wave / np.sqrt(power), 0.0)
+    result = np.where(np.isfinite(power), result, np.nan)
+
+    return wrap_series(result, common_index(close), f"EBSW_{hp_length}_{lp_length}")
+
+
+@indicator(
+    category="oscillators",
+    summary="Ehlers' band-limited cycle extraction with a fixed smoothing constant.",
+    outputs=("CYBERCYCLE", "CYBERCYCLEt"),
+    reference="https://help.ctrader.com/indicators/built-in/oscillators/cyber-cycle/",
+)
+def cyber_cycle(high: ArrayLike, low: ArrayLike, alpha: Number = 0.07) -> pd.DataFrame:
+    """Cyber Cycle (John Ehlers).
+
+    A 4-bar weighted smooth of the median price, then a 2-pole highpass
+    tuned by a fixed ``alpha`` rather than a length in bars::
+
+        Smooth = (Price + 2*Price[-1] + 2*Price[-2] + Price[-3]) / 6
+        Cycle = (1-alpha/2)^2 * (Smooth - 2*Smooth[-1] + Smooth[-2])
+                + 2*(1-alpha)*Cycle[-1] - (1-alpha)^2*Cycle[-2]
+
+    with a simpler bootstrap formula for the first 7 bars. This is the
+    fixed-``alpha`` Cyber Cycle from Ehlers' "Cybernetic Analysis for
+    Stocks and Futures" — his own "Adaptive" variant instead measures the
+    market's own dominant cycle period (via a Hilbert Transform
+    discriminator) and feeds that into ``alpha`` bar by bar. That
+    measurement stage is a substantially larger, separately-nontrivial
+    piece of machinery on its own — the same dominant-cycle apparatus
+    behind MAMA, an indicator this library has already declined for
+    exactly that reason — so only the fixed-``alpha`` form is implemented
+    here.
+
+    Parameters
+    ----------
+    high, low:
+        Price series of equal length.
+    alpha:
+        Smoothing constant. Ehlers' own default is ``0.07``. Must be > 0.
+
+    Returns
+    -------
+    pandas.DataFrame
+        ``CYBERCYCLE`` and its own one-bar-delayed trigger line
+        ``CYBERCYCLEt`` — the same pattern :func:`fisher_transform` and
+        :func:`center_of_gravity` use.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> import numpy as np
+    >>> t = np.arange(60.0)
+    >>> high = 100.5 + 5.0 * np.sin(2.0 * np.pi * t / 15.0)
+    >>> low = 99.5 + 5.0 * np.sin(2.0 * np.pi * t / 15.0)
+    >>> result = zeonta.cyber_cycle(high, low)
+    >>> bool(result['CYBERCYCLE'].iloc[-20:].abs().max() < 6.0)
+    True
+
+    References
+    ----------
+    https://help.ctrader.com/indicators/built-in/oscillators/cyber-cycle/
+    """
+    alpha = validate_multiplier(alpha, "alpha")
+    require_aligned_index(high=high, low=low)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    size = require_same_length(high=high_values, low=low_values)
+    price = (high_values + low_values) / 2.0
+
+    smooth = np.full(size, np.nan, dtype="float64")
+    cycle = np.zeros(size, dtype="float64")
+    for i in range(size):
+        if i >= 3:
+            window = price[i - 3 : i + 1]
+            if np.all(np.isfinite(window)):
+                smooth[i] = (window[3] + 2.0 * window[2] + 2.0 * window[1] + window[0]) / 6.0
+        elif np.isfinite(price[i]):
+            smooth[i] = price[i]
+
+        if i < 7:
+            if i >= 2 and np.all(np.isfinite(price[i - 2 : i + 1])):
+                cycle[i] = (price[i] - 2.0 * price[i - 1] + price[i - 2]) / 4.0
+            continue
+
+        window_s = smooth[i - 2 : i + 1]
+        previous_c = cycle[i - 2 : i]
+        if not np.all(np.isfinite(window_s)) or not np.all(np.isfinite(previous_c)):
+            cycle[i] = cycle[i - 1]
+            continue
+        cycle[i] = (1.0 - 0.5 * alpha) ** 2 * (window_s[2] - 2.0 * window_s[1] + window_s[0]) + (
+            2.0 * (1.0 - alpha) * cycle[i - 1] - (1.0 - alpha) ** 2 * cycle[i - 2]
+        )
+
+    trigger = np.concatenate(([np.nan], cycle[:-1]))
+    order = ["CYBERCYCLE", "CYBERCYCLEt"]
+    return wrap_frame(
+        dict(zip(order, (cycle, trigger), strict=True)),
+        common_index(high, low),
+        order=order,
+    )
+
+
+@indicator(
+    category="oscillators",
+    summary="A band-limiting filter feeding Voss' negative-group-delay predictor.",
+    outputs=("VOSSFILT", "VOSS"),
+    reference="https://www.mesasoftware.com/papers/A%20PEEK%20INTO%20THE%20FUTURE.pdf",
+)
+def voss_predictive_filter(
+    close: ArrayLike, period: int = 20, predict: int = 3, bandwidth: Number = 0.25
+) -> pd.DataFrame:
+    """Voss Predictive Filter (Henning U. Voss, adapted by John Ehlers).
+
+    Band-limits price with a 2-pole bandpass filter, then runs it through
+    a filter with *negative group delay* — Voss' "Universal Negative
+    Group Delay Filter for the Prediction of Band-Limited Signals" — to
+    produce a second line that leads the bandpass output rather than
+    lagging it::
+
+        order = 3 * predict
+        Filt = BandPass(Close, period, bandwidth)      [2-pole, Ehlers' own]
+        Voss = ((3+order)/2)*Filt - sum((k+1)/order * Voss[-(order-k)], k=0..order-1)
+
+    This cannot see the future — the qualification is that ``Filt`` must
+    already be band-limited, which is exactly what the bandpass stage
+    guarantees — but within that band, ``Voss`` measurably precedes
+    ``Filt``'s own turns, which is as close to a genuine lead as a causal
+    filter gets.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    period:
+        Center period of the band-limiting bandpass filter. Ehlers' own
+        default is ``20``.
+    predict:
+        Bars of desired prediction; sets the predictor's own filter order
+        (``3 * predict``). Ehlers recommends not exceeding ``3`` — more
+        prediction trades for a noisier output. Must be >= 1.
+    bandwidth:
+        Bandpass filter width as a fraction of ``period``. Ehlers' own
+        default is ``0.25``. Must be > 0.
+
+    Returns
+    -------
+    pandas.DataFrame
+        ``VOSSFILT`` (the band-limited input) and ``VOSS`` (the
+        predictive line) — plotted together, a ``VOSS``/``VOSSFILT``
+        crossover at a peak or valley is Ehlers' own suggested signal.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> import numpy as np
+    >>> t = np.arange(80.0)
+    >>> close = 100.0 + 5.0 * np.sin(2.0 * np.pi * t / 20.0)
+    >>> result = zeonta.voss_predictive_filter(close, period=20, predict=3)
+    >>> bool(result['VOSSFILT'].iloc[30:].abs().max() < 10.0)
+    True
+
+    References
+    ----------
+    https://www.mesasoftware.com/papers/A%20PEEK%20INTO%20THE%20FUTURE.pdf
+    """
+    period = validate_length(period, "period", minimum=2)
+    predict = validate_length(predict, "predict")
+    bandwidth = validate_multiplier(bandwidth, "bandwidth")
+    values = as_array(close, "close")
+    size = values.shape[0]
+
+    order = 3 * predict
+    f1 = np.cos(2.0 * np.pi / period)
+    g1 = np.cos(bandwidth * 2.0 * np.pi / period)
+    s1 = 1.0 / g1 - np.sqrt(1.0 / (g1 * g1) - 1.0)
+
+    filt = np.zeros(size, dtype="float64")
+    warmup = 5  # Ehlers' own literal "CurrentBar <= 5" bootstrap bar count
+    for i in range(size):
+        if i < warmup or i < 2:
+            continue
+        pair = (values[i], values[i - 2])
+        if (
+            not np.all(np.isfinite(pair))
+            or not np.isfinite(filt[i - 1])
+            or not np.isfinite(filt[i - 2])
+        ):
+            filt[i] = filt[i - 1]
+            continue
+        filt[i] = (
+            0.5 * (1.0 - s1) * (values[i] - values[i - 2])
+            + f1 * (1.0 + s1) * filt[i - 1]
+            - s1 * filt[i - 2]
+        )
+
+    voss = np.zeros(size, dtype="float64")
+    weights = np.array([(count + 1.0) / order for count in range(order)])
+    for i in range(size):
+        if i < warmup:
+            continue
+        lag_indices = [i - (order - count) for count in range(order)]
+        lags = np.array([voss[idx] if idx >= 0 else 0.0 for idx in lag_indices])
+        sum_c = float(np.dot(weights, lags))
+        voss[i] = ((3.0 + order) / 2.0) * filt[i] - sum_c
+
+    order_cols = ["VOSSFILT", "VOSS"]
+    return wrap_frame(
+        dict(zip(order_cols, (filt, voss), strict=True)),
+        common_index(close),
+        order=order_cols,
+    )
+
+
+@indicator(
+    category="oscillators",
+    summary="Ehlers' zero-lag pair: deviation from a fitted line (cycle) vs. current value.",
+    outputs=("REFLEX", "TRENDFLEX"),
+    reference="https://www.prorealcode.com/prorealtime-indicators/reflex-and-trendflex-indicators-john-f-ehlers/",
+)
+def reflex_trendflex(close: ArrayLike, length: int = 20) -> pd.DataFrame:
+    """Reflex and Trendflex (John Ehlers).
+
+    Both start from the same :func:`super_smoother` pass at half
+    ``length``, then average that filtered line's own deviation from a
+    reference over the full window — Reflex measures deviation from a
+    straight line drawn across the window (stripping trend, isolating
+    cycle swings), Trendflex measures deviation from the filtered line's
+    *current* value (keeping trend in)::
+
+        Filt = SuperSmoother(Close, length/2)
+        Slope = (Filt[-length] - Filt) / length
+        ReflexSum  = mean(Filt + k*Slope - Filt[-k], k=1..length)
+        TrendflexSum = mean(Filt - Filt[-k], k=1..length)
+        MS = 0.04*Sum^2 + 0.96*MS[-1]           [separately, for each line]
+        Output = Sum / sqrt(MS)
+
+    Both self-normalize against their own recent mean square, the same
+    "divide by local RMS" idea :func:`even_better_sinewave` uses, so
+    their scale stays comparable across different volatility regimes.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Window length in bars. Ehlers' own default is ``20``; the
+        SuperSmoother pre-filter runs at half of this.
+
+    Returns
+    -------
+    pandas.DataFrame
+        ``REFLEX_{length}`` and ``TRENDFLEX_{length}``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> import numpy as np
+    >>> t = np.arange(100.0)
+    >>> close = 100.0 + 5.0 * np.sin(2.0 * np.pi * t / 20.0)
+    >>> result = zeonta.reflex_trendflex(close, length=20)
+    >>> bool(result['REFLEX_20'].iloc[50:].abs().max() <= 2.0)
+    True
+
+    References
+    ----------
+    https://www.prorealcode.com/prorealtime-indicators/reflex-and-trendflex-indicators-john-f-ehlers/
+    """
+    length = validate_length(length, minimum=4)
+    values = as_array(close, "close")
+    size = values.shape[0]
+
+    filt = super_smoother_values(values, length / 2.0)
+
+    reflex_sum = np.full(size, np.nan, dtype="float64")
+    trendflex_sum = np.full(size, np.nan, dtype="float64")
+    for i in range(length, size):
+        window = filt[i - length : i + 1]
+        if not np.all(np.isfinite(window)):
+            continue
+        current = window[-1]
+        slope = (window[0] - current) / length
+        counts = np.arange(1, length + 1)
+        lagged = window[-1 - counts]  # Filt[i - count], count = 1..length
+        reflex_sum[i] = float(np.mean((current + counts * slope) - lagged))
+        trendflex_sum[i] = float(np.mean(current - lagged))
+
+    def normalize(sums: np.ndarray) -> np.ndarray:
+        ms = np.full(size, np.nan, dtype="float64")
+        result = np.full(size, np.nan, dtype="float64")
+        previous_ms = 0.0
+        for i in range(size):
+            value = sums[i]
+            if not np.isfinite(value):
+                continue
+            previous_ms = 0.04 * value * value + 0.96 * previous_ms
+            ms[i] = previous_ms
+            result[i] = value / np.sqrt(ms[i]) if ms[i] != 0.0 else 0.0
+        return result
+
+    reflex = normalize(reflex_sum)
+    trendflex = normalize(trendflex_sum)
+
+    order = [f"REFLEX_{length}", f"TRENDFLEX_{length}"]
+    return wrap_frame(
+        dict(zip(order, (reflex, trendflex), strict=True)),
+        common_index(close),
+        order=order,
+    )

@@ -57,8 +57,10 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`cmo`](indicators/cmo.md) | Chande Momentum Oscillator (CMO) |
 | [`connors_rsi`](indicators/connors_rsi.md) | Connors RSI |
 | [`coppock_curve`](indicators/coppock_curve.md) | Coppock Curve |
+| [`cyber_cycle`](indicators/cyber_cycle.md) | Cyber Cycle |
 | [`dpo`](indicators/dpo.md) | Detrended Price Oscillator (DPO) |
 | [`elder_ray`](indicators/elder_ray.md) | Elder Ray (Bull Power / Bear Power) |
+| [`even_better_sinewave`](indicators/even_better_sinewave.md) | Even Better Sinewave |
 | [`fisher_transform`](indicators/fisher_transform.md) | Fisher Transform (Ehlers) |
 | [`ift_rsi`](indicators/ift_rsi.md) | Inverse Fisher Transform of RSI |
 | [`kdj`](indicators/kdj.md) | KDJ |
@@ -69,7 +71,9 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`ppo`](indicators/ppo.md) | Percentage Price Oscillator (PPO) |
 | [`psl`](indicators/psl.md) | Psychological Line (PSL) |
 | [`qqe`](indicators/qqe.md) | Quantitative Qualitative Estimation (QQE) |
+| [`reflex_trendflex`](indicators/reflex_trendflex.md) | Reflex and Trendflex |
 | [`roc`](indicators/roc.md) | Rate of Change (ROC) |
+| [`roofing_filter`](indicators/roofing_filter.md) | Roofing Filter |
 | [`rsi`](indicators/rsi.md) | Relative Strength Index (RSI) |
 | [`rvgi`](indicators/rvgi.md) | Relative Vigor Index (RVGI) |
 | [`smi`](indicators/smi.md) | Stochastic Momentum Index (SMI) |
@@ -78,6 +82,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`trix`](indicators/trix.md) | TRIX (Triple Exponential Average) |
 | [`tsi`](indicators/tsi.md) | True Strength Index (TSI) |
 | [`ultimate_oscillator`](indicators/ultimate_oscillator.md) | Ultimate Oscillator |
+| [`voss_predictive_filter`](indicators/voss_predictive_filter.md) | Voss Predictive Filter |
 | [`williams_r`](indicators/williams_r.md) | Williams %R |
 
 ## Volume

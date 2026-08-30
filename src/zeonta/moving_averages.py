@@ -28,6 +28,7 @@ from ._core import (
     rolling_min,
     rolling_sum,
     rolling_wma,
+    super_smoother_values,
     validate_length,
     validate_multiplier,
     wilder_values,
@@ -805,35 +806,7 @@ def super_smoother(close: ArrayLike, length: int = 20) -> pd.Series:
     """
     length = validate_length(length)
     values = as_array(close, "close")
-    size = values.shape[0]
-
-    a1 = np.exp(-1.414 * np.pi / length)
-    b1 = 2.0 * a1 * np.cos(1.414 * np.pi / length)
-    c2 = b1
-    c3 = -a1 * a1
-    c1 = 1.0 - c2 - c3
-
-    result = np.full(size, np.nan, dtype="float64")
-    prev_price = np.nan
-    f1 = np.nan
-    f2 = np.nan
-
-    for i in range(size):
-        price = values[i]
-        if not np.isfinite(price):
-            # Hold the last filtered value through a gap rather than
-            # poisoning the recursion, the same convention ema_values() uses.
-            result[i] = f1
-            continue
-        if not (np.isfinite(f1) and np.isfinite(f2) and np.isfinite(prev_price)):
-            filtered = price
-        else:
-            filtered = c1 * (price + prev_price) / 2.0 + c2 * f1 + c3 * f2
-        result[i] = filtered
-        f2 = f1
-        f1 = filtered
-        prev_price = price
-
+    result = super_smoother_values(values, length)
     return wrap_series(result, common_index(close), f"SSF_{length}")
 
 

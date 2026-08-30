@@ -12,7 +12,7 @@ from .rolling import (
     rolling_sum,
     rolling_wma,
 )
-from .smoothing import ema_values, first_full_window, wilder_values
+from .smoothing import ema_values, first_full_window, super_smoother_values, wilder_values
 from .types import ArrayLike, Number
 from .validation import (
     as_array,
@@ -50,6 +50,7 @@ __all__ = [
     "rolling_std",
     "rolling_sum",
     "rolling_wma",
+    "super_smoother_values",
     "validate_length",
     "validate_multiplier",
     "wilder_values",

@@ -726,3 +726,153 @@ def test_ift_rsi_rejects_non_positive_length() -> None:
 def test_ift_rsi_rejects_non_positive_smooth() -> None:
     with pytest.raises(ValueError, match="'smooth' must be >="):
         zeonta.ift_rsi(list(range(1, 20)), smooth=0)
+
+
+def test_roofing_filter_matches_an_independent_reimplementation() -> None:
+    rng = np.random.default_rng(0)
+    close = 100.0 + np.cumsum(rng.normal(size=80))
+    result = zeonta.roofing_filter(close, hp_length=20, lp_length=10)
+    np.testing.assert_allclose(result.iloc[-1], -0.0008118327093320638)
+
+
+def test_roofing_filter_is_zero_on_a_flat_series() -> None:
+    result = zeonta.roofing_filter([10.0] * 60, hp_length=20, lp_length=10)
+    np.testing.assert_allclose(result.to_numpy(), 0.0)
+
+
+def test_roofing_filter_recovers_after_an_interior_gap() -> None:
+    rng = np.random.default_rng(0)
+    close = (100.0 + np.cumsum(rng.normal(size=100))).tolist()
+    close[60] = float("nan")
+    result = zeonta.roofing_filter(close, hp_length=20, lp_length=10)
+    assert result.iloc[70:].notna().all()
+
+
+def test_roofing_filter_rejects_non_positive_hp_length() -> None:
+    with pytest.raises(ValueError, match="'hp_length' must be >="):
+        zeonta.roofing_filter(list(range(1, 60)), hp_length=1)
+
+
+def test_roofing_filter_rejects_non_positive_lp_length() -> None:
+    with pytest.raises(ValueError, match="'lp_length' must be >="):
+        zeonta.roofing_filter(list(range(1, 60)), lp_length=1)
+
+
+def test_even_better_sinewave_matches_an_independent_reimplementation() -> None:
+    rng = np.random.default_rng(1)
+    close = 100.0 + np.cumsum(rng.normal(size=80))
+    result = zeonta.even_better_sinewave(close, hp_length=40, lp_length=10)
+    np.testing.assert_allclose(result.iloc[-1], -0.33900001728602347)
+
+
+def test_even_better_sinewave_is_zero_on_a_flat_series() -> None:
+    result = zeonta.even_better_sinewave([10.0] * 60, hp_length=40, lp_length=10)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_even_better_sinewave_stays_within_bounds(ohlcv: pd.DataFrame) -> None:
+    result = zeonta.even_better_sinewave(ohlcv["close"]).dropna()
+    assert result.between(-1.5, 1.5).all()
+
+
+def test_even_better_sinewave_rejects_non_positive_hp_length() -> None:
+    with pytest.raises(ValueError, match="'hp_length' must be >="):
+        zeonta.even_better_sinewave(list(range(1, 60)), hp_length=1)
+
+
+def test_even_better_sinewave_rejects_non_positive_lp_length() -> None:
+    with pytest.raises(ValueError, match="'lp_length' must be >="):
+        zeonta.even_better_sinewave(list(range(1, 60)), lp_length=1)
+
+
+def test_cyber_cycle_matches_an_independent_reimplementation() -> None:
+    rng = np.random.default_rng(2)
+    high = 100.0 + np.cumsum(rng.normal(size=50)) + 0.5
+    low = high - 1.0
+    result = zeonta.cyber_cycle(high, low)
+    np.testing.assert_allclose(result["CYBERCYCLE"].iloc[-1], -1.4043291793301915)
+
+
+def test_cyber_cycle_trigger_is_cycle_shifted_by_one_bar() -> None:
+    rng = np.random.default_rng(2)
+    high = 100.0 + np.cumsum(rng.normal(size=50)) + 0.5
+    low = high - 1.0
+    result = zeonta.cyber_cycle(high, low)
+    np.testing.assert_allclose(
+        result["CYBERCYCLEt"].to_numpy(), result["CYBERCYCLE"].shift(1).to_numpy(), equal_nan=True
+    )
+
+
+def test_cyber_cycle_is_zero_on_a_flat_series() -> None:
+    result = zeonta.cyber_cycle([11.0] * 30, [9.0] * 30)
+    np.testing.assert_allclose(result["CYBERCYCLE"].to_numpy(), 0.0)
+
+
+def test_cyber_cycle_rejects_non_positive_alpha() -> None:
+    with pytest.raises(ValueError, match="'alpha' must be > 0"):
+        zeonta.cyber_cycle([11.0, 12.0], [9.0, 10.0], alpha=0.0)
+
+
+def test_voss_predictive_filter_matches_an_independent_reimplementation() -> None:
+    rng = np.random.default_rng(3)
+    close = 100.0 + np.cumsum(rng.normal(size=60))
+    result = zeonta.voss_predictive_filter(close, period=20, predict=3, bandwidth=0.25)
+    np.testing.assert_allclose(result["VOSSFILT"].iloc[-1], -0.798783267593836)
+    np.testing.assert_allclose(result["VOSS"].iloc[-1], -1.4600140804367272)
+
+
+def test_voss_predictive_filter_is_zero_on_a_flat_series() -> None:
+    result = zeonta.voss_predictive_filter([10.0] * 40)
+    np.testing.assert_allclose(result.to_numpy(), 0.0)
+
+
+def test_voss_predictive_filter_rejects_non_positive_period() -> None:
+    with pytest.raises(ValueError, match="'period' must be >="):
+        zeonta.voss_predictive_filter(list(range(1, 40)), period=1)
+
+
+def test_voss_predictive_filter_rejects_non_positive_predict() -> None:
+    with pytest.raises(ValueError, match="'predict' must be >="):
+        zeonta.voss_predictive_filter(list(range(1, 40)), predict=0)
+
+
+def test_voss_predictive_filter_rejects_non_positive_bandwidth() -> None:
+    with pytest.raises(ValueError, match="'bandwidth' must be > 0"):
+        zeonta.voss_predictive_filter(list(range(1, 40)), bandwidth=0.0)
+
+
+def test_reflex_trendflex_matches_an_independent_reimplementation() -> None:
+    rng = np.random.default_rng(4)
+    close = 100.0 + np.cumsum(rng.normal(size=60))
+    result = zeonta.reflex_trendflex(close, length=20)
+    np.testing.assert_allclose(result["REFLEX_20"].iloc[-1], 0.4365385585728406)
+    np.testing.assert_allclose(result["TRENDFLEX_20"].iloc[-1], -0.4252007505049121)
+
+
+def test_reflex_trendflex_is_zero_on_a_flat_series() -> None:
+    result = zeonta.reflex_trendflex([10.0] * 40, length=20)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_reflex_trendflex_recovers_after_an_interior_gap() -> None:
+    rng = np.random.default_rng(4)
+    close = (100.0 + np.cumsum(rng.normal(size=100))).tolist()
+    close[60] = float("nan")
+    result = zeonta.reflex_trendflex(close, length=20)
+    assert result.iloc[85:].notna().all().all()
+
+
+def test_reflex_trendflex_rejects_a_length_below_four() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.reflex_trendflex(list(range(1, 20)), length=3)
+
+
+def test_reflex_trendflex_is_nan_while_the_very_first_bar_is_still_missing() -> None:
+    """A missing first bar leaves the SuperSmoother pre-filter permanently
+    unseeded at that position (it has no earlier value to hold), so every
+    window that still includes bar 0 must stay NaN rather than a bogus
+    number - only once the window has aged past bar 0 does it recover."""
+    close = [float("nan")] + [100.0 + i for i in range(40)]
+    result = zeonta.reflex_trendflex(close, length=20)
+    assert result.iloc[20].isna().all()
+    assert result.iloc[21].notna().all()

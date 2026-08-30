@@ -91,7 +91,7 @@ the cloud that projects past the last bar, rather than discarding it.
 
 ## Documentation
 
-The full indicator reference — 122 indicators across 8 categories,
+The full indicator reference — 127 indicators across 8 categories,
 each with its formula, parameters, worked examples and (where one exists) the
 external source it was verified against — is published at:
 

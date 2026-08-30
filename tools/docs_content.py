@@ -3307,4 +3307,138 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.williams_fractals(df["high"], df["low"]).tail(5),
         ],
     },
+    "roofing_filter": {
+        "title": "Roofing Filter",
+        "formula": (
+            "2-pole highpass(Close, hp_length) then SuperSmoother(., lp_length): "
+            "keeps only cycles between lp_length and hp_length bars"
+        ),
+        "about": (
+            "Removes both ends of the spectrum from price: a 2-pole high-pass removes cycles "
+            "longer than `hp_length` (slow drift an oscillator shouldn't react to), and "
+            "[super_smoother](super_smoother.md) then removes cycles shorter than `lp_length` "
+            "(the aliasing noise a plain moving average lets through). What's left is only the "
+            "band of cycles between the two."
+        ),
+        "reading": (
+            "Ehlers designed this specifically to precede other oscillators — feeding this into "
+            "[stoch](stoch.md) or [rsi](rsi.md) instead of raw price makes them react to genuine "
+            "cycles rather than trend or noise."
+        ),
+        "pitfalls": (
+            "Not an oscillator on its own — it has no fixed range and no natural zero line. It's "
+            "a pre-processing filter meant to sit in front of one."
+        ),
+        "example": [
+            lambda df: zeonta.roofing_filter(df["close"]).tail(3),
+        ],
+    },
+    "even_better_sinewave": {
+        "title": "Even Better Sinewave",
+        "formula": (
+            "HP = highpass(Close, hp_length); Filt = SuperSmoother(HP, lp_length); "
+            "EBSW = mean(Filt,Filt[-1],Filt[-2]) / sqrt(mean(Filt^2,Filt[-1]^2,Filt[-2]^2))"
+        ),
+        "about": (
+            "A highpass-then-smoothed cycle extraction, like [roofing_filter](roofing_filter.md), "
+            "but divided by its own recent RMS amplitude so the result traces out an actual sine "
+            'wave regardless of how big the underlying cycle currently is — the "even better" '
+            "in the name is this self-normalization, versus Ehlers' earlier, unnormalized "
+            "Sinewave Indicator."
+        ),
+        "reading": (
+            "Ranges roughly -1 to 1 like a genuine sine wave; zero-line crossings and peaks/"
+            "troughs mark the cycle's own turning points far more cleanly than an un-normalized "
+            "oscillator would in a low-volatility stretch."
+        ),
+        "pitfalls": (
+            "Exactly `0` (not `NaN`) wherever the filtered signal has been flat for three bars "
+            "running — a degenerate but legal `0/0` case, not a division error."
+        ),
+        "example": [
+            lambda df: zeonta.even_better_sinewave(df["close"]).tail(3),
+        ],
+    },
+    "cyber_cycle": {
+        "title": "Cyber Cycle",
+        "formula": (
+            "Smooth = (P+2P[-1]+2P[-2]+P[-3])/6; "
+            "Cycle = (1-a/2)^2*(Smooth-2Smooth[-1]+Smooth[-2]) + 2(1-a)Cycle[-1] - (1-a)^2Cycle[-2]"
+        ),
+        "about": (
+            "A 4-bar weighted smooth of the median price fed into a 2-pole highpass tuned by a "
+            'fixed smoothing constant rather than a length in bars. Ehlers\' own "Adaptive" '
+            "variant instead measures the market's own dominant cycle period (via a Hilbert "
+            "Transform discriminator) and feeds that into the constant bar by bar — that "
+            "measurement stage is the same dominant-cycle apparatus behind MAMA, an indicator "
+            "this library has already declined, so only the fixed-constant form is implemented "
+            "here."
+        ),
+        "reading": (
+            "Oscillates around zero at the market's own dominant cycle rate; the crossover "
+            "between `CYBERCYCLE` and its own one-bar-delayed trigger line is the standard read, "
+            "the same pattern [fisher_transform](fisher_transform.md) uses."
+        ),
+        "pitfalls": (
+            "A fixed smoothing constant means the filter is tuned for one cycle length — it "
+            "will lag or overreact if the market's actual dominant cycle drifts far from what "
+            "`alpha=0.07` implicitly assumes."
+        ),
+        "example": [
+            lambda df: zeonta.cyber_cycle(df["high"], df["low"]).tail(3),
+        ],
+    },
+    "voss_predictive_filter": {
+        "title": "Voss Predictive Filter",
+        "formula": (
+            "Filt = BandPass(Close, period, bandwidth); "
+            "Voss = ((3+order)/2)*Filt - sum((k+1)/order * Voss[-(order-k)], k=0..order-1)"
+        ),
+        "about": (
+            "Band-limits price with a 2-pole bandpass filter, then runs it through a filter "
+            "with *negative group delay* (Henning Voss' \"Universal Negative Group Delay Filter "
+            'for the Prediction of Band-Limited Signals", adapted by Ehlers) to produce a '
+            "second line that leads the bandpass output rather than lagging it."
+        ),
+        "reading": (
+            "Plot `VOSS` against `VOSSFILT` — `VOSS` measurably precedes `VOSSFILT`'s own turns, "
+            "so a crossover between the two at a peak or valley is Ehlers' own suggested signal."
+        ),
+        "pitfalls": (
+            "This cannot see the future — the input must already be band-limited (which the "
+            "bandpass stage guarantees only within its own passband), and a market that isn't "
+            "currently cycling near `period` gives a `VOSS` line with nothing meaningful to lead."
+        ),
+        "example": [
+            lambda df: zeonta.voss_predictive_filter(df["close"]).tail(3),
+        ],
+    },
+    "reflex_trendflex": {
+        "title": "Reflex and Trendflex",
+        "formula": (
+            "Filt = SuperSmoother(Close, length/2); "
+            "Reflex = mean(Filt+k*Slope-Filt[-k]) / sqrt(MS); Trendflex = mean(Filt-Filt[-k]) / sqrt(MS)"
+        ),
+        "about": (
+            "Both start from the same [super_smoother](super_smoother.md) pass at half `length`, "
+            "then average that filtered line's own deviation from a reference over the full "
+            "window — Reflex measures deviation from a straight line drawn across the window "
+            "(stripping trend, isolating cycle swings), Trendflex measures deviation from the "
+            "filtered line's *current* value (keeping trend in)."
+        ),
+        "reading": (
+            'Both self-normalize against their own recent mean square, the same "divide by '
+            'local RMS" idea [even_better_sinewave](even_better_sinewave.md) uses, so their '
+            "scale stays comparable across different volatility regimes — read zero-line "
+            "crossings and extremes the same way you would any zero-lag oscillator."
+        ),
+        "pitfalls": (
+            "Reflex and Trendflex answer different questions from the same input — Reflex "
+            "isolates the cycle, Trendflex keeps the trend — so reading one where you meant the "
+            "other gives a misleading signal even though both are always well-defined together."
+        ),
+        "example": [
+            lambda df: zeonta.reflex_trendflex(df["close"]).tail(3),
+        ],
+    },
 }

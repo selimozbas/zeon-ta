@@ -8,6 +8,37 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Ehlers cycle-filter family (5 indicators, 122 -> 127)**, completing the
+  "next-generation indicators" scope: `roofing_filter` (a 2-pole highpass
+  then a `super_smoother` low-pass, isolating a chosen band of cycles —
+  the exact 2-pole highpass formula verified against Ehlers' own "Swiss
+  Army Knife Indicator" paper), `even_better_sinewave` (a highpass-then-
+  smoothed cycle self-normalized against its own recent RMS amplitude,
+  cross-confirmed identically across two independent reimplementations),
+  `cyber_cycle` (the fixed-smoothing-constant Cyber Cycle from "Cybernetic
+  Analysis for Stocks and Futures" — the "Adaptive" variant, which
+  requires a dominant-cycle-period measurement stage, was scoped out for
+  the same reason MAMA was already declined: that measurement machinery
+  is a substantial, separately nontrivial piece of apparatus on its own),
+  `voss_predictive_filter` (Henning Voss' negative-group-delay predictor
+  as adapted by Ehlers, verified against his own "A Peek Into The Future"
+  paper, full EasyLanguage code included), and `reflex_trendflex` (Ehlers'
+  2020 zero-lag oscillator pair, sharing one SuperSmoother pre-filter).
+  Every formula in this batch was checked against an independent
+  from-scratch reimplementation of the underlying paper/code, not just
+  against the library's own output. `decycler` (Ehlers' "Decyclers",
+  Stocks & Commodities Sept. 2015) was investigated and **declined**:
+  freely available sources disagree on the highpass filter's own alpha
+  scaling (a plain `2*pi/period` argument in some transcriptions, a
+  `0.707*2*pi/period`-scaled one in others) and on default parameters,
+  and the original TASC article is paywalled — the same class of
+  irresolvable disagreement that `thermo` was declined for.
+- Extracted `super_smoother`'s recursive 2-pole low-pass filter into a
+  new shared `_core.super_smoother_values`, so the five new Ehlers tools
+  above (which all use it as a pre-processing stage, some at a
+  non-integer bar count such as half their own period) share the exact
+  same, already-verified recursion rather than a second copy of it.
+
 - **Beyond pandas-ta: 11 indicators sourced directly from academic papers
   and Ehlers' own writing rather than another OSS library's list**
   (102 -> 122, this and the two preceding pandas-ta-classic batches

@@ -96,11 +96,13 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`adx`](indicators/adx.md) | ADX / DMI |
 | [`aroon`](indicators/aroon.md) | Aroon and the Aroon Oscillator |
 | [`chandelier_exit`](indicators/chandelier_exit.md) | Chandelier Exit |
+| [`choppiness_index`](indicators/choppiness_index.md) | Choppiness Index (CHOP) |
 | [`donchian`](indicators/donchian.md) | Donchian Channels |
 | [`ichimoku`](indicators/ichimoku.md) | Ichimoku |
 | [`linreg`](indicators/linreg.md) | Linear Regression Slope & Forecast |
 | [`parabolic_sar`](indicators/parabolic_sar.md) | Parabolic SAR |
 | [`supertrend`](indicators/supertrend.md) | SuperTrend |
+| [`vertical_horizontal_filter`](indicators/vertical_horizontal_filter.md) | Vertical Horizontal Filter (VHF) |
 | [`vortex`](indicators/vortex.md) | Vortex Indicator |
 
 ## Advanced Tools

@@ -441,3 +441,51 @@ def test_linreg_slope_is_flat_on_a_constant_series() -> None:
 def test_linreg_rejects_non_positive_length() -> None:
     with pytest.raises(ValueError, match="must be >="):
         zeonta.linreg([1.0, 2.0, 3.0], length=0)
+
+
+def test_choppiness_index_matches_the_hand_computed_value() -> None:
+    high = [12.0, 13.0, 11.0, 14.0]
+    low = [10.0, 11.0, 9.0, 12.0]
+    close = [11.0, 12.0, 10.0, 13.0]
+    result = zeonta.choppiness_index(high, low, close, length=4)
+    np.testing.assert_allclose(result.iloc[-1], 56.87517618749675)
+
+
+def test_choppiness_index_is_bounded_zero_to_hundred(ohlcv: pd.DataFrame) -> None:
+    result = zeonta.choppiness_index(
+        ohlcv["high"], ohlcv["low"], ohlcv["close"], length=14
+    ).dropna()
+    assert result.between(0.0, 100.0).all()
+
+
+def test_choppiness_index_is_nan_on_a_flat_series() -> None:
+    result = zeonta.choppiness_index([100.0] * 20, [100.0] * 20, [100.0] * 20, length=14)
+    assert result.isna().all()
+
+
+def test_choppiness_index_rejects_a_length_below_two() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.choppiness_index([2.0, 3.0], [1.0, 2.0], [1.5, 2.5], length=1)
+
+
+def test_vertical_horizontal_filter_matches_the_hand_computed_value() -> None:
+    close = [10.0, 11.0, 9.0, 12.0, 13.0]
+    result = zeonta.vertical_horizontal_filter(close, length=4)
+    np.testing.assert_allclose(result.iloc[-1], 0.5714285714285714)
+
+
+def test_vertical_horizontal_filter_is_nan_on_a_flat_series() -> None:
+    result = zeonta.vertical_horizontal_filter([100.0] * 20, length=10)
+    assert result.isna().all()
+
+
+def test_vertical_horizontal_filter_is_higher_for_a_clean_trend_than_a_whipsaw() -> None:
+    """A clean run and a zigzag covering the same net distance: VHF must
+    rank the trending one higher, the read the indicator is built for."""
+    trend = list(range(1, 21))
+    whipsaw = [10.0]
+    for i in range(19):
+        whipsaw.append(whipsaw[-1] + (3.0 if i % 2 == 0 else -2.0))
+    trend_vhf = zeonta.vertical_horizontal_filter(trend, length=10).dropna().iloc[-1]
+    whipsaw_vhf = zeonta.vertical_horizontal_filter(whipsaw, length=10).dropna().iloc[-1]
+    assert trend_vhf > whipsaw_vhf

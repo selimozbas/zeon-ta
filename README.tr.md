@@ -189,11 +189,13 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `adx` | ADX / DMI | [doküman](docs/tr/indicators/adx.md) |
 | `aroon` | Aroon ve Aroon Osilatörü | [doküman](docs/tr/indicators/aroon.md) |
 | `chandelier_exit` | Chandelier Exit | [doküman](docs/tr/indicators/chandelier_exit.md) |
+| `choppiness_index` | Sıkışma Endeksi (CHOP) | [doküman](docs/tr/indicators/choppiness_index.md) |
 | `donchian` | Donchian Kanalları | [doküman](docs/tr/indicators/donchian.md) |
 | `ichimoku` | Ichimoku | [doküman](docs/tr/indicators/ichimoku.md) |
 | `linreg` | Doğrusal Regresyon Eğimi ve Tahmini | [doküman](docs/tr/indicators/linreg.md) |
 | `parabolic_sar` | Parabolik SAR | [doküman](docs/tr/indicators/parabolic_sar.md) |
 | `supertrend` | SuperTrend | [doküman](docs/tr/indicators/supertrend.md) |
+| `vertical_horizontal_filter` | Dikey Yatay Filtre (VHF) | [doküman](docs/tr/indicators/vertical_horizontal_filter.md) |
 | `vortex` | Vortex İndikatörü | [doküman](docs/tr/indicators/vortex.md) |
 
 ### İleri Seviye Araçlar

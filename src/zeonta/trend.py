@@ -33,6 +33,7 @@ from ._core import (
     validate_multiplier,
     wilder_values,
     wrap_frame,
+    wrap_series,
 )
 from .volatility import _true_range_values
 
@@ -40,11 +41,13 @@ __all__ = [
     "adx",
     "aroon",
     "chandelier_exit",
+    "choppiness_index",
     "donchian",
     "ichimoku",
     "linreg",
     "parabolic_sar",
     "supertrend",
+    "vertical_horizontal_filter",
     "vortex",
 ]
 
@@ -939,3 +942,136 @@ def linreg(close: ArrayLike, length: int = 14) -> pd.DataFrame:
         common_index(close),
         order=order,
     )
+
+
+@indicator(
+    category="trend",
+    summary="How much a window's price range came from many small moves versus one big one.",
+    reference="https://www.tradingview.com/support/solutions/43000501980-choppiness-index-chop/",
+    outputs=("CHOP",),
+)
+def choppiness_index(
+    high: ArrayLike, low: ArrayLike, close: ArrayLike, length: int = 14
+) -> pd.Series:
+    """Choppiness Index (E.W. Dreiss).
+
+    ``CHOP = 100 * log10(Sum(TrueRange, n) / (HighestHigh(n) - LowestLow(n))) / log10(n)``.
+    The numerator sums every single bar's own True Range; the denominator
+    is the range of the *whole* window measured start to end. When price
+    zigzags back and forth, the sum of individual bar ranges greatly
+    exceeds the net window range (a lot of motion, little net progress) —
+    when price trends cleanly in one direction, the two stay close to
+    each other (each bar's range adds directly to the net move). Bounded
+    to ``[0, 100]`` by construction.
+
+    Parameters
+    ----------
+    high, low, close:
+        Price series of equal length.
+    length:
+        Look-back window. Must be >= 2 (``log10(1) = 0`` would divide by
+        zero).
+
+    Returns
+    -------
+    pandas.Series
+        Named ``CHOP_{length}``.
+
+    Notes
+    -----
+    Says nothing about *direction*, only about how choppy the window was
+    — the same "measures magnitude, not direction" caveat :func:`atr`
+    carries. Dreiss' own commonly cited reading is above ``61.8``
+    (consolidation) versus below ``38.2`` (a clean trend) — Fibonacci
+    numbers chosen for their familiarity, not derived from the formula
+    itself.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> high = [12.0, 13.0, 11.0, 14.0]
+    >>> low = [10.0, 11.0, 9.0, 12.0]
+    >>> close = [11.0, 12.0, 10.0, 13.0]
+    >>> float(zeonta.choppiness_index(high, low, close, length=4).iloc[-1])
+    56.87517618749675
+
+    References
+    ----------
+    https://www.tradingview.com/support/solutions/43000501980-choppiness-index-chop/
+    """
+    length = validate_length(length, minimum=2)
+    require_aligned_index(high=high, low=low, close=close)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    require_same_length(high=high_values, low=low_values, close=close_values)
+
+    true_range = _true_range_values(high_values, low_values, close_values)
+    sum_tr = rolling_sum(true_range, length)
+    window_range = rolling_max(high_values, length) - rolling_min(low_values, length)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = 100.0 * np.log10(sum_tr / window_range) / np.log10(length)
+
+    return wrap_series(result, common_index(high, low, close), f"CHOP_{length}")
+
+
+@indicator(
+    category="trend",
+    summary="How much of a window's net move survived versus how much back-and-forth it took.",
+    reference="https://www.rdocumentation.org/packages/TTR/versions/0.24.4/topics/VHF",
+    outputs=("VHF",),
+)
+def vertical_horizontal_filter(close: ArrayLike, length: int = 28) -> pd.Series:
+    """Vertical Horizontal Filter (Adam White).
+
+    ``VHF = (HighestClose(n) - LowestClose(n)) / Sum(|Close[i] - Close[i-1]|, n)``.
+    The numerator ("vertical" movement) is the net distance covered by
+    the window's closing range; the denominator ("horizontal" movement)
+    is the total distance covered bar by bar getting there. A window that
+    trends cleanly has both close to each other (little wasted motion); a
+    window that whipsaws back and forth racks up far more bar-by-bar
+    distance than its net closing range shows.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Look-back window. White's own convention uses ``28``.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``VHF_{length}``. ``NaN`` wherever the window's bar-to-bar
+        movement summed to exactly ``0`` (a perfectly flat window).
+
+    Notes
+    -----
+    Reads the *opposite* way from :func:`choppiness_index`: a higher VHF
+    means more trend, not more chop, even though both are built from a
+    similar "net move versus total movement" comparison.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> close = [10.0, 11.0, 9.0, 12.0, 13.0]
+    >>> float(zeonta.vertical_horizontal_filter(close, length=4).iloc[-1])
+    0.5714285714285714
+
+    References
+    ----------
+    https://www.rdocumentation.org/packages/TTR/versions/0.24.4/topics/VHF
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+
+    highest_close = rolling_max(values, length)
+    lowest_close = rolling_min(values, length)
+    bar_moves = np.abs(np.diff(values, prepend=np.nan))
+    total_movement = rolling_sum(bar_moves, length)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = np.where(
+            total_movement > 0.0, (highest_close - lowest_close) / total_movement, np.nan
+        )
+
+    return wrap_series(result, common_index(close), f"VHF_{length}")

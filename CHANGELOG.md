@@ -17,6 +17,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Trend** — two more gap-filling indicators from the same coverage
+  review: `choppiness_index` (E.W. Dreiss — sum of every bar's own True
+  Range against the window's net high-low range, log-scaled to `[0,
+  100]`) and `vertical_horizontal_filter` (Adam White — the same "net
+  move versus total movement" comparison built the opposite way round on
+  the closing range, and read in the opposite direction: higher VHF means
+  *more* trend, unlike CHOP). Registered indicators: 85 -> 87.
+
 - **Volatility** — two more gap-filling indicators from the same coverage
   review: `natr` (Normalized ATR — `atr()` expressed as a percentage of
   price, composed directly from the existing `atr()` rather than

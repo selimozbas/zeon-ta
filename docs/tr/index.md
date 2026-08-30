@@ -96,11 +96,13 @@
 | [`adx`](indicators/adx.md) | ADX / DMI |
 | [`aroon`](indicators/aroon.md) | Aroon ve Aroon Osilatörü |
 | [`chandelier_exit`](indicators/chandelier_exit.md) | Chandelier Exit |
+| [`choppiness_index`](indicators/choppiness_index.md) | Sıkışma Endeksi (CHOP) |
 | [`donchian`](indicators/donchian.md) | Donchian Kanalları |
 | [`ichimoku`](indicators/ichimoku.md) | Ichimoku |
 | [`linreg`](indicators/linreg.md) | Doğrusal Regresyon Eğimi ve Tahmini |
 | [`parabolic_sar`](indicators/parabolic_sar.md) | Parabolik SAR |
 | [`supertrend`](indicators/supertrend.md) | SuperTrend |
+| [`vertical_horizontal_filter`](indicators/vertical_horizontal_filter.md) | Dikey Yatay Filtre (VHF) |
 | [`vortex`](indicators/vortex.md) | Vortex İndikatörü |
 
 ## İleri Seviye Araçlar

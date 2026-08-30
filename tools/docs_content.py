@@ -4485,4 +4485,102 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.mass_index(df["high"], df["low"]).tail(3),
         ],
     },
+    "choppiness_index": {
+        "title_en": "Choppiness Index (CHOP)",
+        "title_tr": "Sıkışma Endeksi (CHOP)",
+        "formula_en": (
+            "CHOP = 100 * log10(Sum(TrueRange, n) / (HighestHigh(n) - LowestLow(n))) / log10(n)"
+        ),
+        "formula_tr": (
+            "CHOP = 100 * log10(Toplam(GerçekAralık, n) / (EnYüksekYüksek(n) - EnDüşükDüşük(n))) "
+            "/ log10(n)"
+        ),
+        "about_en": (
+            "E.W. Dreiss compares two ways of measuring the same window's movement: sum up every "
+            "single bar's own range (a lot, if price zigzags back and forth all window long), "
+            "versus the range of the window measured start to end (small, if all that zigzagging "
+            "cancelled itself out). A high ratio between the two means most of the motion was "
+            "wasted; a ratio close to 1 means the window's bars each contributed net progress in "
+            "the same direction."
+        ),
+        "about_tr": (
+            "E.W. Dreiss, aynı pencerenin hareketini ölçmenin iki yolunu karşılaştırır: her bir "
+            "barın kendi aralığını topla (fiyat pencere boyunca ileri geri gidip geliyorsa bu "
+            "çok olur), buna karşılık pencerenin baştan sona ölçülen aralığı (tüm o gidip "
+            "gelmeler birbirini götürdüyse bu küçük olur). İkisi arasındaki yüksek bir oran, "
+            "hareketin çoğunun boşa gittiği; 1'e yakın bir oran ise pencerenin her barının aynı "
+            "yönde net ilerlemeye katkıda bulunduğu anlamına gelir."
+        ),
+        "reading_en": (
+            "Dreiss' own commonly cited reading: above `61.8` suggests consolidation, below `38.2` "
+            "suggests a clean trend (Fibonacci numbers chosen for familiarity, not derived from "
+            "the formula). Bounded to `[0, 100]` by construction, but says nothing about *which* "
+            "direction a trend runs, the same caveat `atr` carries."
+        ),
+        "reading_tr": (
+            "Dreiss'in kendi yaygın olarak atıf yapılan okuması: `61,8`'in üstü konsolidasyonu, "
+            "`38,2`'nin altı ise temiz bir trendi düşündürür (Fibonacci sayıları formülden "
+            "türetilmemiş, alışkanlık için seçilmiştir). Yapısı gereği `[0, 100]` ile sınırlıdır, "
+            "ama bir trendin *hangi* yönde gittiği konusunda hiçbir şey söylemez — `atr`'nin "
+            "taşıdığı aynı uyarı."
+        ),
+        "pitfalls_en": (
+            "`NaN` on a perfectly flat window (both the numerator and denominator collapse to "
+            "`0`) rather than an undefined division or a misleading number."
+        ),
+        "pitfalls_tr": (
+            "Tamamen düz bir pencerede (hem pay hem payda `0`'a çöker), tanımsız bir bölüm ya da "
+            "yanıltıcı bir sayı yerine `NaN` olur."
+        ),
+        "example": [
+            lambda df: zeonta.choppiness_index(df["high"], df["low"], df["close"]).tail(3),
+        ],
+    },
+    "vertical_horizontal_filter": {
+        "title_en": "Vertical Horizontal Filter (VHF)",
+        "title_tr": "Dikey Yatay Filtre (VHF)",
+        "formula_en": (
+            "VHF = (HighestClose(n) - LowestClose(n)) / Sum(|Close[i] - Close[i-1]|, n)"
+        ),
+        "formula_tr": (
+            "VHF = (EnYüksekKapanış(n) - EnDüşükKapanış(n)) / "
+            "Toplam(|Kapanış[i] - Kapanış[i-1]|, n)"
+        ),
+        "about_en": (
+            "Adam White's version of the same comparison [choppiness_index](choppiness_index.md) "
+            "makes, built the opposite way round and read the opposite direction: the numerator "
+            "('vertical' movement) is the net distance the window's closing range covered; the "
+            "denominator ('horizontal' movement) is the total bar-by-bar distance it took to get "
+            "there."
+        ),
+        "about_tr": (
+            "Adam White'ın [choppiness_index](choppiness_index.md)'in yaptığı aynı "
+            "karşılaştırmanın tersten kurulmuş ve ters yönde okunan versiyonu: pay ('dikey' "
+            "hareket), pencerenin kapanış aralığının kat ettiği net mesafedir; payda ('yatay' "
+            "hareket) ise oraya varmak için gereken toplam bar-başı mesafedir."
+        ),
+        "reading_en": (
+            "Higher means more trend (the opposite direction from CHOP, despite the similar "
+            "construction) — little wasted motion getting from the window's start to its end. "
+            "Lower means more whipsaw: a lot of bar-by-bar distance covered for little net "
+            "progress."
+        ),
+        "reading_tr": (
+            "Daha yüksek olması daha fazla trend anlamına gelir (benzer kuruluma rağmen CHOP'un "
+            "tersi yönde) — pencerenin başından sonuna kadar az boşa giden hareket. Daha düşük "
+            "olması daha fazla yalancı sinyal anlamına gelir: az net ilerleme için kat edilen çok "
+            "fazla bar-başı mesafe."
+        ),
+        "pitfalls_en": (
+            "`NaN` wherever the window's bar-to-bar movement summed to exactly `0` (a perfectly "
+            "flat window), rather than an undefined division."
+        ),
+        "pitfalls_tr": (
+            "Pencerenin bar-başı hareketi tam olarak `0`'a toplandığında (tamamen düz bir "
+            "pencere), tanımsız bir bölüm yerine `NaN` olur."
+        ),
+        "example": [
+            lambda df: zeonta.vertical_horizontal_filter(df["close"]).tail(3),
+        ],
+    },
 }

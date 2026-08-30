@@ -183,11 +183,13 @@ the cloud that projects past the last bar, rather than discarding it.
 | `adx` | ADX / DMI | [docs](docs/en/indicators/adx.md) |
 | `aroon` | Aroon and the Aroon Oscillator | [docs](docs/en/indicators/aroon.md) |
 | `chandelier_exit` | Chandelier Exit | [docs](docs/en/indicators/chandelier_exit.md) |
+| `choppiness_index` | Choppiness Index (CHOP) | [docs](docs/en/indicators/choppiness_index.md) |
 | `donchian` | Donchian Channels | [docs](docs/en/indicators/donchian.md) |
 | `ichimoku` | Ichimoku | [docs](docs/en/indicators/ichimoku.md) |
 | `linreg` | Linear Regression Slope & Forecast | [docs](docs/en/indicators/linreg.md) |
 | `parabolic_sar` | Parabolic SAR | [docs](docs/en/indicators/parabolic_sar.md) |
 | `supertrend` | SuperTrend | [docs](docs/en/indicators/supertrend.md) |
+| `vertical_horizontal_filter` | Vertical Horizontal Filter (VHF) | [docs](docs/en/indicators/vertical_horizontal_filter.md) |
 | `vortex` | Vortex Indicator | [docs](docs/en/indicators/vortex.md) |
 
 ### Advanced Tools

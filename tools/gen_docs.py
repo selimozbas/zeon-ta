@@ -91,6 +91,7 @@ CATEGORY_TITLES = {
     "volatility": ("Volatility", "Oynaklık"),
     "trend": ("Trend Systems", "Trend Sistemleri"),
     "advanced": ("Advanced Tools", "İleri Seviye Araçlar"),
+    "statistics": ("Statistics", "İstatistik"),
 }
 
 

@@ -17,6 +17,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **New `statistics` category** — eight generic statistical indicators,
+  filling gaps found by cross-checking against other libraries' coverage
+  (TA-Lib/pandas-ta-style categories): `stddev`, `variance`, `zscore`,
+  `skewness`, `kurtosis`, `mad` (median, not mean, absolute deviation —
+  distinct from the mean absolute deviation `cci` already uses
+  internally), `log_return`, and `cumulative_return`. Unlike the recent
+  academic batch, these are textbook, single-formula statistics with no
+  verification ambiguity; `skewness` and `kurtosis` specifically use the
+  adjusted Fisher-Pearson formulas, checked to match
+  `pandas.Series.rolling().skew()`/`.kurt()` exactly (pandas already being
+  a dependency, this is a strong, convenient second source). Also
+  reviewed but intentionally not added: `APO` (Absolute Price Oscillator,
+  which is `macd`'s own main line under a different name) and `THERM`
+  (Market Thermometer, not in TA-Lib's own indicator set and not found
+  with a single clearly authoritative source). Registered indicators:
+  67 -> 75.
+
 - **Moving averages** — `emd_imf1` (Huang et al., 1998): the fifth and
   last of the academic indicator batch, and the biggest single
   implementation in it. Empirical Mode Decomposition derives its own

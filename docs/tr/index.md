@@ -105,3 +105,16 @@
 | [`pivot_points`](indicators/pivot_points.md) | Pivot Noktaları |
 | [`sample_entropy`](indicators/sample_entropy.md) | Örnek Entropi (SampEn) |
 | [`vwap`](indicators/vwap.md) | VWAP (Hacim Ağırlıklı Ortalama Fiyat) |
+
+## İstatistik
+
+| İndikatör | Özet |
+| --- | --- |
+| [`cumulative_return`](indicators/cumulative_return.md) | Kümülatif Getiri |
+| [`kurtosis`](indicators/kurtosis.md) | Basıklık |
+| [`log_return`](indicators/log_return.md) | Logaritmik Getiri |
+| [`mad`](indicators/mad.md) | Medyan Mutlak Sapma (MAD) |
+| [`skewness`](indicators/skewness.md) | Çarpıklık |
+| [`stddev`](indicators/stddev.md) | Standart Sapma |
+| [`variance`](indicators/variance.md) | Varyans |
+| [`zscore`](indicators/zscore.md) | Z-Skoru |

@@ -105,3 +105,16 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`pivot_points`](indicators/pivot_points.md) | Pivot Points |
 | [`sample_entropy`](indicators/sample_entropy.md) | Sample Entropy (SampEn) |
 | [`vwap`](indicators/vwap.md) | VWAP (Volume-Weighted Average Price) |
+
+## Statistics
+
+| Indicator | Summary |
+| --- | --- |
+| [`cumulative_return`](indicators/cumulative_return.md) | Cumulative Return |
+| [`kurtosis`](indicators/kurtosis.md) | Kurtosis |
+| [`log_return`](indicators/log_return.md) | Logarithmic Return |
+| [`mad`](indicators/mad.md) | Median Absolute Deviation (MAD) |
+| [`skewness`](indicators/skewness.md) | Skewness |
+| [`stddev`](indicators/stddev.md) | Standard Deviation |
+| [`variance`](indicators/variance.md) | Variance |
+| [`zscore`](indicators/zscore.md) | Z-Score |

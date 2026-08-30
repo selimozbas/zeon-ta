@@ -104,6 +104,14 @@ def test_indicators_with_a_reference() -> None:
         "dfa",
         "sample_entropy",
         "emd_imf1",
+        "stddev",
+        "variance",
+        "zscore",
+        "skewness",
+        "kurtosis",
+        "mad",
+        "log_return",
+        "cumulative_return",
     }
     with_reference = {spec.name for spec in iter_specs() if spec.reference is not None}
     assert with_reference == expected

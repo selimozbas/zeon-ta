@@ -178,6 +178,7 @@ def iter_specs() -> tuple[IndicatorSpec, ...]:
         "volatility": 4,
         "trend": 5,
         "advanced": 6,
+        "statistics": 7,
     }
     return tuple(
         sorted(_REGISTRY.values(), key=lambda spec: (order.get(spec.category, 99), spec.name))

@@ -3705,4 +3705,329 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.emd_imf1(df["close"]).tail(3),
         ],
     },
+    "stddev": {
+        "title_en": "Standard Deviation",
+        "title_tr": "Standart Sapma",
+        "formula_en": "STDDEV = std(Close, n)",
+        "formula_tr": "STDDEV = std(Kapanış, n)",
+        "about_en": (
+            "The building block [bbands](bbands.md) plots as a band around price, exposed here on "
+            "its own. Population standard deviation (`ddof=0`, matching charting-platform "
+            "convention) unless you pass `ddof=1` for the sample estimate."
+        ),
+        "about_tr": (
+            "[bbands](bbands.md)'in fiyatın etrafında bant olarak çizdiği yapı taşı, burada tek "
+            "başına sunulur. Popülasyon standart sapması (`ddof=0`, grafik platformu geleneğine "
+            "uygun) — örneklem tahmini için `ddof=1` verilebilir."
+        ),
+        "reading_en": (
+            "A rising STDDEV means price has gotten choppier over the window; a falling one means "
+            "it has calmed down — the same read [squeeze](squeeze.md) automates for a specific "
+            "band-width comparison."
+        ),
+        "reading_tr": (
+            "Yükselen bir STDDEV, fiyatın pencere boyunca daha çalkantılı hale geldiği; düşen bir "
+            "STDDEV ise sakinleştiği anlamına gelir — [squeeze](squeeze.md)'in belirli bir bant "
+            "genişliği karşılaştırması için otomatikleştirdiği aynı okuma."
+        ),
+        "pitfalls_en": (
+            "A raw price measure, not a percentage — a $5 standard deviation means something "
+            "completely different for a $20 stock than for a $2,000 one. Compare across symbols "
+            "using a percentage-based measure instead, or normalise it yourself."
+        ),
+        "pitfalls_tr": (
+            "Yüzde değil, ham bir fiyat ölçüsüdür — 5 dolarlık bir standart sapma, 20 dolarlık bir "
+            "hisse için 2.000 dolarlık bir hisseden tamamen farklı bir şey ifade eder. Semboller "
+            "arası karşılaştırma için yüzde tabanlı bir ölçü kullanın ya da kendiniz normalize edin."
+        ),
+        "example": [
+            lambda df: zeonta.stddev(df["close"]).tail(3),
+        ],
+    },
+    "variance": {
+        "title_en": "Variance",
+        "title_tr": "Varyans",
+        "formula_en": "VAR = variance(Close, n) = STDDEV(Close, n) ^ 2",
+        "formula_tr": "VAR = varyans(Kapanış, n) = STDDEV(Kapanış, n) ^ 2",
+        "about_en": (
+            "[stddev](stddev.md) before the square root — computed directly here rather than by "
+            "squaring it, but numerically the same relationship. Statistical work (variance is "
+            "additive for independent series; standard deviation is not) reaches for this form; "
+            "charting reaches for `stddev`, since it shares price's own units."
+        ),
+        "about_tr": (
+            "Kare köke girmeden önceki [stddev](stddev.md) — burada onu karesini alarak değil "
+            "doğrudan hesaplanır, ama sayısal olarak aynı ilişkidir. İstatistiksel çalışmalar bu "
+            "biçime yönelir (varyans, bağımsız seriler için toplanabilirdir; standart sapma "
+            "değildir); grafik çizimi ise fiyatla aynı birimi paylaştığı için `stddev`'e yönelir."
+        ),
+        "reading_en": "Same direction as `stddev`, just on a squared (and therefore larger) scale.",
+        "reading_tr": "`stddev` ile aynı yön, sadece karesi alınmış (dolayısıyla daha büyük) bir ölçekte.",
+        "pitfalls_en": (
+            "Squared units — a variance of 4 for a price series in dollars is technically "
+            "'dollars squared', not directly comparable to price itself the way `stddev` is."
+        ),
+        "pitfalls_tr": (
+            "Karesi alınmış birimler — dolar cinsinden bir fiyat serisi için 4 varyans, teknik "
+            "olarak 'dolar kare'dir, `stddev`'in yaptığı gibi doğrudan fiyatla karşılaştırılamaz."
+        ),
+        "example": [
+            lambda df: zeonta.variance(df["close"]).tail(3),
+        ],
+    },
+    "zscore": {
+        "title_en": "Z-Score",
+        "title_tr": "Z-Skoru",
+        "formula_en": "ZSCORE = (Close - SMA(Close, n)) / STDDEV(Close, n)",
+        "formula_tr": "ZSCORE = (Kapanış - SMA(Kapanış, n)) / STDDEV(Kapanış, n)",
+        "about_en": (
+            "The same mean and spread [bbands](bbands.md) plots as two lines around price, "
+            "collapsed into a single number: how many standard deviations price currently sits "
+            "from its own rolling mean."
+        ),
+        "about_tr": (
+            "[bbands](bbands.md)'in fiyatın etrafına iki çizgi olarak çizdiği aynı ortalama ve "
+            "yayılım, tek bir sayıya indirgenmiş: fiyatın şu anda kendi yuvarlanan ortalamasından "
+            "kaç standart sapma uzakta olduğu."
+        ),
+        "reading_en": (
+            "`|ZSCORE| > 2` is a common, if arbitrary, threshold for 'unusually far from the "
+            "mean' — the same idea as touching a Bollinger Band, expressed as a number instead of "
+            "a price level you have to compare visually against the close."
+        ),
+        "reading_tr": (
+            "`|ZSCORE| > 2`, 'ortalamadan alışılmadık derecede uzak' için yaygın, keyfi olsa da bir "
+            "eşiktir — bir Bollinger Bandına dokunmakla aynı fikir, kapanışla görsel olarak "
+            "karşılaştırmanız gereken bir fiyat seviyesi yerine bir sayı olarak ifade edilmiş hali."
+        ),
+        "pitfalls_en": (
+            "Assumes the window's distribution is roughly normal enough for 'standard deviations "
+            "from the mean' to be a meaningful yardstick — a window dominated by one huge outlier "
+            "bar distorts both the mean and the spread it is being measured against."
+        ),
+        "pitfalls_tr": (
+            "Pencerenin dağılımının, 'ortalamadan standart sapma' ölçütünün anlamlı olması için "
+            "kabaca normal olduğunu varsayar — tek bir devasa aykırı bar tarafından domine edilen "
+            "bir pencere, hem ortalamayı hem de karşısında ölçüldüğü yayılımı bozar."
+        ),
+        "example": [
+            lambda df: zeonta.zscore(df["close"]).tail(3),
+        ],
+    },
+    "skewness": {
+        "title_en": "Skewness",
+        "title_tr": "Çarpıklık",
+        "formula_en": (
+            "Adjusted Fisher-Pearson coefficient: G1 = (sqrt(n(n-1))/(n-2)) * (m3/m2^1.5), the "
+            "same bias-adjusted formula pandas' own rolling .skew() uses"
+        ),
+        "formula_tr": (
+            "Düzeltilmiş Fisher-Pearson katsayısı: G1 = (sqrt(n(n-1))/(n-2)) * (m3/m2^1.5), "
+            "pandas'ın kendi yuvarlanan .skew()'inin kullandığı aynı yanlılık-düzeltmeli formül"
+        ),
+        "about_en": (
+            "A shape measure for the window's recent return distribution rather than a level or "
+            "trend measure like most of this library: which side has the longer tail."
+        ),
+        "about_tr": (
+            "Bu kütüphanedeki çoğu gösterge gibi bir seviye ya da trend ölçüsü değil, pencerenin "
+            "son getiri dağılımı için bir şekil ölçüsü: hangi tarafın kuyruğu daha uzun."
+        ),
+        "reading_en": (
+            "Positive skew means the window had a longer right tail — a few outsized up-moves "
+            "against an otherwise typical range, common in a slow grind higher punctuated by sharp "
+            "rallies. Negative skew is the mirror image: a slow grind punctuated by sharp drops, "
+            "the shape many equity indices show over the long run."
+        ),
+        "reading_tr": (
+            "Pozitif çarpıklık, pencerenin daha uzun bir sağ kuyruğu olduğu anlamına gelir — "
+            "aksi halde tipik bir aralığa karşı birkaç aşırı büyük yukarı hareket; keskin ralliyle "
+            "noktalanan yavaş bir yükselişte yaygındır. Negatif çarpıklık aynanın tersi: keskin "
+            "düşüşlerle noktalanan yavaş bir yükseliş, birçok hisse endeksinin uzun vadede "
+            "gösterdiği şekil."
+        ),
+        "pitfalls_en": (
+            "Needs a real spread to mean anything — `NaN` on a perfectly flat window, and noisy on "
+            "a short one (a handful of points barely constrains a third-moment estimate)."
+        ),
+        "pitfalls_tr": (
+            "Bir anlam ifade etmesi için gerçek bir yayılım gerekir — tamamen düz bir pencerede "
+            "`NaN` olur, kısa bir pencerede ise gürültülüdür (bir avuç nokta üçüncü moment "
+            "tahminini zar zor kısıtlar)."
+        ),
+        "example": [
+            lambda df: zeonta.skewness(df["close"]).tail(3),
+        ],
+    },
+    "kurtosis": {
+        "title_en": "Kurtosis",
+        "title_tr": "Basıklık",
+        "formula_en": (
+            "Adjusted Fisher-Pearson excess coefficient: G2 = ((n-1)/((n-2)(n-3))) * ((n+1)g2 + 6), "
+            "g2 = m4/m2^2 - 3, the same bias-adjusted formula pandas' own rolling .kurt() uses"
+        ),
+        "formula_tr": (
+            "Düzeltilmiş Fisher-Pearson fazlalık katsayısı: G2 = ((n-1)/((n-2)(n-3))) * "
+            "((n+1)g2 + 6), g2 = m4/m2^2 - 3, pandas'ın kendi yuvarlanan .kurt()'unun kullandığı "
+            "aynı yanlılık-düzeltmeli formül"
+        ),
+        "about_en": (
+            "[skewness](skewness.md)'s sibling shape measure: not which side has the longer tail, "
+            "but how fat *both* tails are compared to a normal distribution — how much of the "
+            "window's spread comes from a few extreme bars rather than being spread evenly."
+        ),
+        "about_tr": (
+            "[skewness](skewness.md)'in kardeş şekil ölçüsü: hangi tarafın kuyruğunun daha uzun "
+            "olduğu değil, normal bir dağılıma kıyasla *her iki* kuyruğun ne kadar şişman olduğu — "
+            "pencerenin yayılımının ne kadarının eşit dağılmak yerine birkaç uç bardan geldiği."
+        ),
+        "reading_en": (
+            "`0` reads like a normal distribution's tails. Positive (fat tails) means a few extreme "
+            "bars dominate the window's spread — the pattern a market that is mostly quiet with "
+            "occasional sharp shocks produces. Negative (thin tails) means moves have been unusually "
+            "uniform in size."
+        ),
+        "reading_tr": (
+            "`0`, normal bir dağılımın kuyrukları gibi okunur. Pozitif (şişman kuyruklar), "
+            "pencerenin yayılımına birkaç uç barın hakim olduğu anlamına gelir — çoğunlukla sakin "
+            "olup ara sıra keskin şoklar üreten bir piyasanın deseni. Negatif (ince kuyruklar), "
+            "hareketlerin büyüklük olarak alışılmadık derecede tek tip olduğu anlamına gelir."
+        ),
+        "pitfalls_en": (
+            "Needs more points than `skewness` to be stable (a 4th-moment estimate is noisier "
+            "still on a short window) and, like it, is `NaN` on a perfectly flat window."
+        ),
+        "pitfalls_tr": (
+            "Kararlı olması için `skewness`'ten daha fazla noktaya ihtiyaç duyar (dördüncü moment "
+            "tahmini kısa bir pencerede daha da gürültülüdür) ve onun gibi tamamen düz bir "
+            "pencerede `NaN` olur."
+        ),
+        "example": [
+            lambda df: zeonta.kurtosis(df["close"]).tail(3),
+        ],
+    },
+    "mad": {
+        "title_en": "Median Absolute Deviation (MAD)",
+        "title_tr": "Medyan Mutlak Sapma (MAD)",
+        "formula_en": "MAD = median(|Close - median(Close, n)|, n)",
+        "formula_tr": "MAD = medyan(|Kapanış - medyan(Kapanış, n)|, n)",
+        "about_en": (
+            "A spread measure like [stddev](stddev.md), but built from medians instead of means "
+            "and squares at every step — the same robust-to-outliers idea behind using a median "
+            "instead of a mean in the first place, applied twice over."
+        ),
+        "about_tr": (
+            "[stddev](stddev.md) gibi bir yayılım ölçüsü, ama her adımda ortalama ve kare yerine "
+            "medyan kullanılarak inşa edilmiştir — ortalama yerine medyan kullanmanın ardındaki "
+            "aykırı-değerlere-dayanıklılık fikrinin, iki kez uygulanmış hali."
+        ),
+        "reading_en": (
+            "Reads the same direction as `stddev` — rising means the window has gotten choppier — "
+            "but a single wild bar barely moves MAD, while it can dominate `stddev` outright."
+        ),
+        "reading_tr": (
+            "`stddev` ile aynı yönde okunur — yükselmesi pencerenin daha çalkantılı hale geldiği "
+            "anlamına gelir — ama tek bir vahşi bar MAD'ı neredeyse hiç oynatmazken, `stddev`'e "
+            "doğrudan hakim olabilir."
+        ),
+        "pitfalls_en": (
+            "Not the same thing as the mean absolute deviation [cci](cci.md) uses internally, "
+            "despite the similar name — that one averages the deviations, this one takes their "
+            "median, and the two disagree whenever the window has any outliers at all."
+        ),
+        "pitfalls_tr": (
+            "Benzer isme rağmen, [cci](cci.md)'nin dahili olarak kullandığı ortalama mutlak sapma "
+            "ile aynı şey değildir — o, sapmaların ortalamasını alır, bu ise medyanını alır, ve "
+            "pencerede herhangi bir aykırı değer olduğunda ikisi anlaşmaz."
+        ),
+        "example": [
+            lambda df: zeonta.mad(df["close"]).tail(3),
+        ],
+    },
+    "log_return": {
+        "title_en": "Logarithmic Return",
+        "title_tr": "Logaritmik Getiri",
+        "formula_en": "LOGRET = ln(Close[t] / Close[t-n])",
+        "formula_tr": "LOGRET = ln(Kapanış[t] / Kapanış[t-n])",
+        "about_en": (
+            "[roc](roc.md)'s statistical cousin: the same bar-lag comparison, expressed as a log "
+            "ratio instead of a percentage. Log returns are additive across time (summing "
+            "single-bar log returns over a window equals the log return over the whole window), "
+            "which simple percentage change is not — the reason most statistical work on a return "
+            "series (including this library's own `hurst_exponent`, `dfa` and `sample_entropy`) "
+            "uses this form rather than `roc`."
+        ),
+        "about_tr": (
+            "[roc](roc.md)'un istatistiksel kuzeni: aynı bar-gecikmeli karşılaştırma, yüzde yerine "
+            "logaritmik oran olarak ifade edilir. Logaritmik getiriler zaman içinde toplanabilirdir "
+            "(bir pencere boyunca tek-barlık log getirilerin toplamı, tüm pencerenin log getirisine "
+            "eşittir), basit yüzde değişim ise değildir — bu kütüphanenin bir getiri serisi "
+            "üzerindeki istatistiksel çalışmalarının (kendi `hurst_exponent`, `dfa` ve "
+            "`sample_entropy`'si dahil) `roc` yerine bu biçimi kullanmasının nedeni budur."
+        ),
+        "reading_en": (
+            "For everyday-sized moves, a log return and a simple percentage return are nearly "
+            "identical (`ln(1.01) ~= 0.00995`); they diverge more visibly on a large single-bar move."
+        ),
+        "reading_tr": (
+            "Sıradan büyüklükteki hareketler için, logaritmik getiri ile basit yüzde getiri neredeyse "
+            "aynıdır (`ln(1.01) ~= 0,00995`); büyük tek-barlık bir harekette daha belirgin şekilde "
+            "ayrışırlar."
+        ),
+        "pitfalls_en": (
+            "Requires strictly positive prices — `ln` of a zero or negative value is undefined, "
+            "which surfaces here as `NaN` rather than an exception."
+        ),
+        "pitfalls_tr": (
+            "Kesinlikle pozitif fiyatlar gerektirir — sıfır ya da negatif bir değerin `ln`'i "
+            "tanımsızdır, bu burada bir istisna yerine `NaN` olarak ortaya çıkar."
+        ),
+        "example": [
+            lambda df: zeonta.log_return(df["close"]).tail(3),
+        ],
+    },
+    "cumulative_return": {
+        "title_en": "Cumulative Return",
+        "title_tr": "Kümülatif Getiri",
+        "formula_en": "CUMRET = (Close[t] / Close[0] - 1) * 100",
+        "formula_tr": "CUMRET = (Kapanış[t] / Kapanış[0] - 1) * 100",
+        "about_en": (
+            "The odd one out among this library's indicators: every other one only ever looks "
+            "back a fixed *length* of bars, so its value at bar N is stable no matter how much "
+            "history you later add before it. This instead anchors to bar 0 of whatever series "
+            "you pass in — the running percentage gain or loss since the very start of *that* "
+            "series."
+        ),
+        "about_tr": (
+            "Bu kütüphanedeki indikatörler arasında tuhaf olanı: diğer her biri yalnızca sabit "
+            "bir *length* bar geriye bakar, bu yüzden N barındaki değeri, daha sonra önüne ne "
+            "kadar geçmiş eklerseniz ekleyin sabit kalır. Bu ise verdiğiniz serinin 0. barına "
+            "sabitlenir — *o* serinin en başından beri süregelen yüzde kâr ya da zarar."
+        ),
+        "reading_en": (
+            "A straightforward running total return line, the same shape an equity-curve chart "
+            "plots — reads highest where price has run up the most since bar 0, lowest where it "
+            "has run down the most."
+        ),
+        "reading_tr": (
+            "Bir equity-curve grafiğinin çizdiğiyle aynı şekilde, basit bir süregelen toplam getiri "
+            "çizgisi — fiyatın 0. bardan beri en çok yükseldiği yerde en yüksek, en çok düştüğü "
+            "yerde en düşük okunur."
+        ),
+        "pitfalls_en": (
+            "Re-running this on a longer history changes *every* earlier value, since the anchor "
+            "point (bar 0) moves with it — by design, since the question being asked is always "
+            "'return since the start of this series', but a real surprise if you expected the same "
+            "stability every other indicator here gives you."
+        ),
+        "pitfalls_tr": (
+            "Bunu daha uzun bir geçmiş üzerinde yeniden çalıştırmak *her* önceki değeri değiştirir, "
+            "çünkü sabitleme noktası (0. bar) onunla birlikte hareket eder — bu tasarım gereğidir, "
+            "çünkü sorulan soru her zaman 'bu serinin başından beri getiri'dir, ama buradaki her "
+            "diğer indikatörün verdiği aynı kararlılığı bekliyorsanız gerçek bir sürpriz olur."
+        ),
+        "example": [
+            lambda df: zeonta.cumulative_return(df["close"]).tail(3),
+        ],
+    },
 }

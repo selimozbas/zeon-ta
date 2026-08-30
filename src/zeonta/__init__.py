@@ -79,6 +79,16 @@ from .oscillators import (
     ultimate_oscillator,
     williams_r,
 )
+from .statistics import (
+    cumulative_return,
+    kurtosis,
+    log_return,
+    mad,
+    skewness,
+    stddev,
+    variance,
+    zscore,
+)
 from .trend import (
     adx,
     aroon,
@@ -118,6 +128,7 @@ __all__ = [
     "chandelier_exit",
     "cmf",
     "coppock_curve",
+    "cumulative_return",
     "dema",
     "dfa",
     "divergence",
@@ -138,10 +149,13 @@ __all__ = [
     "instantaneous_trendline",
     "kama",
     "keltner",
+    "kurtosis",
     "linreg",
     "list_indicators",
+    "log_return",
     "ma_cross",
     "macd",
+    "mad",
     "mfi",
     "momentum",
     "obv",
@@ -153,10 +167,12 @@ __all__ = [
     "roc",
     "rsi",
     "sample_entropy",
+    "skewness",
     "sma",
     "smma",
     "squeeze",
     "sr_levels",
+    "stddev",
     "stoch",
     "stoch_rsi",
     "super_smoother",
@@ -170,12 +186,14 @@ __all__ = [
     "tsi",
     "ulcer_index",
     "ultimate_oscillator",
+    "variance",
     "vortex",
     "vwap",
     "wavelet_denoise",
     "wavelet_variance",
     "williams_r",
     "wma",
+    "zscore",
 ]
 
 
@@ -193,8 +211,9 @@ def list_indicators() -> pd.DataFrame:
     >>> table = zeonta.list_indicators()
     >>> len(table) >= 30
     True
-    >>> sorted(table['category'].unique())
-    ['advanced', 'foundations', 'moving_averages', 'oscillators', 'trend', 'volatility', 'volume']
+    >>> sorted(table['category'].unique())  # doctest: +NORMALIZE_WHITESPACE
+    ['advanced', 'foundations', 'moving_averages', 'oscillators',
+     'statistics', 'trend', 'volatility', 'volume']
     """
     return pd.DataFrame(
         [

@@ -193,6 +193,19 @@ the cloud that projects past the last bar, rather than discarding it.
 | `sample_entropy` | Sample Entropy (SampEn) | [docs](docs/en/indicators/sample_entropy.md) |
 | `vwap` | VWAP (Volume-Weighted Average Price) | [docs](docs/en/indicators/vwap.md) |
 
+### Statistics
+
+| Indicator | What it does | Docs |
+| --- | --- | --- |
+| `cumulative_return` | Cumulative Return | [docs](docs/en/indicators/cumulative_return.md) |
+| `kurtosis` | Kurtosis | [docs](docs/en/indicators/kurtosis.md) |
+| `log_return` | Logarithmic Return | [docs](docs/en/indicators/log_return.md) |
+| `mad` | Median Absolute Deviation (MAD) | [docs](docs/en/indicators/mad.md) |
+| `skewness` | Skewness | [docs](docs/en/indicators/skewness.md) |
+| `stddev` | Standard Deviation | [docs](docs/en/indicators/stddev.md) |
+| `variance` | Variance | [docs](docs/en/indicators/variance.md) |
+| `zscore` | Z-Score | [docs](docs/en/indicators/zscore.md) |
+
 ### Cross-asset utilities (outside the registry)
 
 `zeonta.cross_asset.wavelet_lead_lag(close_a, close_b, period=20)` compares

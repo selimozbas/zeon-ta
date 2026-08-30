@@ -199,6 +199,19 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `sample_entropy` | Örnek Entropi (SampEn) | [doküman](docs/tr/indicators/sample_entropy.md) |
 | `vwap` | VWAP (Hacim Ağırlıklı Ortalama Fiyat) | [doküman](docs/tr/indicators/vwap.md) |
 
+### İstatistik
+
+| İndikatör | Ne yapar | Doküman |
+| --- | --- | --- |
+| `cumulative_return` | Kümülatif Getiri | [doküman](docs/tr/indicators/cumulative_return.md) |
+| `kurtosis` | Basıklık | [doküman](docs/tr/indicators/kurtosis.md) |
+| `log_return` | Logaritmik Getiri | [doküman](docs/tr/indicators/log_return.md) |
+| `mad` | Medyan Mutlak Sapma (MAD) | [doküman](docs/tr/indicators/mad.md) |
+| `skewness` | Çarpıklık | [doküman](docs/tr/indicators/skewness.md) |
+| `stddev` | Standart Sapma | [doküman](docs/tr/indicators/stddev.md) |
+| `variance` | Varyans | [doküman](docs/tr/indicators/variance.md) |
+| `zscore` | Z-Skoru | [doküman](docs/tr/indicators/zscore.md) |
+
 ### Varlıklar-arası araçlar (registry dışında)
 
 `zeonta.cross_asset.wavelet_lead_lag(close_a, close_b, period=20)`, *iki

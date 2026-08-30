@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Relicensed from GPL-3.0-or-later to MIT.** GPL's copyleft terms cap
+  adoption for a library that aims to be genuinely comprehensive — many
+  organizations disallow GPL-licensed dependencies by policy regardless
+  of technical merit. The project has had a single author to this point,
+  so the switch required no outside consent. `LICENSE`, `pyproject.toml`'s
+  classifier, `CONTRIBUTING.md`'s contribution terms, and the generated
+  README were all updated together.
+
 ### Added
 
 - **Ehlers cycle-filter family (5 indicators, 122 -> 127)**, completing the

@@ -185,4 +185,4 @@ All five must pass. If you added an indicator, also update
 ## License
 
 By contributing, you agree your contribution is licensed under the same
-terms as the project: GPL-3.0-or-later (see [LICENSE](LICENSE)).
+terms as the project: MIT (see [LICENSE](LICENSE)).

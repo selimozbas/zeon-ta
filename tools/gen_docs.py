@@ -361,7 +361,7 @@ report a vulnerability privately.
 
 ## License
 
-GPL-3.0-or-later — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
 """
 
 

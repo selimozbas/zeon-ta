@@ -35,14 +35,18 @@ __all__ = [
     "atr",
     "bbands",
     "chaikin_volatility",
+    "garman_klass_volatility",
     "keltner",
     "mass_index",
     "natr",
+    "parkinson_volatility",
     "relative_volatility_index",
+    "rogers_satchell_volatility",
     "squeeze",
     "true_range",
     "ulcer_index",
     "wavelet_variance",
+    "yang_zhang_volatility",
 ]
 
 
@@ -892,3 +896,303 @@ def accbands(
         common_index(high, low, close),
         order=order,
     )
+
+
+def _sqrt_of_nonnegative_mean(per_bar: np.ndarray, length: int) -> np.ndarray:
+    """``100 * sqrt(rolling_mean(per_bar, length))``.
+
+    NaN instead of a complex result wherever rounding noise pushes an
+    estimator's windowed mean (which is a variance, and so should be
+    non-negative) just below zero.
+    """
+    mean = rolling_mean(per_bar, length)
+    with np.errstate(invalid="ignore"):
+        result = np.where(mean >= 0.0, 100.0 * np.sqrt(mean), np.nan)
+    return np.where(np.isnan(mean), np.nan, result)
+
+
+@indicator(
+    category="volatility",
+    summary="Extreme-value volatility from the high-low range alone, ~5x more efficient than C2C.",
+    outputs=("PARKV",),
+    reference="https://www.ivolatility.com/education/parkinsons-historical-volatility/",
+)
+def parkinson_volatility(high: ArrayLike, low: ArrayLike, length: int = 20) -> pd.Series:
+    """Parkinson's extreme-value volatility estimator (Parkinson, 1980).
+
+    Uses only the high-low range, on the theory that the full path a price
+    took during the bar — not just where it closed — carries information
+    about its variance::
+
+        PARKV = 100 * sqrt(mean(ln(High/Low)^2, length) / (4 * ln(2)))
+
+    Assuming log-normal, zero-drift prices, this is roughly 5x more
+    statistically efficient than the equivalent close-to-close standard
+    deviation (:func:`stddev` of :func:`log_return`) at the same window
+    length — the same "use the whole bar, not just one point" idea
+    :func:`true_range`/:func:`atr` apply to range instead of variance.
+
+    Parameters
+    ----------
+    high, low:
+        Price series of equal length.
+    length:
+        Rolling window, in bars.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``PARKV_{length}``, in percent, not annualized — multiply
+        by ``sqrt(periods_per_year)`` to annualize.
+
+    Notes
+    -----
+    Assumes zero drift and no opening jumps; a strongly trending or
+    gapping series inflates this estimator. :func:`rogers_satchell_volatility`
+    and :func:`yang_zhang_volatility` correct for exactly that.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> high = [12.0, 13.0, 11.0, 14.0, 15.0]
+    >>> low = [10.0, 11.0, 9.0, 12.0, 13.0]
+    >>> round(float(zeonta.parkinson_volatility(high, low, length=3).iloc[-1]), 6)
+    10.079713
+
+    References
+    ----------
+    https://www.ivolatility.com/education/parkinsons-historical-volatility/
+    """
+    length = validate_length(length)
+    require_aligned_index(high=high, low=low)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    require_same_length(high=high_values, low=low_values)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        per_bar = np.log(high_values / low_values) ** 2
+    result = _sqrt_of_nonnegative_mean(per_bar / (4.0 * np.log(2.0)), length)
+    return wrap_series(result, common_index(high, low), f"PARKV_{length}")
+
+
+@indicator(
+    category="volatility",
+    summary="OHLC volatility adding the open-close jump to Parkinson's range term.",
+    outputs=("GKV",),
+    reference="https://www.cmegroup.com/trading/fx/files/a_estimation_of_security_price.pdf",
+)
+def garman_klass_volatility(
+    open: ArrayLike, high: ArrayLike, low: ArrayLike, close: ArrayLike, length: int = 20
+) -> pd.Series:
+    """Garman-Klass volatility estimator (Garman & Klass, 1980).
+
+    Extends :func:`parkinson_volatility` with the open-close jump::
+
+        GKV = 100 * sqrt(mean(0.5*ln(High/Low)^2 - (2*ln(2)-1)*ln(Close/Open)^2, length))
+
+    Using all four OHLC prices rather than the range alone, this is
+    roughly 7.4x more statistically efficient than close-to-close
+    volatility at the same window length, assuming (like
+    :func:`parkinson_volatility`) zero drift and no opening jump.
+
+    Parameters
+    ----------
+    open, high, low, close:
+        Price series of equal length.
+    length:
+        Rolling window, in bars.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``GKV_{length}``, in percent, not annualized — multiply by
+        ``sqrt(periods_per_year)`` to annualize.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> open_ = [10.0, 11.0, 10.5, 12.0, 13.0]
+    >>> high = [12.0, 13.0, 11.0, 14.0, 15.0]
+    >>> low = [10.0, 11.0, 9.0, 12.0, 13.0]
+    >>> close = [11.0, 12.5, 10.0, 13.5, 14.5]
+    >>> result = zeonta.garman_klass_volatility(open_, high, low, close, length=3)
+    >>> round(float(result.iloc[-1]), 6)
+    10.225715
+
+    References
+    ----------
+    https://www.cmegroup.com/trading/fx/files/a_estimation_of_security_price.pdf
+    """
+    length = validate_length(length)
+    require_aligned_index(open=open, high=high, low=low, close=close)
+    open_values = as_array(open, "open")
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    require_same_length(open=open_values, high=high_values, low=low_values, close=close_values)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        per_bar = (
+            0.5 * np.log(high_values / low_values) ** 2
+            - (2.0 * np.log(2.0) - 1.0) * np.log(close_values / open_values) ** 2
+        )
+    result = _sqrt_of_nonnegative_mean(per_bar, length)
+    return wrap_series(result, common_index(open, high, low, close), f"GKV_{length}")
+
+
+def _rogers_satchell_per_bar(
+    open_values: np.ndarray,
+    high_values: np.ndarray,
+    low_values: np.ndarray,
+    close_values: np.ndarray,
+) -> np.ndarray:
+    with np.errstate(divide="ignore", invalid="ignore"):
+        high_term = np.log(high_values / close_values) * np.log(high_values / open_values)
+        low_term = np.log(low_values / close_values) * np.log(low_values / open_values)
+        result: np.ndarray = high_term + low_term
+    return result
+
+
+@indicator(
+    category="volatility",
+    summary="Drift-independent OHLC volatility that stays unbiased in a trending market.",
+    outputs=("RSV",),
+    reference="https://www.luxalgo.com/library/concept/rogers-satchell-estimator/",
+)
+def rogers_satchell_volatility(
+    open: ArrayLike, high: ArrayLike, low: ArrayLike, close: ArrayLike, length: int = 20
+) -> pd.Series:
+    """Rogers-Satchell volatility estimator (Rogers & Satchell, 1991).
+
+    ::
+
+        RSV = 100 * sqrt(mean(ln(High/Close)*ln(High/Open) + ln(Low/Close)*ln(Low/Open), length))
+
+    Unlike :func:`parkinson_volatility` and :func:`garman_klass_volatility`,
+    this does not assume zero drift — it stays unbiased whether the
+    market trended hard or went nowhere over the window, which is the
+    entire reason it exists.
+
+    Parameters
+    ----------
+    open, high, low, close:
+        Price series of equal length.
+    length:
+        Rolling window, in bars.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``RSV_{length}``, in percent, not annualized — multiply by
+        ``sqrt(periods_per_year)`` to annualize.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> open_ = [10.0, 11.0, 10.5, 12.0, 13.0]
+    >>> high = [12.0, 13.0, 11.0, 14.0, 15.0]
+    >>> low = [10.0, 11.0, 9.0, 12.0, 13.0]
+    >>> close = [11.0, 12.5, 10.0, 13.5, 14.5]
+    >>> result = zeonta.rogers_satchell_volatility(open_, high, low, close, length=3)
+    >>> round(float(result.iloc[-1]), 6)
+    10.187028
+
+    References
+    ----------
+    https://www.luxalgo.com/library/concept/rogers-satchell-estimator/
+    """
+    length = validate_length(length)
+    require_aligned_index(open=open, high=high, low=low, close=close)
+    open_values = as_array(open, "open")
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    require_same_length(open=open_values, high=high_values, low=low_values, close=close_values)
+
+    per_bar = _rogers_satchell_per_bar(open_values, high_values, low_values, close_values)
+    result = _sqrt_of_nonnegative_mean(per_bar, length)
+    return wrap_series(result, common_index(open, high, low, close), f"RSV_{length}")
+
+
+@indicator(
+    category="volatility",
+    summary="Drift-independent volatility blending overnight, open-close and Rogers-Satchell.",
+    outputs=("YZV",),
+    reference="https://iwpfinance.com/concepts/technical-analysis/yang-zhang-volatility",
+)
+def yang_zhang_volatility(
+    open: ArrayLike, high: ArrayLike, low: ArrayLike, close: ArrayLike, length: int = 20
+) -> pd.Series:
+    """Yang-Zhang volatility estimator (Yang & Zhang, 2000).
+
+    Splits total variance into three parts and recombines them::
+
+        overnight   = ln(Open / Close[-1])
+        open_close  = ln(Close / Open)
+        k = 0.34 / (1.34 + (length+1)/(length-1))
+        YZV = 100 * sqrt(Var(overnight, length) + k*Var(open_close, length)
+                          + (1-k)*mean(RogersSatchell_per_bar, length))
+
+    where ``Var`` is the sample variance (mean-subtracted, ``ddof=1``).
+    Combining the overnight jump, the intraday drift and
+    :func:`rogers_satchell_volatility`'s own drift-independent range term,
+    this is the most statistically efficient of the four OHLC volatility
+    estimators in this module — roughly 8x more efficient than
+    close-to-close at the same window length — while staying unbiased
+    under both drift and opening jumps, unlike :func:`parkinson_volatility`
+    and :func:`garman_klass_volatility`.
+
+    Parameters
+    ----------
+    open, high, low, close:
+        Price series of equal length.
+    length:
+        Rolling window, in bars. Must be >= 2 (the sample-variance terms
+        need at least two points).
+
+    Returns
+    -------
+    pandas.Series
+        Named ``YZV_{length}``, in percent, not annualized — multiply by
+        ``sqrt(periods_per_year)`` to annualize.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> open_ = [10.0, 11.0, 10.5, 12.0, 13.0]
+    >>> high = [12.0, 13.0, 11.0, 14.0, 15.0]
+    >>> low = [10.0, 11.0, 9.0, 12.0, 13.0]
+    >>> close = [11.0, 12.5, 10.0, 13.5, 14.5]
+    >>> result = zeonta.yang_zhang_volatility(open_, high, low, close, length=3)
+    >>> round(float(result.iloc[-1]), 6)
+    20.640059
+
+    References
+    ----------
+    https://iwpfinance.com/concepts/technical-analysis/yang-zhang-volatility
+    """
+    length = validate_length(length, minimum=2)
+    require_aligned_index(open=open, high=high, low=low, close=close)
+    open_values = as_array(open, "open")
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    require_same_length(open=open_values, high=high_values, low=low_values, close=close_values)
+
+    previous_close = np.concatenate(([np.nan], close_values[:-1]))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        overnight = np.log(open_values / previous_close)
+        open_close = np.log(close_values / open_values)
+    rs_per_bar = _rogers_satchell_per_bar(open_values, high_values, low_values, close_values)
+
+    variance_overnight = rolling_std(overnight, length, ddof=1) ** 2
+    variance_open_close = rolling_std(open_close, length, ddof=1) ** 2
+    mean_rs = rolling_mean(rs_per_bar, length)
+
+    k = 0.34 / (1.34 + (length + 1.0) / (length - 1.0))
+    total_variance = variance_overnight + k * variance_open_close + (1.0 - k) * mean_rs
+    with np.errstate(invalid="ignore"):
+        result = np.where(total_variance >= 0.0, 100.0 * np.sqrt(total_variance), np.nan)
+    result = np.where(np.isnan(total_variance), np.nan, result)
+
+    return wrap_series(result, common_index(open, high, low, close), f"YZV_{length}")

@@ -450,3 +450,94 @@ def test_sample_entropy_is_nan_when_m_leaves_too_few_templates() -> None:
     prices = 100.0 * np.cumprod(1 + rng.normal(scale=0.02, size=60))
     result = zeonta.sample_entropy(prices, window=20, m=19)
     assert result.isna().all()
+
+
+def test_approximate_entropy_is_higher_for_noisy_than_periodic_returns() -> None:
+    """The same shape test as sample_entropy: a periodic series repeats its
+    own short patterns almost exactly, unstructured noise should not."""
+    rng = np.random.default_rng(2)
+    n = 300
+    t = np.arange(n)
+    periodic_returns = 0.01 * np.sin(2 * np.pi * t / 10)
+    noisy_returns = rng.normal(scale=0.01, size=n)
+    periodic_price = 100.0 * np.cumprod(1 + periodic_returns)
+    noisy_price = 100.0 * np.cumprod(1 + noisy_returns)
+
+    periodic_entropy = zeonta.approximate_entropy(periodic_price, window=100).dropna().iloc[-1]
+    noisy_entropy = zeonta.approximate_entropy(noisy_price, window=100).dropna().iloc[-1]
+    assert noisy_entropy > periodic_entropy
+
+
+def test_approximate_entropy_is_never_negative() -> None:
+    """Unlike sample_entropy, self-matches are always counted, so C_i^k is
+    always >= 1/count and phi(m) can never fall below phi(m+1)'s own floor
+    by more than measurement noise allows — this is the property Sample
+    Entropy was built specifically to remove."""
+    rng = np.random.default_rng(0)
+    prices = 100.0 * np.cumprod(1 + rng.normal(scale=0.01, size=150))
+    result = zeonta.approximate_entropy(prices, window=100).dropna()
+    assert (result >= 0.0).all()
+
+
+def test_approximate_entropy_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.approximate_entropy([1.0, 2.0, 3.0], window=100)
+    assert len(result) == 3
+    assert result.isna().all()
+
+
+def test_approximate_entropy_rejects_window_below_twenty() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.approximate_entropy(list(range(1, 50)), window=10)
+
+
+def test_approximate_entropy_rejects_m_below_one() -> None:
+    with pytest.raises(ValueError, match="'m' must be an integer >= 1"):
+        zeonta.approximate_entropy(list(range(1, 50)), m=0)
+
+
+def test_approximate_entropy_rejects_non_positive_r() -> None:
+    with pytest.raises(ValueError, match="'r' must be > 0"):
+        zeonta.approximate_entropy(list(range(1, 50)), r=0.0)
+
+
+def test_permutation_entropy_is_zero_for_a_monotonic_series() -> None:
+    """A strictly increasing series produces exactly one ordinal pattern
+    ("everything ascending") in every window, so its probability is 1 and
+    the entropy is exactly 0."""
+    result = zeonta.permutation_entropy(list(range(1, 130)), window=100, order=3)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0, atol=1e-12)
+
+
+def test_permutation_entropy_is_higher_for_noise_than_a_clean_ramp() -> None:
+    rng = np.random.default_rng(3)
+    ramp = list(range(1, 130))
+    noisy = (100.0 + rng.normal(scale=1.0, size=130)).tolist()
+    ramp_entropy = zeonta.permutation_entropy(ramp, window=100, order=3).dropna().iloc[-1]
+    noisy_entropy = zeonta.permutation_entropy(noisy, window=100, order=3).dropna().iloc[-1]
+    assert noisy_entropy > ramp_entropy
+
+
+def test_permutation_entropy_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.permutation_entropy([1.0, 2.0, 3.0], window=100)
+    assert len(result) == 3
+    assert result.isna().all()
+
+
+def test_permutation_entropy_rejects_window_below_twenty() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.permutation_entropy(list(range(1, 50)), window=10)
+
+
+def test_permutation_entropy_rejects_order_below_two() -> None:
+    with pytest.raises(ValueError, match="'order' must be an integer >= 2"):
+        zeonta.permutation_entropy(list(range(1, 50)), order=1)
+
+
+def test_permutation_entropy_rejects_non_positive_delay() -> None:
+    with pytest.raises(ValueError, match="'delay' must be >="):
+        zeonta.permutation_entropy(list(range(1, 50)), delay=0)
+
+
+def test_permutation_entropy_rejects_a_window_too_small_for_two_patterns() -> None:
+    with pytest.raises(ValueError, match="'window' must be large enough"):
+        zeonta.permutation_entropy(list(range(1, 50)), window=20, order=25, delay=1)

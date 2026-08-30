@@ -148,6 +148,17 @@ def test_indicators_with_a_reference() -> None:
         "vwmacd",
         "kdj",
         "qqe",
+        "parkinson_volatility",
+        "garman_klass_volatility",
+        "rogers_satchell_volatility",
+        "yang_zhang_volatility",
+        "approximate_entropy",
+        "permutation_entropy",
+        "connors_rsi",
+        "ift_rsi",
+        "frama",
+        "gmma",
+        "williams_fractals",
     }
     with_reference = {spec.name for spec in iter_specs() if spec.reference is not None}
     assert with_reference == expected

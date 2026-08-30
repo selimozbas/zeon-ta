@@ -33,6 +33,7 @@ __all__ = [
     "sr_levels",
     "support_resistance",
     "trend_channel",
+    "williams_fractals",
 ]
 
 
@@ -538,5 +539,73 @@ def heikin_ashi(open: ArrayLike, high: ArrayLike, low: ArrayLike, close: ArrayLi
     return wrap_frame(
         dict(zip(order, (ha_open, ha_high, ha_low, ha_close), strict=True)),
         common_index(open, high, low, close),
+        order=order,
+    )
+
+
+@indicator(
+    category="foundations",
+    summary="Bill Williams' 5-bar pivot: a high or low with two lower/higher bars on each side.",
+    outputs=("FRACTALB", "FRACTALU"),
+    reference="https://www.metatrader5.com/en/terminal/help/indicators/bw_indicators/fractals",
+)
+def williams_fractals(high: ArrayLike, low: ArrayLike) -> pd.DataFrame:
+    """Williams Fractals (Bill Williams).
+
+    The same strict local-extremum test :func:`support_resistance` builds
+    on, at that indicator's own ``left=right=2`` — the classic 5-bar
+    window: a bearish fractal is a high exceeding the two highs on each
+    side of it, a bullish fractal a low below the two lows on each side.
+
+    Parameters
+    ----------
+    high, low:
+        Price series of equal length.
+
+    Returns
+    -------
+    pandas.DataFrame
+        ``FRACTALB`` (bearish, the confirmed high) and ``FRACTALU``
+        (bullish, the confirmed low) — each ``NaN`` except at a
+        confirmed fractal bar, where it holds that bar's own high/low.
+
+    Notes
+    -----
+    Unlike :func:`support_resistance`'s ``RES``/``SUP`` columns, this
+    does **not** shift the flag forward or hold it until the next pivot —
+    a fractal is only knowable 2 bars after it happened (the two
+    right-side bars must exist first), so a fractal shown at bar ``i``
+    was not actually confirmed until bar ``i + 2``. Look ahead of the
+    marked bar, not at it, if trading the confirmation.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> high = [10.0, 11.0, 15.0, 11.0, 10.0]
+    >>> low = [8.0, 7.0, 6.0, 7.0, 8.0]
+    >>> out = zeonta.williams_fractals(high, low)
+    >>> float(out['FRACTALB'].iloc[2])
+    15.0
+    >>> float(out['FRACTALU'].iloc[2])
+    6.0
+
+    References
+    ----------
+    https://www.metatrader5.com/en/terminal/help/indicators/bw_indicators/fractals
+    """
+    require_aligned_index(high=high, low=low)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    require_same_length(high=high_values, low=low_values)
+
+    high_flags = _pivot_flags(high_values, 2, 2, high=True)
+    low_flags = _pivot_flags(low_values, 2, 2, high=False)
+    bearish = np.where(high_flags, high_values, np.nan)
+    bullish = np.where(low_flags, low_values, np.nan)
+
+    order = ["FRACTALB", "FRACTALU"]
+    return wrap_frame(
+        dict(zip(order, (bearish, bullish), strict=True)),
+        common_index(high, low),
         order=order,
     )

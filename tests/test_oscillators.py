@@ -658,3 +658,71 @@ def test_qqe_rejects_non_positive_smooth() -> None:
 def test_qqe_rejects_non_positive_factor() -> None:
     with pytest.raises(ValueError, match="'factor' must be > 0"):
         zeonta.qqe(list(range(1, 10)), factor=0.0)
+
+
+def test_connors_rsi_matches_an_independent_reimplementation() -> None:
+    close = [10.0, 10.5, 11.0, 10.8, 11.2, 11.5, 11.3, 11.6, 11.9, 11.7]
+    result = zeonta.connors_rsi(close, rsi_length=3, streak_length=2, rank_length=5)
+    np.testing.assert_allclose(result.iloc[-1], 43.606594399277306)
+
+
+def test_connors_rsi_stays_within_bounds(ohlcv: pd.DataFrame) -> None:
+    result = zeonta.connors_rsi(ohlcv["close"], rank_length=50).dropna()
+    assert result.between(0.0, 100.0).all()
+
+
+def test_connors_rsi_streak_resets_on_an_unchanged_close() -> None:
+    """A flat bar (Close == previous Close) must zero the streak rather
+    than continuing or reversing the run — exercised end to end (no
+    warning, no NaN once warmed up) rather than inspecting the private
+    streak array directly."""
+    close = [10.0, 11.0, 12.0, 12.0, 13.0]
+    result = zeonta.connors_rsi(close, rsi_length=2, streak_length=2, rank_length=2)
+    assert result.iloc[2:].notna().all()
+
+
+def test_connors_rsi_rejects_non_positive_rsi_length() -> None:
+    with pytest.raises(ValueError, match="'rsi_length' must be >="):
+        zeonta.connors_rsi(list(range(1, 20)), rsi_length=0)
+
+
+def test_connors_rsi_rejects_non_positive_streak_length() -> None:
+    with pytest.raises(ValueError, match="'streak_length' must be >="):
+        zeonta.connors_rsi(list(range(1, 20)), streak_length=0)
+
+
+def test_connors_rsi_rejects_rank_length_below_two() -> None:
+    with pytest.raises(ValueError, match="'rank_length' must be >="):
+        zeonta.connors_rsi(list(range(1, 20)), rank_length=1)
+
+
+def test_ift_rsi_matches_an_independent_reimplementation() -> None:
+    result = zeonta.ift_rsi(list(range(1, 40)), length=14, smooth=9)
+    np.testing.assert_allclose(result.iloc[-1], 0.9999092042625951)
+
+
+def test_ift_rsi_is_zero_on_a_perfectly_flat_series() -> None:
+    """RSI itself is neutral (50) on a flat series, which maps to v1=0 and
+    an Inverse Fisher Transform output of exactly 0."""
+    result = zeonta.ift_rsi([50.0] * 30, length=14, smooth=9)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_ift_rsi_stays_within_bounds(ohlcv: pd.DataFrame) -> None:
+    result = zeonta.ift_rsi(ohlcv["close"]).dropna()
+    assert result.between(-1.0, 1.0).all()
+
+
+def test_ift_rsi_settles_near_one_after_a_clean_uptrend() -> None:
+    result = zeonta.ift_rsi(list(range(1, 60)), length=14, smooth=9)
+    assert result.iloc[-1] > 0.99
+
+
+def test_ift_rsi_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="'length' must be >="):
+        zeonta.ift_rsi(list(range(1, 20)), length=0)
+
+
+def test_ift_rsi_rejects_non_positive_smooth() -> None:
+    with pytest.raises(ValueError, match="'smooth' must be >="):
+        zeonta.ift_rsi(list(range(1, 20)), smooth=0)

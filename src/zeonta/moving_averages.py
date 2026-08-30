@@ -23,7 +23,9 @@ from ._core import (
     require_aligned_index,
     require_non_negative,
     require_same_length,
+    rolling_max,
     rolling_mean,
+    rolling_min,
     rolling_sum,
     rolling_wma,
     validate_length,
@@ -41,6 +43,8 @@ __all__ = [
     "ema",
     "ema_ribbon",
     "emd_imf1",
+    "frama",
+    "gmma",
     "hma",
     "instantaneous_trendline",
     "kama",
@@ -1618,3 +1622,185 @@ def vidya(close: ArrayLike, length: int = 14, cmo_length: int = 9) -> pd.Series:
         result[i] = previous
 
     return wrap_series(result, common_index(close), f"VIDYA_{length}_{cmo_length}")
+
+
+@indicator(
+    category="moving_averages",
+    summary="EMA whose smoothing constant adapts to price's own fractal dimension.",
+    outputs=("FRAMA",),
+    reference="https://www.mesasoftware.com/papers/FRAMA.pdf",
+)
+def frama(high: ArrayLike, low: ArrayLike, length: int = 16) -> pd.Series:
+    """Fractal Adaptive Moving Average (John Ehlers, 2005).
+
+    Splits the window in half, measures each half's own high-low range
+    per bar (a proxy for how much "box-counting" the price path needs at
+    that scale — Ehlers' own fractal-dimension argument), and combines
+    them into a fractal dimension between market noise (``D=2``) and a
+    straight line (``D=1``)::
+
+        N1 = (Highest(High, n/2) - Lowest(Low, n/2)) / (n/2)          [most recent half]
+        N2 = (same, for the OLDER half of the window) / (n/2)
+        N3 = (Highest(High, n) - Lowest(Low, n)) / n
+        D = (ln(N1 + N2) - ln(N3)) / ln(2)
+        alpha = clip(exp(-4.6 * (D - 1)), 0.01, 1.0)
+        FRAMA = alpha * (High+Low)/2 + (1 - alpha) * FRAMA[-1]
+
+    At ``D=1`` (a straight trend line) alpha is ``1`` — as fast as an
+    average can be, equal to price itself. At ``D=2`` (pure noise) alpha
+    is ``0.01`` — as slow as a 200-bar SMA. This is the same "let the
+    market's own statistics set the smoothing speed" idea :func:`kama`
+    and :func:`vidya` use, built from range roughness instead of
+    Kaufman's Efficiency Ratio or Chande's CMO.
+
+    Parameters
+    ----------
+    high, low:
+        Price series of equal length.
+    length:
+        Total window split into two equal halves. Must be even and >= 2;
+        Ehlers' own default is ``16``.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``FRAMA_{length}``.
+
+    Notes
+    -----
+    Ehlers' own construction outputs the midpoint price directly for the
+    first ``length`` bars (there is no fixed-window warm-up the way
+    :func:`ema` has) rather than ``NaN`` — the adaptive recursion only
+    starts once a full window is available to measure the fractal
+    dimension from. A degenerate sub-window (``N1``, ``N2`` or ``N3``
+    exactly ``0``, a perfectly flat half) holds the previous fractal
+    dimension rather than producing an undefined ``log(0)``, matching
+    Ehlers' own EasyLanguage code.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> high = list(range(2, 42))
+    >>> low = list(range(0, 40))
+    >>> round(float(zeonta.frama(high, low, length=8).iloc[-1]), 6)
+    38.987829
+
+    References
+    ----------
+    https://www.mesasoftware.com/papers/FRAMA.pdf
+    """
+    length = validate_length(length, minimum=2)
+    if length % 2 != 0:
+        raise ValueError(f"'length' must be an even number, got {length}")
+    require_aligned_index(high=high, low=low)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    size = require_same_length(high=high_values, low=low_values)
+
+    half = length // 2
+    price = (high_values + low_values) / 2.0
+
+    n3 = (rolling_max(high_values, length) - rolling_min(low_values, length)) / length
+    recent_high = rolling_max(high_values, half)
+    recent_low = rolling_min(low_values, half)
+    n1 = (recent_high - recent_low) / half
+    if half < size:
+        older_high = np.concatenate((np.full(half, np.nan), recent_high[:-half]))
+        older_low = np.concatenate((np.full(half, np.nan), recent_low[:-half]))
+    else:
+        older_high = np.full(size, np.nan)
+        older_low = np.full(size, np.nan)
+    n2 = (older_high - older_low) / half
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        raw_dimen = (np.log(n1 + n2) - np.log(n3)) / np.log(2.0)
+    valid_dimen = (n1 > 0.0) & (n2 > 0.0) & (n3 > 0.0)
+    dimen = pd.Series(np.where(valid_dimen, raw_dimen, np.nan)).ffill().to_numpy()
+
+    with np.errstate(over="ignore"):
+        alpha = np.exp(-4.6 * (dimen - 1.0))
+    alpha = np.clip(alpha, 0.01, 1.0)
+
+    result = np.full(size, np.nan, dtype="float64")
+    previous = np.nan
+    for i in range(size):
+        if i < length:
+            previous = price[i]
+            result[i] = previous
+            continue
+        factor = alpha[i]
+        value = price[i]
+        if np.isfinite(value) and np.isfinite(factor) and np.isfinite(previous):
+            previous = factor * value + (1.0 - factor) * previous
+        # else: hold `previous` across a gap rather than propagating NaN.
+        result[i] = previous
+
+    return wrap_series(result, common_index(high, low), f"FRAMA_{length}")
+
+
+#: Guppy's own short-term (speculator) and long-term (investor) EMA groups.
+GMMA_FAST_LENGTHS: tuple[int, ...] = (3, 5, 8, 10, 12, 15)
+GMMA_SLOW_LENGTHS: tuple[int, ...] = (30, 35, 40, 45, 50, 60)
+
+
+@indicator(
+    category="moving_averages",
+    summary="Two six-EMA ribbons (short-term traders, long-term investors) plotted together.",
+    outputs=tuple(
+        [f"GMMAf_{n}" for n in GMMA_FAST_LENGTHS] + [f"GMMAs_{n}" for n in GMMA_SLOW_LENGTHS]
+    ),
+    returns_frame=True,
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/trading-strategies-and-models/"
+        "trading-strategies/moving-average-trading-strategies/"
+        "guppy-multiple-moving-average-an-ma-ribbon-designed-to-tip-the-markets-hand"
+    ),
+)
+def gmma(close: ArrayLike) -> pd.DataFrame:
+    """Guppy Multiple Moving Average (Daryl Guppy).
+
+    Two fixed six-line EMA ribbons (see :func:`ema_ribbon`) plotted together
+    rather than one: a "fast" group (``3, 5, 8, 10, 12, 15``) standing in for
+    short-term trader activity, and a "slow" group
+    (``30, 35, 40, 45, 50, 60``) standing in for longer-term investor
+    activity. Neither group's period is tunable — the whole point of
+    GMMA is this specific pair of period sets, not a generic ribbon.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``GMMAf_3`` .. ``GMMAf_15`` (the fast group) followed by
+        ``GMMAs_30`` .. ``GMMAs_60`` (the slow group).
+
+    Notes
+    -----
+    Compression *within* a group (the six lines converging) signals
+    agreement among that group's own timescales; wide separation
+    *between* the two groups signals a well-established trend. The
+    fast group crossing the slow group is the classic GMMA entry
+    signal, but reading the ribbons' own compression/expansion is the
+    indicator's real purpose.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> list(zeonta.gmma(list(range(70))).columns)  # doctest: +NORMALIZE_WHITESPACE
+    ['GMMAf_3', 'GMMAf_5', 'GMMAf_8', 'GMMAf_10', 'GMMAf_12', 'GMMAf_15',
+     'GMMAs_30', 'GMMAs_35', 'GMMAs_40', 'GMMAs_45', 'GMMAs_50', 'GMMAs_60']
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/trading-strategies-and-models/trading-strategies/moving-average-trading-strategies/guppy-multiple-moving-average-an-ma-ribbon-designed-to-tip-the-markets-hand
+    """
+    values = as_array(close, "close")
+    order = [f"GMMAf_{n}" for n in GMMA_FAST_LENGTHS] + [f"GMMAs_{n}" for n in GMMA_SLOW_LENGTHS]
+    columns = {
+        name: ema_values(values, length)
+        for name, length in zip(order, (*GMMA_FAST_LENGTHS, *GMMA_SLOW_LENGTHS), strict=True)
+    }
+    return wrap_frame(columns, common_index(close), order=order)

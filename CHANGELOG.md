@@ -6,6 +6,36 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Beyond pandas-ta: 11 indicators sourced directly from academic papers
+  and Ehlers' own writing rather than another OSS library's list**
+  (102 -> 122, this and the two preceding pandas-ta-classic batches
+  combined). Four extreme-value OHLC volatility estimators absent from
+  every mainstream TA library checked so far: `parkinson_volatility`
+  (Parkinson, 1980), `garman_klass_volatility` (Garman & Klass, 1980),
+  `rogers_satchell_volatility` (Rogers & Satchell, 1991, the
+  drift-independent one), and `yang_zhang_volatility` (Yang & Zhang,
+  2000, combining overnight, open-close and Rogers-Satchell terms —
+  the most statistically efficient of the four). Two complexity
+  measures alongside the existing `sample_entropy`/`hurst_exponent`/`dfa`
+  family: `approximate_entropy` (Pincus, 1991 — `sample_entropy`'s
+  older, self-match-biased predecessor, kept for the reader who wants
+  the original statistic) and `permutation_entropy` (Bandt & Pompe,
+  2002 — entropy of a window's own ordinal up/down patterns, ignoring
+  move size entirely). Five modern classics with a single,
+  well-documented formula each: `connors_rsi` (Larry Connors —
+  price RSI, streak RSI and a return percent-rank averaged together),
+  `ift_rsi` (Ehlers' Inverse Fisher Transform of RSI, verified directly
+  against his own mesasoftware.com paper), `frama` (Ehlers, 2005 —
+  fractal-dimension-adaptive EMA, also verified against his own paper,
+  including a bug caught by the registry's own short-input contract
+  test: a naive array slice broke when the window was shorter than
+  half the requested length), `gmma` (Daryl Guppy's fixed twelve-EMA
+  ribbon pair), and `williams_fractals` (the same 5-bar pivot test
+  `support_resistance` already builds on, at its own `left=right=2`,
+  confirmed to match it exactly by a dedicated test).
+
 ### Changed
 
 - **Documentation is English-only, and the full indicator reference moved

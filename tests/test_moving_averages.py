@@ -686,3 +686,69 @@ def test_vidya_recovers_after_an_interior_gap() -> None:
     values = [10.0, 11.0, 12.0, np.nan, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0]
     result = zeonta.vidya(values, length=5, cmo_length=4)
     assert result.iloc[8:].notna().all()
+
+
+def test_frama_matches_an_independent_reimplementation() -> None:
+    high = [12.0, 13.0, 11.0, 14.0, 15.0, 13.5, 16.0, 17.0, 15.5, 18.0]
+    low = [10.0, 11.0, 9.0, 12.0, 13.0, 11.5, 14.0, 15.0, 13.5, 16.0]
+    result = zeonta.frama(high, low, length=4)
+    np.testing.assert_allclose(result.iloc[-1], 14.329829179803022)
+
+
+def test_frama_outputs_midpoint_price_for_the_first_length_bars() -> None:
+    high = [12.0, 13.0, 11.0, 14.0, 15.0, 13.5, 16.0, 17.0]
+    low = [10.0, 11.0, 9.0, 12.0, 13.0, 11.5, 14.0, 15.0]
+    result = zeonta.frama(high, low, length=4)
+    expected_midpoint = (np.array(high[:4]) + np.array(low[:4])) / 2.0
+    np.testing.assert_allclose(result.iloc[:4].to_numpy(), expected_midpoint)
+
+
+def test_frama_is_exact_on_a_flat_series() -> None:
+    result = zeonta.frama([10.0] * 20, [10.0] * 20, length=8)
+    np.testing.assert_allclose(result.to_numpy(), 10.0)
+
+
+def test_frama_rejects_an_odd_length() -> None:
+    with pytest.raises(ValueError, match="'length' must be an even number"):
+        zeonta.frama([1.0, 2.0], [0.5, 1.5], length=7)
+
+
+def test_frama_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.frama([1.0, 2.0], [0.5, 1.5], length=0)
+
+
+def test_gmma_columns_are_the_fixed_fast_and_slow_period_sets() -> None:
+    columns = list(zeonta.gmma(list(range(70))).columns)
+    assert columns == [
+        "GMMAf_3",
+        "GMMAf_5",
+        "GMMAf_8",
+        "GMMAf_10",
+        "GMMAf_12",
+        "GMMAf_15",
+        "GMMAs_30",
+        "GMMAs_35",
+        "GMMAs_40",
+        "GMMAs_45",
+        "GMMAs_50",
+        "GMMAs_60",
+    ]
+
+
+def test_gmma_each_column_matches_a_plain_ema_of_the_same_length() -> None:
+    close = list(np.linspace(10, 60, 90))
+    out = zeonta.gmma(close)
+    for length in (*zeonta.GMMA_FAST_LENGTHS, *zeonta.GMMA_SLOW_LENGTHS):
+        prefix = "GMMAf" if length in zeonta.GMMA_FAST_LENGTHS else "GMMAs"
+        np.testing.assert_allclose(
+            out[f"{prefix}_{length}"].to_numpy(),
+            zeonta.ema(close, length=length).to_numpy(),
+            equal_nan=True,
+        )
+
+
+def test_gmma_fast_group_sits_above_slow_group_in_a_clean_uptrend() -> None:
+    close = list(np.linspace(10, 100, 200))
+    out = zeonta.gmma(close).dropna()
+    assert (out["GMMAf_15"] > out["GMMAs_30"]).all()

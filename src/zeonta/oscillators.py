@@ -41,10 +41,12 @@ __all__ = [
     "cci",
     "center_of_gravity",
     "cmo",
+    "connors_rsi",
     "coppock_curve",
     "dpo",
     "elder_ray",
     "fisher_transform",
+    "ift_rsi",
     "kdj",
     "kst",
     "laguerre_rsi",
@@ -2069,3 +2071,173 @@ def qqe(
         common_index(close),
         order=order,
     )
+
+
+def _streak_values(change: np.ndarray) -> np.ndarray:
+    """Signed run length of consecutive up- or down-closes.
+
+    Positive while closes keep rising, negative while they keep falling,
+    reset to ``0`` on an unchanged close or a missing bar.
+    """
+    size = change.shape[0]
+    streak = np.zeros(size, dtype="float64")
+    for i in range(1, size):
+        move = change[i]
+        if not np.isfinite(move) or move == 0.0:
+            streak[i] = 0.0
+        elif move > 0.0:
+            streak[i] = streak[i - 1] + 1.0 if streak[i - 1] > 0.0 else 1.0
+        else:
+            streak[i] = streak[i - 1] - 1.0 if streak[i - 1] < 0.0 else -1.0
+    return streak
+
+
+def _rolling_percent_rank(values: np.ndarray, length: int) -> np.ndarray:
+    """``100 * (count of the last length values <= the newest one) / length``."""
+    size = values.shape[0]
+    result = np.full(size, np.nan, dtype="float64")
+    for i in range(length - 1, size):
+        window = values[i - length + 1 : i + 1]
+        if not np.all(np.isfinite(window)):
+            continue
+        result[i] = 100.0 * np.count_nonzero(window <= window[-1]) / length
+    return result
+
+
+@indicator(
+    category="oscillators",
+    summary="Composite RSI averaging price RSI, streak RSI and a 1-bar-return percent rank.",
+    outputs=("CRSI",),
+    reference="https://www.tradingview.com/support/solutions/43000502017-connors-rsi-crsi/",
+)
+def connors_rsi(
+    close: ArrayLike,
+    rsi_length: int = 3,
+    streak_length: int = 2,
+    rank_length: int = 100,
+) -> pd.Series:
+    """Connors RSI (Larry Connors).
+
+    Averages three independent readings of the same close series, each
+    built for a different kind of short-term mean-reversion signal::
+
+        CRSI = (RSI(Close, rsi_length) + RSI(Streak, streak_length)
+                + PercentRank(ROC(1), rank_length)) / 3
+
+    ``Streak`` is the signed run length of consecutive up- or
+    down-closes (positive while price keeps rising, negative while it
+    keeps falling, reset to ``0`` on an unchanged close), and
+    ``RSI(Streak, ...)`` applies the ordinary :func:`rsi` recursion to
+    that streak series instead of to price — asking "is the current
+    up/down run itself unusually long?" rather than "is price itself
+    overbought?". ``PercentRank(ROC(1), rank_length)`` — the fraction of
+    the last ``rank_length`` one-bar returns that this bar's own return
+    equals or exceeds — adds a third, magnitude-aware read that neither
+    RSI term captures on its own.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    rsi_length:
+        RSI period applied to price. Connors' own default is ``3``.
+    streak_length:
+        RSI period applied to the streak. Connors' own default is ``2``.
+    rank_length:
+        Look-back for the percent-rank term. Connors' own default is ``100``.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``CRSI_{rsi_length}_{streak_length}_{rank_length}``, ranging
+        0-100 like each of its three components.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> close = [10.0, 10.5, 11.0, 10.8, 11.2, 11.5, 11.3, 11.6, 11.9, 11.7]
+    >>> result = zeonta.connors_rsi(close, rsi_length=3, streak_length=2, rank_length=5)
+    >>> round(float(result.iloc[-1]), 6)
+    43.606594
+
+    References
+    ----------
+    https://www.tradingview.com/support/solutions/43000502017-connors-rsi-crsi/
+    """
+    rsi_length = validate_length(rsi_length, "rsi_length")
+    streak_length = validate_length(streak_length, "streak_length")
+    rank_length = validate_length(rank_length, "rank_length", minimum=2)
+
+    values = as_array(close, "close")
+    change = np.diff(values, prepend=np.nan)
+    streak = _streak_values(change)
+
+    rsi_close = rsi(values, length=rsi_length).to_numpy()
+    rsi_streak = rsi(streak, length=streak_length).to_numpy()
+    one_bar_roc = roc(values, length=1).to_numpy()
+    percent_rank = _rolling_percent_rank(one_bar_roc, rank_length)
+
+    result = (rsi_close + rsi_streak + percent_rank) / 3.0
+    suffix = f"{rsi_length}_{streak_length}_{rank_length}"
+    return wrap_series(result, common_index(close), f"CRSI_{suffix}")
+
+
+@indicator(
+    category="oscillators",
+    summary="RSI compressed toward -1/+1 through Ehlers' Inverse Fisher Transform.",
+    outputs=("IFTRSI",),
+    reference="https://www.mesasoftware.com/papers/TheInverseFisherTransform.pdf",
+)
+def ift_rsi(close: ArrayLike, length: int = 14, smooth: int = 9) -> pd.Series:
+    """Inverse Fisher Transform of RSI (John Ehlers).
+
+    Rescales :func:`rsi` to roughly ``[-5, 5]``, smooths it, and squashes
+    the result through the inverse hyperbolic-tangent-shaped Inverse
+    Fisher Transform::
+
+        v1 = 0.1 * (RSI(length) - 50)
+        v2 = WMA(v1, smooth)
+        IFTRSI = (exp(2*v2) - 1) / (exp(2*v2) + 1)
+
+    The transform's own shape does most of the work: near the middle it
+    passes ``v2`` through almost unchanged, but it compresses everything
+    else hard toward ``-1`` or ``+1`` — RSI's own gentle 0-100 curve
+    becomes a near-binary reading, trading nuance for very clear
+    turning-point signals.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        RSI period.
+    smooth:
+        WMA period smoothing the rescaled RSI before the transform.
+        Ehlers' own default is ``9``.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``IFTRSI_{length}_{smooth}``, ranging -1 to 1.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> round(float(zeonta.ift_rsi(list(range(1, 40)), length=14, smooth=9).iloc[-1]), 6)
+    0.999909
+
+    References
+    ----------
+    https://www.mesasoftware.com/papers/TheInverseFisherTransform.pdf
+    """
+    length = validate_length(length)
+    smooth = validate_length(smooth, "smooth")
+
+    rsi_values = rsi(close, length=length).to_numpy()
+    v1 = 0.1 * (rsi_values - 50.0)
+    v2 = rolling_wma(v1, smooth)
+    with np.errstate(over="ignore"):
+        exponent = np.exp(2.0 * v2)
+    result = (exponent - 1.0) / (exponent + 1.0)
+
+    return wrap_series(result, common_index(close), f"IFTRSI_{length}_{smooth}")

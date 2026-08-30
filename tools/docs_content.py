@@ -3047,4 +3047,264 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.qqe(df["close"]).tail(3),
         ],
     },
+    "parkinson_volatility": {
+        "title": "Parkinson Volatility",
+        "formula": "PARKV = 100 * sqrt(mean(ln(High/Low)^2, length) / (4 * ln(2)))",
+        "about": (
+            "An extreme-value volatility estimator built from the high-low range alone, on the "
+            "theory that the whole path a bar took — not just where it closed — carries "
+            "information about its variance. The same idea [true_range](true_range.md)/"
+            "[atr](atr.md) apply to range, applied here to variance instead."
+        ),
+        "reading": (
+            "Read like any volatility measure: a rising value means the market's own bars are "
+            "spanning more ground, falling means they're tightening up. Reported in percent, not "
+            "annualized — multiply by `sqrt(periods_per_year)` if you want the conventional "
+            "annualized figure."
+        ),
+        "pitfalls": (
+            "Assumes zero drift and no opening jumps; a strongly trending or gapping series "
+            "inflates this estimator. [rogers_satchell_volatility](rogers_satchell_volatility.md) "
+            "and [yang_zhang_volatility](yang_zhang_volatility.md) correct for exactly that."
+        ),
+        "example": [
+            lambda df: zeonta.parkinson_volatility(df["high"], df["low"]).tail(3),
+        ],
+    },
+    "garman_klass_volatility": {
+        "title": "Garman-Klass Volatility",
+        "formula": (
+            "GKV = 100 * sqrt(mean(0.5*ln(High/Low)^2 - (2*ln(2)-1)*ln(Close/Open)^2, length))"
+        ),
+        "about": (
+            "Extends [parkinson_volatility](parkinson_volatility.md) with the open-close jump, "
+            "using all four OHLC prices rather than the range alone for a more statistically "
+            "efficient estimate at the same window length."
+        ),
+        "reading": (
+            "Read the same way as `parkinson_volatility` — reported in percent, not annualized."
+        ),
+        "pitfalls": (
+            "Still assumes zero drift and no opening jump, the same limitation "
+            "`parkinson_volatility` has; [yang_zhang_volatility](yang_zhang_volatility.md) is the "
+            "estimator in this family that corrects for both."
+        ),
+        "example": [
+            lambda df: zeonta.garman_klass_volatility(
+                df["open"], df["high"], df["low"], df["close"]
+            ).tail(3),
+        ],
+    },
+    "rogers_satchell_volatility": {
+        "title": "Rogers-Satchell Volatility",
+        "formula": (
+            "RSV = 100 * sqrt(mean(ln(High/Close)*ln(High/Open) "
+            "+ ln(Low/Close)*ln(Low/Open), length))"
+        ),
+        "about": (
+            "An OHLC volatility estimator that, unlike "
+            "[parkinson_volatility](parkinson_volatility.md) and "
+            "[garman_klass_volatility](garman_klass_volatility.md), does not assume zero drift — "
+            "it stays unbiased whether the market trended hard or went nowhere over the window."
+        ),
+        "reading": "Read the same way as the other estimators in this family — percent, not annualized.",
+        "pitfalls": (
+            "Drift-independent but still assumes no opening jump; "
+            "[yang_zhang_volatility](yang_zhang_volatility.md) adds that correction on top of "
+            "this estimator's own range term."
+        ),
+        "example": [
+            lambda df: zeonta.rogers_satchell_volatility(
+                df["open"], df["high"], df["low"], df["close"]
+            ).tail(3),
+        ],
+    },
+    "yang_zhang_volatility": {
+        "title": "Yang-Zhang Volatility",
+        "formula": (
+            "YZV = 100 * sqrt(Var(overnight) + k*Var(open_close) "
+            "+ (1-k)*mean(RogersSatchell_per_bar)), k = 0.34/(1.34+(n+1)/(n-1))"
+        ),
+        "about": (
+            "Combines an overnight-gap variance term, an intraday open-to-close variance term, "
+            "and [rogers_satchell_volatility](rogers_satchell_volatility.md)'s own drift-"
+            "independent range term into the most statistically efficient of the four OHLC "
+            "volatility estimators in this module, while staying unbiased under both drift and "
+            "opening jumps."
+        ),
+        "reading": "Read the same way as the other estimators in this family — percent, not annualized.",
+        "pitfalls": (
+            "Needs `length >= 2` (the variance terms need at least two points), and the "
+            "combining weight `k` is recomputed from `length` itself — it is not a universal "
+            "constant."
+        ),
+        "example": [
+            lambda df: zeonta.yang_zhang_volatility(
+                df["open"], df["high"], df["low"], df["close"]
+            ).tail(3),
+        ],
+    },
+    "approximate_entropy": {
+        "title": "Approximate Entropy",
+        "formula": "ApEn = phi(m) - phi(m+1), phi(k) = mean(ln(C_i^k)) including self-matches",
+        "about": (
+            "[sample_entropy](sample_entropy.md)'s predecessor, and the whole reason Sample "
+            "Entropy exists: it counts template matches the same way but counts a template as "
+            "matching *itself*, which biases every count upward and makes the statistic depend "
+            "more on window length than Sample Entropy does."
+        ),
+        "reading": (
+            "Read like `sample_entropy` — low means the window keeps repeating short patterns, "
+            "high means little structure at all. Kept here for the reader who specifically wants "
+            "Pincus's original statistic; for new work, `sample_entropy` corrects this "
+            "estimator's two known biases."
+        ),
+        "pitfalls": (
+            "Same `O(window^2)` per-bar cost as `sample_entropy` — see `BENCHMARKS.md`. Never "
+            "negative in this self-match-inclusive form, unlike `sample_entropy`, which can be "
+            "undefined when a window's tightest tolerance finds no matches at all."
+        ),
+        "example": [
+            lambda df: zeonta.approximate_entropy(df["close"], window=100).tail(3),
+        ],
+    },
+    "permutation_entropy": {
+        "title": "Permutation Entropy",
+        "formula": "PERMEN = -sum(p_i * ln(p_i)) over each observed ordinal pattern i",
+        "about": (
+            "Reduces every overlapping slice of a rolling window to the *ordering* of its "
+            "values — which of the possible orderings it matches, never their actual size — "
+            "then takes the Shannon entropy of how often each ordering occurred. A different "
+            "way of asking `sample_entropy`'s question, from shape rather than distance."
+        ),
+        "reading": (
+            "A window that keeps repeating the same up/down shape has low permutation entropy; "
+            "one with no preferred shape approaches `ln(order!)`, the maximum for that `order`."
+        ),
+        "pitfalls": (
+            "Reported in nats (natural-log units), not the normalized 0-1 form some other "
+            "software reports — divide by `ln(order!)` to get that. Ties within a window are "
+            "broken by position, the conventional Bandt-Pompe rule, not treated as an error."
+        ),
+        "example": [
+            lambda df: zeonta.permutation_entropy(df["close"], window=100, order=3).tail(3),
+        ],
+    },
+    "connors_rsi": {
+        "title": "Connors RSI",
+        "formula": "CRSI = (RSI(Close) + RSI(Streak) + PercentRank(ROC(1))) / 3",
+        "about": (
+            "Averages three independent short-term readings of the same close series: an "
+            "ordinary [rsi](rsi.md) on price, an `rsi` on the signed streak of consecutive "
+            "up/down closes (is the current run itself unusually long?), and a percent-rank of "
+            "the latest 1-bar return against its own recent history (a magnitude-aware read "
+            "neither RSI term captures)."
+        ),
+        "reading": (
+            "Ranges 0-100 like each of its three components; short-term mean-reversion traders "
+            "commonly treat readings under 10-20 or over 80-90 as extremes."
+        ),
+        "pitfalls": (
+            "Three separate lookbacks (`rsi_length`, `streak_length`, `rank_length`) stack "
+            "together — changing any one changes the blend, not just one leg of it."
+        ),
+        "example": [
+            lambda df: zeonta.connors_rsi(df["close"]).tail(3),
+        ],
+    },
+    "ift_rsi": {
+        "title": "Inverse Fisher Transform of RSI",
+        "formula": (
+            "v1 = 0.1*(RSI-50); v2 = WMA(v1, smooth); IFTRSI = (exp(2*v2)-1)/(exp(2*v2)+1)"
+        ),
+        "about": (
+            "Rescales [rsi](rsi.md) toward zero, smooths it, and squashes the result through "
+            "Ehlers' Inverse Fisher Transform — a curve that passes the middle of its input "
+            "through almost unchanged but compresses everything else hard toward -1 or +1, "
+            "trading RSI's gentle 0-100 curve for a near-binary reading."
+        ),
+        "reading": (
+            "Readings pin close to -1 or +1 far more often than RSI pins near 0 or 100 — that "
+            "compression is the entire point, giving very clear (if less nuanced) turning-point "
+            "signals."
+        ),
+        "pitfalls": (
+            "The compression means small, genuine changes in the underlying RSI can vanish "
+            "once squashed toward an extreme — this trades resolution for clarity, not a free "
+            "improvement on RSI."
+        ),
+        "example": [
+            lambda df: zeonta.ift_rsi(df["close"]).tail(3),
+        ],
+    },
+    "frama": {
+        "title": "Fractal Adaptive Moving Average",
+        "formula": (
+            "D = (ln(N1+N2)-ln(N3))/ln(2); alpha = clip(exp(-4.6*(D-1)), 0.01, 1.0); "
+            "FRAMA = alpha*Price + (1-alpha)*FRAMA[-1]"
+        ),
+        "about": (
+            "An EMA whose smoothing constant adapts to price's own fractal dimension — the "
+            "same self-adjusting idea [kama](kama.md) and [vidya](vidya.md) use, built from "
+            "how rough the high-low range looks at two different window scales instead of "
+            "Kaufman's Efficiency Ratio or Chande's CMO."
+        ),
+        "reading": (
+            "Read like any moving average. At a fractal dimension of 1 (a straight trend) it "
+            "moves as fast as price itself; at a fractal dimension of 2 (pure noise) it moves "
+            "as slowly as a 200-bar SMA — rapidly following real moves while staying flat "
+            "through congestion."
+        ),
+        "pitfalls": (
+            "Outputs the midpoint price directly for the first `length` bars rather than `NaN` "
+            "— there is no fixed-window warm-up the way `ema` has, since the adaptive recursion "
+            "only starts once a full window exists to measure the fractal dimension from."
+        ),
+        "example": [
+            lambda df: zeonta.frama(df["high"], df["low"]).tail(3),
+        ],
+    },
+    "gmma": {
+        "title": "Guppy Multiple Moving Average",
+        "formula": "Two 6-line EMA groups: fast = EMA(3,5,8,10,12,15), slow = EMA(30,35,40,45,50,60)",
+        "about": (
+            "Two fixed six-line [ema_ribbon](ema_ribbon.md)s plotted together rather than one: "
+            "a fast group standing in for short-term trader activity, and a slow group standing "
+            "in for longer-term investor activity. Neither group's periods are tunable — the "
+            "whole point of GMMA is this specific pair of period sets, not a generic ribbon."
+        ),
+        "reading": (
+            "Compression *within* a group signals agreement among that group's own timescales; "
+            "wide separation *between* the two groups signals a well-established trend. The "
+            "fast group crossing the slow group is the classic entry signal, but reading the "
+            "ribbons' own compression/expansion is the indicator's real purpose."
+        ),
+        "pitfalls": "Twelve EMA lines at once is a lot to plot — most charting tools shade each group as a ribbon rather than drawing all twelve individually.",
+        "example": [
+            lambda df: zeonta.gmma(df["close"]).tail(3),
+        ],
+    },
+    "williams_fractals": {
+        "title": "Williams Fractals",
+        "formula": "Bearish: High[i] > 2 highs each side; Bullish: Low[i] < 2 lows each side",
+        "about": (
+            "Bill Williams' 5-bar pivot test — the same strict local-extremum check "
+            "[support_resistance](support_resistance.md) builds on, at that indicator's own "
+            "`left=right=2`."
+        ),
+        "reading": (
+            "A confirmed fractal marks a potential reversal point; Williams' own methodology "
+            "pairs it with the Alligator and Awesome Oscillator rather than trading fractals "
+            "alone."
+        ),
+        "pitfalls": (
+            "A fractal is only knowable 2 bars after it happened (the two right-side bars must "
+            "exist first) — unlike `support_resistance`'s `RES`/`SUP` columns, this does not "
+            "shift the flag forward, so a fractal shown at bar i was not actually confirmed "
+            "until bar i+2. Look ahead of the marked bar, not at it, if trading the confirmation."
+        ),
+        "example": [
+            lambda df: zeonta.williams_fractals(df["high"], df["low"]).tail(5),
+        ],
+    },
 }

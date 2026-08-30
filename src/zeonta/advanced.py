@@ -27,12 +27,14 @@ from .foundations import _pivot_flags
 from .oscillators import rsi
 
 __all__ = [
+    "approximate_entropy",
     "cpr",
     "dfa",
     "divergence",
     "fib_retracement",
     "hurst_exponent",
     "ou_half_life",
+    "permutation_entropy",
     "pivot_points",
     "sample_entropy",
     "vwap",
@@ -981,3 +983,223 @@ def sample_entropy(close: ArrayLike, window: int = 100, m: int = 2, r: Number = 
         result[i - 1] = _sample_entropy_value(segment, m, tolerance)
 
     return wrap_series(result, common_index(close), f"SAMPEN_{window}_{m}_{r}")
+
+
+def _approximate_entropy_value(segment: np.ndarray, m: int, tolerance: float) -> float:
+    """Approximate Entropy of one *segment*, Pincus (1991).
+
+    Unlike :func:`_sample_entropy_value`, self-matches are *not* excluded
+    (a template always matches itself at distance 0) — the very bias
+    Sample Entropy was later designed to remove.
+    """
+
+    def phi(length: int) -> float:
+        count = segment.shape[0] - length + 1
+        index = np.arange(count)[:, None] + np.arange(length)[None, :]
+        vectors = segment[index]
+        distance = np.abs(vectors[:, None, :] - vectors[None, :, :]).max(axis=2)
+        matches = np.count_nonzero(distance <= tolerance, axis=1)
+        return float(np.mean(np.log(matches / count)))
+
+    return phi(m) - phi(m + 1)
+
+
+@indicator(
+    category="advanced",
+    summary="How unpredictable a window is — sample_entropy's older, self-match-biased ancestor.",
+    outputs=("APEN",),
+    reference="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC54970/",
+)
+def approximate_entropy(
+    close: ArrayLike, window: int = 100, m: int = 2, r: Number = 0.2
+) -> pd.Series:
+    """Approximate Entropy (Pincus, 1991).
+
+    :func:`sample_entropy`'s predecessor, and the whole reason Sample
+    Entropy exists: it counts template matches the same way, but counts a
+    template as matching *itself* (distance 0, always within tolerance),
+    which biases every count upward and makes the statistic depend more
+    on the window length than Sample Entropy does::
+
+        ApEn = phi(m) - phi(m+1)
+
+    where ``phi(k) = mean(ln(C_i^k))`` over every length-``k`` template
+    ``i``, and ``C_i^k`` is the fraction of *all* length-``k`` templates
+    (including ``i`` itself) within tolerance ``r`` of template ``i``.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    window:
+        Bars per rolling estimate, in log returns. Must be >= 20.
+    m:
+        Template length. Pincus's own examples use ``2`` (the default);
+        must be >= 1.
+    r:
+        Matching tolerance as a fraction of the window's own standard
+        deviation — the *actual* Chebyshev distance threshold is
+        ``r * std(window)``. ``0.2`` (the default) is the conventional
+        choice, shared with :func:`sample_entropy`. Must be > 0.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``APEN_{window}_{m}_{r}``. Never negative in this
+        self-match-inclusive form (unlike :func:`sample_entropy`, which
+        can be undefined when a window's tightest tolerance still finds
+        no matches at all).
+
+    Notes
+    -----
+    Kept here for the reader who specifically wants Pincus's original
+    statistic — for new work, :func:`sample_entropy` corrects the two
+    biases (self-matches, and sensitivity to window length) this
+    estimator has by construction. Same ``O(window^2)`` per-bar cost as
+    :func:`sample_entropy`; see `BENCHMARKS.md`.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import zeonta
+    >>> rng = np.random.default_rng(0)
+    >>> noisy = 100.0 * np.cumprod(1.0 + rng.normal(scale=0.01, size=150))
+    >>> result = zeonta.approximate_entropy(noisy, window=100)
+    >>> bool(result.iloc[-1] > 0.0)
+    True
+
+    References
+    ----------
+    https://www.ncbi.nlm.nih.gov/pmc/articles/PMC54970/
+    """
+    window = validate_length(window, "window", minimum=20)
+    if not isinstance(m, (int, np.integer)) or isinstance(m, bool) or m < 1:
+        raise ValueError(f"'m' must be an integer >= 1, got {m!r}")
+    r = validate_multiplier(r, "r")
+
+    values = as_array(close, "close")
+    size = values.shape[0]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        log_returns = np.diff(np.log(values), prepend=np.nan)
+
+    result = np.full(size, np.nan, dtype="float64")
+    for i in range(window, size + 1):
+        segment = log_returns[i - window : i]
+        if not np.all(np.isfinite(segment)):
+            continue
+        tolerance = r * segment.std()
+        if tolerance == 0.0:
+            continue
+        result[i - 1] = _approximate_entropy_value(segment, m, tolerance)
+
+    return wrap_series(result, common_index(close), f"APEN_{window}_{m}_{r}")
+
+
+def _ordinal_pattern_counts(segment: np.ndarray, order: int, delay: int) -> np.ndarray:
+    """Count which ordinal pattern each overlapping length-``order`` window matches.
+
+    Windows are spaced ``delay`` bars apart; ties are broken by index, the
+    conventional Bandt-Pompe rule.
+    """
+    span = (order - 1) * delay + 1
+    count = segment.shape[0] - span + 1
+    index = np.arange(count)[:, None] + np.arange(0, span, delay)[None, :]
+    windows = segment[index]
+    # argsort of argsort gives each element's rank within its own window,
+    # which is exactly the ordinal pattern Bandt & Pompe define.
+    patterns = np.argsort(np.argsort(windows, axis=1, kind="stable"), axis=1, kind="stable")
+    _, counts = np.unique(patterns, axis=0, return_counts=True)
+    return counts
+
+
+@indicator(
+    category="advanced",
+    summary="Shannon entropy of a window's own ordinal (up/down) patterns, ignoring move size.",
+    outputs=("PERMEN",),
+    reference="https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.88.174102",
+)
+def permutation_entropy(
+    close: ArrayLike, window: int = 100, order: int = 3, delay: int = 1
+) -> pd.Series:
+    """Permutation Entropy (Bandt & Pompe, 2002).
+
+    Reduces every overlapping length-``order`` slice of a rolling window
+    to the *ordering* of its values (which of the ``order!`` possible
+    orderings it matches — "up then down then up", say — never their
+    actual size), then takes the Shannon entropy of how often each
+    ordering occurred::
+
+        PERMEN = -sum(p_i * ln(p_i))
+
+    over every ordering ``i`` that appeared, ``p_i`` its observed
+    frequency. A window that keeps repeating the same up/down shape has
+    low permutation entropy; one with no preferred shape at all
+    approaches ``ln(order!)``, the maximum for that ``order``.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    window:
+        Bars per rolling estimate. Must be >= 20.
+    order:
+        Length of each ordinal pattern (the embedding dimension). Bandt &
+        Pompe's own examples use ``3`` to ``7``; must be >= 2, and
+        ``window`` must be able to hold at least a few non-overlapping
+        patterns of this length.
+    delay:
+        Spacing, in bars, between the points that make up one pattern.
+        ``1`` (the default) compares consecutive bars; a larger delay
+        looks for the same up/down shape at a slower pace. Must be >= 1.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``PERMEN_{window}_{order}_{delay}``, in nats (natural-log
+        units) — divide by ``ln(order!)`` for the normalized 0-1 form
+        some other software reports instead.
+
+    Notes
+    -----
+    Ties within a window (two equal prices) are broken by position, the
+    conventional Bandt-Pompe rule — a run of identical prices is treated
+    as already sorted, not as an error.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import zeonta
+    >>> rng = np.random.default_rng(0)
+    >>> noisy = 100.0 * np.cumprod(1.0 + rng.normal(scale=0.01, size=150))
+    >>> result = zeonta.permutation_entropy(noisy, window=100, order=3)
+    >>> bool(result.iloc[-1] > 0.0)
+    True
+
+    References
+    ----------
+    https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.88.174102
+    """
+    window = validate_length(window, "window", minimum=20)
+    if not isinstance(order, (int, np.integer)) or isinstance(order, bool) or order < 2:
+        raise ValueError(f"'order' must be an integer >= 2, got {order!r}")
+    delay = validate_length(delay, "delay")
+    span = (order - 1) * delay + 1
+    if window < span + 1:
+        raise ValueError(
+            f"'window' must be large enough to hold at least two length-{order} "
+            f"patterns spaced {delay} apart (>= {span + 1}), got {window}"
+        )
+
+    values = as_array(close, "close")
+    size = values.shape[0]
+
+    result = np.full(size, np.nan, dtype="float64")
+    for i in range(window, size + 1):
+        segment = values[i - window : i]
+        if not np.all(np.isfinite(segment)):
+            continue
+        counts = _ordinal_pattern_counts(segment, order, delay)
+        probabilities = counts / counts.sum()
+        result[i - 1] = float(-np.sum(probabilities * np.log(probabilities)))
+
+    return wrap_series(result, common_index(close), f"PERMEN_{window}_{order}_{delay}")

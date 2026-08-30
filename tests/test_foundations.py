@@ -189,3 +189,39 @@ def test_heikin_ashi_holds_the_prior_open_through_a_gap() -> None:
     out = zeonta.heikin_ashi(open_, high, low, close)
     assert out["HAclose"].iloc[2:].isna().to_numpy().tolist() == [True, False]
     assert out["HAopen"].iloc[3] == out["HAopen"].iloc[2]
+
+
+def test_williams_fractals_matches_the_hand_computed_pivots() -> None:
+    high = [10.0, 11.0, 15.0, 11.0, 10.0]
+    low = [8.0, 7.0, 6.0, 7.0, 8.0]
+    out = zeonta.williams_fractals(high, low)
+    np.testing.assert_allclose(out["FRACTALB"].iloc[2], 15.0)
+    np.testing.assert_allclose(out["FRACTALU"].iloc[2], 6.0)
+    assert out["FRACTALB"].drop(index=2).isna().all()
+    assert out["FRACTALU"].drop(index=2).isna().all()
+
+
+def test_williams_fractals_matches_support_resistance_at_left_right_two() -> None:
+    """Williams Fractals is exactly support_resistance's own pivot test at
+    left=right=2, just reported without the forward shift/hold."""
+    rng = np.random.default_rng(0)
+    high = 100.0 + np.cumsum(rng.normal(size=60))
+    low = high - rng.uniform(0.5, 2.0, size=60)
+    fractals = zeonta.williams_fractals(high, low)
+    pivots = zeonta.support_resistance(high, low, left=2, right=2)
+    np.testing.assert_allclose(
+        fractals["FRACTALB"].to_numpy(), pivots["PIVOTHIGH_2_2"].to_numpy(), equal_nan=True
+    )
+    np.testing.assert_allclose(
+        fractals["FRACTALU"].to_numpy(), pivots["PIVOTLOW_2_2"].to_numpy(), equal_nan=True
+    )
+
+
+def test_williams_fractals_is_nan_when_no_pivot_qualifies() -> None:
+    result = zeonta.williams_fractals([10.0] * 10, [9.0] * 10)
+    assert result.isna().all().all()
+
+
+def test_williams_fractals_needs_at_least_five_bars() -> None:
+    result = zeonta.williams_fractals([10.0, 11.0, 12.0], [8.0, 9.0, 10.0])
+    assert result.isna().all().all()

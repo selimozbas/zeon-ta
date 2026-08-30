@@ -355,3 +355,93 @@ def test_accbands_rejects_non_positive_length() -> None:
 def test_accbands_rejects_non_positive_c() -> None:
     with pytest.raises(ValueError, match="'c' must be > 0"):
         zeonta.accbands([2.0, 3.0], [1.0, 2.0], [1.5, 2.5], c=0.0)
+
+
+# Shared OHLC fixture for the four extreme-value volatility estimators,
+# hand-verified against an independent numpy re-derivation of each formula
+# (not just cross-checked against the implementation's own output).
+_VOL_OPEN = [10.0, 11.0, 10.5, 12.0, 13.0]
+_VOL_HIGH = [12.0, 13.0, 11.0, 14.0, 15.0]
+_VOL_LOW = [10.0, 11.0, 9.0, 12.0, 13.0]
+_VOL_CLOSE = [11.0, 12.5, 10.0, 13.5, 14.5]
+
+
+def test_parkinson_volatility_matches_an_independent_reimplementation() -> None:
+    result = zeonta.parkinson_volatility(_VOL_HIGH, _VOL_LOW, length=3)
+    np.testing.assert_allclose(result.iloc[-1], 10.079712788848116)
+
+
+def test_parkinson_volatility_is_zero_on_a_constant_series() -> None:
+    result = zeonta.parkinson_volatility([12.0] * 10, [12.0] * 10, length=5)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_parkinson_volatility_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.parkinson_volatility([2.0, 3.0], [1.0, 2.0], length=0)
+
+
+def test_garman_klass_volatility_matches_an_independent_reimplementation() -> None:
+    result = zeonta.garman_klass_volatility(_VOL_OPEN, _VOL_HIGH, _VOL_LOW, _VOL_CLOSE, length=3)
+    np.testing.assert_allclose(result.iloc[-1], 10.225715470370217)
+
+
+def test_garman_klass_volatility_is_zero_when_every_bar_is_flat() -> None:
+    result = zeonta.garman_klass_volatility(
+        [10.0] * 10, [10.0] * 10, [10.0] * 10, [10.0] * 10, length=5
+    )
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_garman_klass_volatility_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.garman_klass_volatility([1.0, 2.0], [2.0, 3.0], [1.0, 2.0], [1.5, 2.5], length=0)
+
+
+def test_rogers_satchell_volatility_matches_an_independent_reimplementation() -> None:
+    result = zeonta.rogers_satchell_volatility(_VOL_OPEN, _VOL_HIGH, _VOL_LOW, _VOL_CLOSE, length=3)
+    np.testing.assert_allclose(result.iloc[-1], 10.187028334838402)
+
+
+def test_rogers_satchell_volatility_is_zero_when_every_bar_is_flat() -> None:
+    result = zeonta.rogers_satchell_volatility(
+        [10.0] * 10, [10.0] * 10, [10.0] * 10, [10.0] * 10, length=5
+    )
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_rogers_satchell_volatility_stays_unbiased_under_a_trend() -> None:
+    """The whole point of the estimator: a steadily trending, otherwise
+    calm series should read close to zero, unlike a zero-drift assuming
+    estimator which would inflate on the same data."""
+    trend = [100.0 + i for i in range(30)]
+    result = zeonta.rogers_satchell_volatility(
+        [p - 0.1 for p in trend],
+        [p + 0.5 for p in trend],
+        [p - 0.5 for p in trend],
+        trend,
+        length=10,
+    )
+    assert result.dropna().iloc[-1] < 5.0
+
+
+def test_rogers_satchell_volatility_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.rogers_satchell_volatility([1.0, 2.0], [2.0, 3.0], [1.0, 2.0], [1.5, 2.5], length=0)
+
+
+def test_yang_zhang_volatility_matches_an_independent_reimplementation() -> None:
+    result = zeonta.yang_zhang_volatility(_VOL_OPEN, _VOL_HIGH, _VOL_LOW, _VOL_CLOSE, length=3)
+    np.testing.assert_allclose(result.iloc[-1], 20.640059428520114)
+
+
+def test_yang_zhang_volatility_is_zero_when_every_bar_is_identical() -> None:
+    result = zeonta.yang_zhang_volatility(
+        [10.0] * 10, [10.0] * 10, [10.0] * 10, [10.0] * 10, length=5
+    )
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_yang_zhang_volatility_rejects_length_below_two() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.yang_zhang_volatility([1.0, 2.0], [2.0, 3.0], [1.0, 2.0], [1.5, 2.5], length=1)

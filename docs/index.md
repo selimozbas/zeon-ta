@@ -15,6 +15,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`relative_volume`](indicators/relative_volume.md) | Volume Basics |
 | [`support_resistance`](indicators/support_resistance.md) | Support and Resistance |
 | [`trend_channel`](indicators/trend_channel.md) | Trend Basics and Trend Channels |
+| [`williams_fractals`](indicators/williams_fractals.md) | Williams Fractals |
 
 ## Moving Averages
 
@@ -26,6 +27,8 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`ema`](indicators/ema.md) | Exponential Moving Average (EMA) |
 | [`ema_ribbon`](indicators/ema_ribbon.md) | EMA Ribbon |
 | [`emd_imf1`](indicators/emd_imf1.md) | Empirical Mode Decomposition — First IMF |
+| [`frama`](indicators/frama.md) | Fractal Adaptive Moving Average |
+| [`gmma`](indicators/gmma.md) | Guppy Multiple Moving Average |
 | [`hma`](indicators/hma.md) | Hull Moving Average (HMA) |
 | [`instantaneous_trendline`](indicators/instantaneous_trendline.md) | Instantaneous Trendline (Ehlers) |
 | [`kama`](indicators/kama.md) | Kaufman's Adaptive Moving Average (KAMA) |
@@ -52,10 +55,12 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`cci`](indicators/cci.md) | Commodity Channel Index (CCI) |
 | [`center_of_gravity`](indicators/center_of_gravity.md) | Center of Gravity Oscillator (CG) |
 | [`cmo`](indicators/cmo.md) | Chande Momentum Oscillator (CMO) |
+| [`connors_rsi`](indicators/connors_rsi.md) | Connors RSI |
 | [`coppock_curve`](indicators/coppock_curve.md) | Coppock Curve |
 | [`dpo`](indicators/dpo.md) | Detrended Price Oscillator (DPO) |
 | [`elder_ray`](indicators/elder_ray.md) | Elder Ray (Bull Power / Bear Power) |
 | [`fisher_transform`](indicators/fisher_transform.md) | Fisher Transform (Ehlers) |
+| [`ift_rsi`](indicators/ift_rsi.md) | Inverse Fisher Transform of RSI |
 | [`kdj`](indicators/kdj.md) | KDJ |
 | [`kst`](indicators/kst.md) | Pring's Know Sure Thing (KST) |
 | [`laguerre_rsi`](indicators/laguerre_rsi.md) | Laguerre RSI |
@@ -102,14 +107,18 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`atr`](indicators/atr.md) | Average True Range (ATR) |
 | [`bbands`](indicators/bbands.md) | Bollinger Bands |
 | [`chaikin_volatility`](indicators/chaikin_volatility.md) | Chaikin Volatility (CVI) |
+| [`garman_klass_volatility`](indicators/garman_klass_volatility.md) | Garman-Klass Volatility |
 | [`keltner`](indicators/keltner.md) | Keltner Channels |
 | [`mass_index`](indicators/mass_index.md) | Mass Index |
 | [`natr`](indicators/natr.md) | Normalized Average True Range (NATR) |
+| [`parkinson_volatility`](indicators/parkinson_volatility.md) | Parkinson Volatility |
 | [`relative_volatility_index`](indicators/relative_volatility_index.md) | Relative Volatility Index (RVI) |
+| [`rogers_satchell_volatility`](indicators/rogers_satchell_volatility.md) | Rogers-Satchell Volatility |
 | [`squeeze`](indicators/squeeze.md) | The Squeeze (TTM Squeeze) |
 | [`true_range`](indicators/true_range.md) | True Range |
 | [`ulcer_index`](indicators/ulcer_index.md) | Ulcer Index |
 | [`wavelet_variance`](indicators/wavelet_variance.md) | Multi-Scale Wavelet Variance (MODWT) |
+| [`yang_zhang_volatility`](indicators/yang_zhang_volatility.md) | Yang-Zhang Volatility |
 
 ## Trend Systems
 
@@ -133,12 +142,14 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 
 | Indicator | Summary |
 | --- | --- |
+| [`approximate_entropy`](indicators/approximate_entropy.md) | Approximate Entropy |
 | [`cpr`](indicators/cpr.md) | Central Pivot Range (CPR) |
 | [`dfa`](indicators/dfa.md) | Detrended Fluctuation Analysis (DFA) |
 | [`divergence`](indicators/divergence.md) | Divergences |
 | [`fib_retracement`](indicators/fib_retracement.md) | Fibonacci Retracement |
 | [`hurst_exponent`](indicators/hurst_exponent.md) | Hurst Exponent (Rescaled Range Analysis) |
 | [`ou_half_life`](indicators/ou_half_life.md) | Ornstein-Uhlenbeck Half-Life of Mean Reversion |
+| [`permutation_entropy`](indicators/permutation_entropy.md) | Permutation Entropy |
 | [`pivot_points`](indicators/pivot_points.md) | Pivot Points |
 | [`sample_entropy`](indicators/sample_entropy.md) | Sample Entropy (SampEn) |
 | [`vwap`](indicators/vwap.md) | VWAP (Volume-Weighted Average Price) |

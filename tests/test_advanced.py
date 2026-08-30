@@ -156,6 +156,34 @@ def test_pivot_points_reject_unknown_kind() -> None:
         zeonta.pivot_points([10, 11], [8, 9], [9, 10], kind="camarilla")
 
 
+def test_cpr_pivot_matches_the_classic_pivot_formula() -> None:
+    """CPR's own pivot must agree exactly with pivot_points' classic pivot."""
+    high, low, close = [10.0, 14.0], [8.0, 9.0], [9.6, 13.0]
+    cpr_out = zeonta.cpr(high, low, close)
+    pivot_out = zeonta.pivot_points(high, low, close, kind="classic")
+    np.testing.assert_allclose(cpr_out["CPR_PIVOT"].to_numpy(), pivot_out["PP_classic"].to_numpy())
+
+
+def test_cpr_matches_the_hand_computed_bc_and_tc() -> None:
+    out = zeonta.cpr([10.0, 14.0], [8.0, 9.0], [9.6, 13.0])
+    row = out.iloc[1]
+    np.testing.assert_allclose(row["CPR_PIVOT"], 9.2)
+    np.testing.assert_allclose(row["CPR_BC"], 9.0)
+    np.testing.assert_allclose(row["CPR_TC"], 9.4)
+
+
+def test_cpr_bc_and_tc_are_equidistant_from_the_pivot() -> None:
+    out = zeonta.cpr([10.0, 14.0, 11.0], [8.0, 9.0, 7.0], [9.6, 13.0, 8.0]).dropna()
+    distance_to_bc = out["CPR_PIVOT"] - out["CPR_BC"]
+    distance_to_tc = out["CPR_TC"] - out["CPR_PIVOT"]
+    np.testing.assert_allclose(distance_to_bc.to_numpy(), distance_to_tc.to_numpy())
+
+
+def test_cpr_is_causal() -> None:
+    out = zeonta.cpr([10.0, 11.0], [8.0, 9.0], [9.0, 10.0])
+    assert out.iloc[0].isna().all()
+
+
 def test_regular_bearish_divergence_is_detected() -> None:
     """Price makes a higher high while the oscillator makes a lower high."""
     highs = np.array([1, 2, 5, 2, 1, 2, 6, 2, 1], dtype=float)

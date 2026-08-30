@@ -133,6 +133,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | Indicator | What it does | Docs |
 | --- | --- | --- |
 | `awesome_oscillator` | Awesome Oscillator (AO) | [docs](docs/en/indicators/awesome_oscillator.md) |
+| `bias` | Bias | [docs](docs/en/indicators/bias.md) |
 | `cci` | Commodity Channel Index (CCI) | [docs](docs/en/indicators/cci.md) |
 | `center_of_gravity` | Center of Gravity Oscillator (CG) | [docs](docs/en/indicators/center_of_gravity.md) |
 | `cmo` | Chande Momentum Oscillator (CMO) | [docs](docs/en/indicators/cmo.md) |
@@ -140,11 +141,14 @@ the cloud that projects past the last bar, rather than discarding it.
 | `dpo` | Detrended Price Oscillator (DPO) | [docs](docs/en/indicators/dpo.md) |
 | `elder_ray` | Elder Ray (Bull Power / Bear Power) | [docs](docs/en/indicators/elder_ray.md) |
 | `fisher_transform` | Fisher Transform (Ehlers) | [docs](docs/en/indicators/fisher_transform.md) |
+| `kdj` | KDJ | [docs](docs/en/indicators/kdj.md) |
 | `kst` | Pring's Know Sure Thing (KST) | [docs](docs/en/indicators/kst.md) |
 | `laguerre_rsi` | Laguerre RSI | [docs](docs/en/indicators/laguerre_rsi.md) |
 | `macd` | MACD (Moving Average Convergence Divergence) | [docs](docs/en/indicators/macd.md) |
 | `momentum` | Momentum | [docs](docs/en/indicators/momentum.md) |
 | `ppo` | Percentage Price Oscillator (PPO) | [docs](docs/en/indicators/ppo.md) |
+| `psl` | Psychological Line (PSL) | [docs](docs/en/indicators/psl.md) |
+| `qqe` | Quantitative Qualitative Estimation (QQE) | [docs](docs/en/indicators/qqe.md) |
 | `roc` | Rate of Change (ROC) | [docs](docs/en/indicators/roc.md) |
 | `rsi` | Relative Strength Index (RSI) | [docs](docs/en/indicators/rsi.md) |
 | `rvgi` | Relative Vigor Index (RVGI) | [docs](docs/en/indicators/rvgi.md) |
@@ -172,12 +176,14 @@ the cloud that projects past the last bar, rather than discarding it.
 | `obv` | On-Balance Volume (OBV) | [docs](docs/en/indicators/obv.md) |
 | `pvi` | Positive Volume Index (PVI) | [docs](docs/en/indicators/pvi.md) |
 | `pvt` | Price Volume Trend (PVT) | [docs](docs/en/indicators/pvt.md) |
+| `vwmacd` | Volume-Weighted MACD | [docs](docs/en/indicators/vwmacd.md) |
 | `williams_ad` | Williams Accumulation/Distribution (WAD) | [docs](docs/en/indicators/williams_ad.md) |
 
 ### Volatility
 
 | Indicator | What it does | Docs |
 | --- | --- | --- |
+| `accbands` | Acceleration Bands | [docs](docs/en/indicators/accbands.md) |
 | `atr` | Average True Range (ATR) | [docs](docs/en/indicators/atr.md) |
 | `bbands` | Bollinger Bands | [docs](docs/en/indicators/bbands.md) |
 | `chaikin_volatility` | Chaikin Volatility (CVI) | [docs](docs/en/indicators/chaikin_volatility.md) |
@@ -195,6 +201,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | Indicator | What it does | Docs |
 | --- | --- | --- |
 | `adx` | ADX / DMI | [docs](docs/en/indicators/adx.md) |
+| `adxr` | ADX Rating (ADXR) | [docs](docs/en/indicators/adxr.md) |
 | `aroon` | Aroon and the Aroon Oscillator | [docs](docs/en/indicators/aroon.md) |
 | `chandelier_exit` | Chandelier Exit | [docs](docs/en/indicators/chandelier_exit.md) |
 | `choppiness_index` | Choppiness Index (CHOP) | [docs](docs/en/indicators/choppiness_index.md) |
@@ -202,6 +209,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | `ichimoku` | Ichimoku | [docs](docs/en/indicators/ichimoku.md) |
 | `linreg` | Linear Regression Slope & Forecast | [docs](docs/en/indicators/linreg.md) |
 | `parabolic_sar` | Parabolic SAR | [docs](docs/en/indicators/parabolic_sar.md) |
+| `qstick` | Qstick | [docs](docs/en/indicators/qstick.md) |
 | `supertrend` | SuperTrend | [docs](docs/en/indicators/supertrend.md) |
 | `vertical_horizontal_filter` | Vertical Horizontal Filter (VHF) | [docs](docs/en/indicators/vertical_horizontal_filter.md) |
 | `vortex` | Vortex Indicator | [docs](docs/en/indicators/vortex.md) |
@@ -210,6 +218,7 @@ the cloud that projects past the last bar, rather than discarding it.
 
 | Indicator | What it does | Docs |
 | --- | --- | --- |
+| `cpr` | Central Pivot Range (CPR) | [docs](docs/en/indicators/cpr.md) |
 | `dfa` | Detrended Fluctuation Analysis (DFA) | [docs](docs/en/indicators/dfa.md) |
 | `divergence` | Divergences | [docs](docs/en/indicators/divergence.md) |
 | `fib_retracement` | Fibonacci Retracement | [docs](docs/en/indicators/fib_retracement.md) |

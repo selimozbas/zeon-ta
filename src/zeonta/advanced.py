@@ -27,6 +27,7 @@ from .foundations import _pivot_flags
 from .oscillators import rsi
 
 __all__ = [
+    "cpr",
     "dfa",
     "divergence",
     "fib_retracement",
@@ -337,6 +338,77 @@ def pivot_points(
     order = [f"{name}_{kind}" for name in ("PP", "R1", "R2", "R3", "S1", "S2", "S3")]
     return wrap_frame(
         dict(zip(order, (pivot, r1, r2, r3, s1, s2, s3), strict=True)),
+        common_index(high, low, close),
+        order=order,
+    )
+
+
+@indicator(
+    category="advanced",
+    summary="Classic pivot with a width band (Top/Bottom Central) around it, from the prior bar.",
+    outputs=("CPR_PIVOT", "CPR_BC", "CPR_TC"),
+    reference="https://www.luxalgo.com/library/concept/central-pivot-range/",
+)
+def cpr(high: ArrayLike, low: ArrayLike, close: ArrayLike) -> pd.DataFrame:
+    """Central Pivot Range.
+
+    The same classic pivot :func:`pivot_points` computes, plus a width
+    band built from the same previous bar's range::
+
+        Pivot = (High + Low + Close) / 3
+        BC (Bottom Central) = (High + Low) / 2
+        TC (Top Central) = 2*Pivot - BC
+
+    The CPR's width is always exactly two-thirds of the distance between
+    the previous close and the previous range's midpoint — a narrow CPR
+    means the prior bar closed near the middle of its own range
+    (indecision), a wide one that it closed near an extreme (a
+    directional bar).
+
+    Parameters
+    ----------
+    high, low, close:
+        Price series of equal length.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``CPR_PIVOT``, ``CPR_BC`` (bottom), ``CPR_TC`` (top).
+
+    Notes
+    -----
+    Like :func:`pivot_points`, levels are computed from the **previous**
+    bar and apply to the current one, so the output is causal. Feed daily
+    bars for daily CPR levels, weekly bars for weekly ones.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> out = zeonta.cpr([10.0, 14.0], [8.0, 9.0], [9.6, 13.0])
+    >>> out.iloc[1].round(4).tolist()
+    [9.2, 9.0, 9.4]
+
+    References
+    ----------
+    https://www.luxalgo.com/library/concept/central-pivot-range/
+    """
+    require_aligned_index(high=high, low=low, close=close)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    require_same_length(high=high_values, low=low_values, close=close_values)
+
+    previous_high = np.concatenate(([np.nan], high_values[:-1]))
+    previous_low = np.concatenate(([np.nan], low_values[:-1]))
+    previous_close = np.concatenate(([np.nan], close_values[:-1]))
+
+    pivot = (previous_high + previous_low + previous_close) / 3.0
+    bottom_central = (previous_high + previous_low) / 2.0
+    top_central = 2.0 * pivot - bottom_central
+
+    order = ["CPR_PIVOT", "CPR_BC", "CPR_TC"]
+    return wrap_frame(
+        dict(zip(order, (pivot, bottom_central, top_central), strict=True)),
         common_index(high, low, close),
         order=order,
     )

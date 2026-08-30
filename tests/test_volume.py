@@ -379,3 +379,29 @@ def test_klinger_volume_oscillator_is_zero_with_zero_volume() -> None:
         high, low, close, [0.0] * 5, fast=2, slow=3, signal_length=2
     )
     np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_vwmacd_matches_the_difference_of_two_independent_vwma_calls() -> None:
+    close = [10.0, 11.0, 12.0, 9.0, 14.0, 8.0, 16.0]
+    volume = [100.0, 50.0, 200.0, 30.0, 300.0, 20.0, 400.0]
+    result = zeonta.vwmacd(close, volume, fast=2, slow=3, signal=2)
+    expected = zeonta.vwma(close, volume, length=2) - zeonta.vwma(close, volume, length=3)
+    np.testing.assert_allclose(
+        result["VWMACD_2_3_2"].to_numpy(), expected.to_numpy(), equal_nan=True
+    )
+
+
+def test_vwmacd_histogram_is_line_minus_signal() -> None:
+    close = [10.0, 11.0, 12.0, 9.0, 14.0, 8.0, 16.0]
+    volume = [100.0, 50.0, 200.0, 30.0, 300.0, 20.0, 400.0]
+    result = zeonta.vwmacd(close, volume, fast=2, slow=3, signal=2)
+    np.testing.assert_allclose(
+        result["VWMACDh_2_3_2"].to_numpy(),
+        (result["VWMACD_2_3_2"] - result["VWMACDs_2_3_2"]).to_numpy(),
+        equal_nan=True,
+    )
+
+
+def test_vwmacd_rejects_fast_not_smaller_than_slow() -> None:
+    with pytest.raises(ValueError, match="'fast' must be smaller than 'slow'"):
+        zeonta.vwmacd([1.0] * 10, [100.0] * 10, fast=10, slow=10)

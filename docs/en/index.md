@@ -46,6 +46,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | Indicator | Summary |
 | --- | --- |
 | [`awesome_oscillator`](indicators/awesome_oscillator.md) | Awesome Oscillator (AO) |
+| [`bias`](indicators/bias.md) | Bias |
 | [`cci`](indicators/cci.md) | Commodity Channel Index (CCI) |
 | [`center_of_gravity`](indicators/center_of_gravity.md) | Center of Gravity Oscillator (CG) |
 | [`cmo`](indicators/cmo.md) | Chande Momentum Oscillator (CMO) |
@@ -53,11 +54,14 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`dpo`](indicators/dpo.md) | Detrended Price Oscillator (DPO) |
 | [`elder_ray`](indicators/elder_ray.md) | Elder Ray (Bull Power / Bear Power) |
 | [`fisher_transform`](indicators/fisher_transform.md) | Fisher Transform (Ehlers) |
+| [`kdj`](indicators/kdj.md) | KDJ |
 | [`kst`](indicators/kst.md) | Pring's Know Sure Thing (KST) |
 | [`laguerre_rsi`](indicators/laguerre_rsi.md) | Laguerre RSI |
 | [`macd`](indicators/macd.md) | MACD (Moving Average Convergence Divergence) |
 | [`momentum`](indicators/momentum.md) | Momentum |
 | [`ppo`](indicators/ppo.md) | Percentage Price Oscillator (PPO) |
+| [`psl`](indicators/psl.md) | Psychological Line (PSL) |
+| [`qqe`](indicators/qqe.md) | Quantitative Qualitative Estimation (QQE) |
 | [`roc`](indicators/roc.md) | Rate of Change (ROC) |
 | [`rsi`](indicators/rsi.md) | Relative Strength Index (RSI) |
 | [`rvgi`](indicators/rvgi.md) | Relative Vigor Index (RVGI) |
@@ -85,12 +89,14 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`obv`](indicators/obv.md) | On-Balance Volume (OBV) |
 | [`pvi`](indicators/pvi.md) | Positive Volume Index (PVI) |
 | [`pvt`](indicators/pvt.md) | Price Volume Trend (PVT) |
+| [`vwmacd`](indicators/vwmacd.md) | Volume-Weighted MACD |
 | [`williams_ad`](indicators/williams_ad.md) | Williams Accumulation/Distribution (WAD) |
 
 ## Volatility
 
 | Indicator | Summary |
 | --- | --- |
+| [`accbands`](indicators/accbands.md) | Acceleration Bands |
 | [`atr`](indicators/atr.md) | Average True Range (ATR) |
 | [`bbands`](indicators/bbands.md) | Bollinger Bands |
 | [`chaikin_volatility`](indicators/chaikin_volatility.md) | Chaikin Volatility (CVI) |
@@ -108,6 +114,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | Indicator | Summary |
 | --- | --- |
 | [`adx`](indicators/adx.md) | ADX / DMI |
+| [`adxr`](indicators/adxr.md) | ADX Rating (ADXR) |
 | [`aroon`](indicators/aroon.md) | Aroon and the Aroon Oscillator |
 | [`chandelier_exit`](indicators/chandelier_exit.md) | Chandelier Exit |
 | [`choppiness_index`](indicators/choppiness_index.md) | Choppiness Index (CHOP) |
@@ -115,6 +122,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`ichimoku`](indicators/ichimoku.md) | Ichimoku |
 | [`linreg`](indicators/linreg.md) | Linear Regression Slope & Forecast |
 | [`parabolic_sar`](indicators/parabolic_sar.md) | Parabolic SAR |
+| [`qstick`](indicators/qstick.md) | Qstick |
 | [`supertrend`](indicators/supertrend.md) | SuperTrend |
 | [`vertical_horizontal_filter`](indicators/vertical_horizontal_filter.md) | Vertical Horizontal Filter (VHF) |
 | [`vortex`](indicators/vortex.md) | Vortex Indicator |
@@ -123,6 +131,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 
 | Indicator | Summary |
 | --- | --- |
+| [`cpr`](indicators/cpr.md) | Central Pivot Range (CPR) |
 | [`dfa`](indicators/dfa.md) | Detrended Fluctuation Analysis (DFA) |
 | [`divergence`](indicators/divergence.md) | Divergences |
 | [`fib_retracement`](indicators/fib_retracement.md) | Fibonacci Retracement |

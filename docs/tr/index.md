@@ -46,6 +46,7 @@
 | İndikatör | Özet |
 | --- | --- |
 | [`awesome_oscillator`](indicators/awesome_oscillator.md) | Awesome Osilatör (AO) |
+| [`bias`](indicators/bias.md) | Sapma (Bias) |
 | [`cci`](indicators/cci.md) | Emtia Kanal Endeksi (CCI) |
 | [`center_of_gravity`](indicators/center_of_gravity.md) | Ağırlık Merkezi Osilatörü (CG) |
 | [`cmo`](indicators/cmo.md) | Chande Momentum Osilatörü (CMO) |
@@ -53,11 +54,14 @@
 | [`dpo`](indicators/dpo.md) | Trendi Arındırılmış Fiyat Osilatörü (DPO) |
 | [`elder_ray`](indicators/elder_ray.md) | Elder Ray (Boğa Gücü / Ayı Gücü) |
 | [`fisher_transform`](indicators/fisher_transform.md) | Fisher Dönüşümü (Ehlers) |
+| [`kdj`](indicators/kdj.md) | KDJ |
 | [`kst`](indicators/kst.md) | Pring'in Know Sure Thing'i (KST) |
 | [`laguerre_rsi`](indicators/laguerre_rsi.md) | Laguerre RSI |
 | [`macd`](indicators/macd.md) | MACD (Hareketli Ortalama Yakınsama Iraksama) |
 | [`momentum`](indicators/momentum.md) | Momentum |
 | [`ppo`](indicators/ppo.md) | Yüzde Fiyat Osilatörü (PPO) |
+| [`psl`](indicators/psl.md) | Psikolojik Çizgi (PSL) |
+| [`qqe`](indicators/qqe.md) | Niceliksel Niteliksel Tahmin (QQE) |
 | [`roc`](indicators/roc.md) | Değişim Oranı (ROC) |
 | [`rsi`](indicators/rsi.md) | Göreceli Güç Endeksi (RSI) |
 | [`rvgi`](indicators/rvgi.md) | Göreceli Canlılık Endeksi (RVGI) |
@@ -85,12 +89,14 @@
 | [`obv`](indicators/obv.md) | Denge Hacmi (OBV) |
 | [`pvi`](indicators/pvi.md) | Pozitif Hacim Endeksi (PVI) |
 | [`pvt`](indicators/pvt.md) | Fiyat Hacim Trendi (PVT) |
+| [`vwmacd`](indicators/vwmacd.md) | Hacim Ağırlıklı MACD |
 | [`williams_ad`](indicators/williams_ad.md) | Williams Birikim/Dağıtım (WAD) |
 
 ## Oynaklık
 
 | İndikatör | Özet |
 | --- | --- |
+| [`accbands`](indicators/accbands.md) | İvme Bantları (Acceleration Bands) |
 | [`atr`](indicators/atr.md) | Ortalama Gerçek Aralık (ATR) |
 | [`bbands`](indicators/bbands.md) | Bollinger Bantları |
 | [`chaikin_volatility`](indicators/chaikin_volatility.md) | Chaikin Oynaklığı (CVI) |
@@ -108,6 +114,7 @@
 | İndikatör | Özet |
 | --- | --- |
 | [`adx`](indicators/adx.md) | ADX / DMI |
+| [`adxr`](indicators/adxr.md) | ADX Derecelendirmesi (ADXR) |
 | [`aroon`](indicators/aroon.md) | Aroon ve Aroon Osilatörü |
 | [`chandelier_exit`](indicators/chandelier_exit.md) | Chandelier Exit |
 | [`choppiness_index`](indicators/choppiness_index.md) | Sıkışma Endeksi (CHOP) |
@@ -115,6 +122,7 @@
 | [`ichimoku`](indicators/ichimoku.md) | Ichimoku |
 | [`linreg`](indicators/linreg.md) | Doğrusal Regresyon Eğimi ve Tahmini |
 | [`parabolic_sar`](indicators/parabolic_sar.md) | Parabolik SAR |
+| [`qstick`](indicators/qstick.md) | Qstick |
 | [`supertrend`](indicators/supertrend.md) | SuperTrend |
 | [`vertical_horizontal_filter`](indicators/vertical_horizontal_filter.md) | Dikey Yatay Filtre (VHF) |
 | [`vortex`](indicators/vortex.md) | Vortex İndikatörü |
@@ -123,6 +131,7 @@
 
 | İndikatör | Özet |
 | --- | --- |
+| [`cpr`](indicators/cpr.md) | Merkezi Pivot Aralığı (CPR) |
 | [`dfa`](indicators/dfa.md) | Trendi Arındırılmış Dalgalanma Analizi (DFA) |
 | [`divergence`](indicators/divergence.md) | Uyumsuzluklar |
 | [`fib_retracement`](indicators/fib_retracement.md) | Fibonacci Geri Çekilmesi |

@@ -568,3 +568,93 @@ def test_smi_stays_within_bounds(ohlcv: pd.DataFrame) -> None:
 def test_smi_rejects_non_positive_length() -> None:
     with pytest.raises(ValueError, match="must be >="):
         zeonta.smi([1.0, 2.0], [0.5, 1.5], [0.8, 1.8], length=0)
+
+
+def test_bias_is_zero_on_a_flat_series() -> None:
+    result = zeonta.bias([5.0] * 10, length=4)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_bias_matches_the_hand_computed_percentage() -> None:
+    close = [10.0, 11.0, 9.0, 12.0]
+    result = zeonta.bias(close, length=4)
+    np.testing.assert_allclose(result.iloc[-1], 14.285714285714285)
+
+
+def test_bias_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.bias([1.0, 2.0], length=0)
+
+
+def test_psl_is_100_when_every_bar_in_the_window_closed_up() -> None:
+    result = zeonta.psl([1.0, 2.0, 3.0, 4.0, 5.0], length=4)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 100.0)
+
+
+def test_psl_is_0_when_every_bar_in_the_window_closed_down() -> None:
+    result = zeonta.psl([5.0, 4.0, 3.0, 2.0, 1.0], length=4)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_psl_matches_the_hand_computed_percentage() -> None:
+    close = [10.0, 11.0, 10.5, 12.0, 13.0]
+    result = zeonta.psl(close, length=4)
+    np.testing.assert_allclose(result.iloc[-1], 75.0)
+
+
+def test_psl_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.psl([1.0, 2.0], length=0)
+
+
+def test_kdj_matches_the_hand_computed_recursion() -> None:
+    high = [12.0, 13.0, 11.0, 14.0, 15.0, 13.5, 16.0]
+    low = [10.0, 11.0, 9.0, 12.0, 13.0, 11.5, 14.0]
+    close = [11.0, 12.5, 10.0, 13.5, 14.5, 12.5, 15.5]
+    out = zeonta.kdj(high, low, close, length=3, signal=2)
+    np.testing.assert_allclose(out["K_3_2"].iloc[-1], 70.23313492063492)
+    np.testing.assert_allclose(out["D_3_2"].iloc[-1], 64.52132936507937)
+    np.testing.assert_allclose(out["J_3_2"].iloc[-1], 81.65674603174603)
+
+
+def test_kdj_is_all_nan_on_a_zero_range_series() -> None:
+    result = zeonta.kdj([10.0] * 10, [10.0] * 10, [10.0] * 10, length=3, signal=2)
+    assert result.isna().all().all()
+
+
+def test_kdj_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="'length' must be >="):
+        zeonta.kdj([1.0, 2.0], [0.5, 1.5], [0.8, 1.8], length=0)
+
+
+def test_kdj_rejects_non_positive_signal() -> None:
+    with pytest.raises(ValueError, match="'signal' must be >="):
+        zeonta.kdj([1.0, 2.0], [0.5, 1.5], [0.8, 1.8], signal=0)
+
+
+def test_qqe_settles_with_the_smoothed_rsi_above_its_own_trailing_line_in_a_clean_uptrend() -> None:
+    close = list(range(1, 31)) + list(range(29, 14, -1)) + list(range(16, 41))
+    out = zeonta.qqe(close, length=5, smooth=2, factor=2.0)
+    assert out.iloc[-1, 0] > out.iloc[-1, 1]
+
+
+def test_qqe_is_causal_new_bars_never_change_past_values() -> None:
+    close = list(range(1, 31)) + list(range(29, 14, -1)) + list(range(16, 41))
+    full = zeonta.qqe(close, length=5, smooth=2, factor=2.0)
+    prefix = zeonta.qqe(close[:50], length=5, smooth=2, factor=2.0)
+    np.testing.assert_allclose(full.iloc[:50].to_numpy(), prefix.to_numpy(), equal_nan=True)
+
+
+def test_qqe_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="'length' must be >="):
+        zeonta.qqe(list(range(1, 10)), length=0)
+
+
+def test_qqe_rejects_non_positive_smooth() -> None:
+    with pytest.raises(ValueError, match="'smooth' must be >="):
+        zeonta.qqe(list(range(1, 10)), smooth=0)
+
+
+def test_qqe_rejects_non_positive_factor() -> None:
+    with pytest.raises(ValueError, match="'factor' must be > 0"):
+        zeonta.qqe(list(range(1, 10)), factor=0.0)

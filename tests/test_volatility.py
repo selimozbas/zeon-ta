@@ -319,3 +319,39 @@ def test_relative_volatility_index_rejects_non_positive_stdev_length() -> None:
 def test_relative_volatility_index_rejects_non_positive_smooth_length() -> None:
     with pytest.raises(ValueError, match="'smooth_length' must be >="):
         zeonta.relative_volatility_index([1.0, 2.0, 3.0], smooth_length=0)
+
+
+def test_accbands_matches_the_hand_computed_value() -> None:
+    high = [12.0, 13.0, 11.0, 14.0, 15.0]
+    low = [10.0, 11.0, 9.0, 12.0, 13.0]
+    close = [11.0, 12.5, 10.0, 13.5, 14.5]
+    out = zeonta.accbands(high, low, close, length=3)
+    np.testing.assert_allclose(out["ACCBU_3"].iloc[-1], 17.664468864468862)
+    np.testing.assert_allclose(out["ACCBL_3"].iloc[-1], 7.664468864468863)
+    np.testing.assert_allclose(out["ACCBM_3"].iloc[-1], 12.666666666666666)
+
+
+def test_accbands_brackets_close_between_lower_and_upper(ohlcv: pd.DataFrame) -> None:
+    out = zeonta.accbands(ohlcv["high"], ohlcv["low"], ohlcv["close"]).dropna()
+    assert (out["ACCBU_20"] >= out["ACCBM_20"]).all()
+    assert (out["ACCBM_20"] >= out["ACCBL_20"]).all()
+
+
+def test_accbands_upper_lower_are_nan_on_a_zero_price_zero_range_bar() -> None:
+    """High + Low == 0 leaves the ratio undefined; only the outer bands
+    (which depend on the ratio) go NaN — the middle band is a plain SMA
+    of Close and stays well-defined at 0.0."""
+    result = zeonta.accbands([0.0] * 10, [0.0] * 10, [0.0] * 10, length=5)
+    assert result["ACCBL_5"].isna().all()
+    assert result["ACCBU_5"].isna().all()
+    np.testing.assert_allclose(result["ACCBM_5"].dropna().to_numpy(), 0.0)
+
+
+def test_accbands_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.accbands([2.0, 3.0], [1.0, 2.0], [1.5, 2.5], length=0)
+
+
+def test_accbands_rejects_non_positive_c() -> None:
+    with pytest.raises(ValueError, match="'c' must be > 0"):
+        zeonta.accbands([2.0, 3.0], [1.0, 2.0], [1.5, 2.5], c=0.0)

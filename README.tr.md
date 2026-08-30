@@ -139,6 +139,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | İndikatör | Ne yapar | Doküman |
 | --- | --- | --- |
 | `awesome_oscillator` | Awesome Osilatör (AO) | [doküman](docs/tr/indicators/awesome_oscillator.md) |
+| `bias` | Sapma (Bias) | [doküman](docs/tr/indicators/bias.md) |
 | `cci` | Emtia Kanal Endeksi (CCI) | [doküman](docs/tr/indicators/cci.md) |
 | `center_of_gravity` | Ağırlık Merkezi Osilatörü (CG) | [doküman](docs/tr/indicators/center_of_gravity.md) |
 | `cmo` | Chande Momentum Osilatörü (CMO) | [doküman](docs/tr/indicators/cmo.md) |
@@ -146,11 +147,14 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `dpo` | Trendi Arındırılmış Fiyat Osilatörü (DPO) | [doküman](docs/tr/indicators/dpo.md) |
 | `elder_ray` | Elder Ray (Boğa Gücü / Ayı Gücü) | [doküman](docs/tr/indicators/elder_ray.md) |
 | `fisher_transform` | Fisher Dönüşümü (Ehlers) | [doküman](docs/tr/indicators/fisher_transform.md) |
+| `kdj` | KDJ | [doküman](docs/tr/indicators/kdj.md) |
 | `kst` | Pring'in Know Sure Thing'i (KST) | [doküman](docs/tr/indicators/kst.md) |
 | `laguerre_rsi` | Laguerre RSI | [doküman](docs/tr/indicators/laguerre_rsi.md) |
 | `macd` | MACD (Hareketli Ortalama Yakınsama Iraksama) | [doküman](docs/tr/indicators/macd.md) |
 | `momentum` | Momentum | [doküman](docs/tr/indicators/momentum.md) |
 | `ppo` | Yüzde Fiyat Osilatörü (PPO) | [doküman](docs/tr/indicators/ppo.md) |
+| `psl` | Psikolojik Çizgi (PSL) | [doküman](docs/tr/indicators/psl.md) |
+| `qqe` | Niceliksel Niteliksel Tahmin (QQE) | [doküman](docs/tr/indicators/qqe.md) |
 | `roc` | Değişim Oranı (ROC) | [doküman](docs/tr/indicators/roc.md) |
 | `rsi` | Göreceli Güç Endeksi (RSI) | [doküman](docs/tr/indicators/rsi.md) |
 | `rvgi` | Göreceli Canlılık Endeksi (RVGI) | [doküman](docs/tr/indicators/rvgi.md) |
@@ -178,12 +182,14 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `obv` | Denge Hacmi (OBV) | [doküman](docs/tr/indicators/obv.md) |
 | `pvi` | Pozitif Hacim Endeksi (PVI) | [doküman](docs/tr/indicators/pvi.md) |
 | `pvt` | Fiyat Hacim Trendi (PVT) | [doküman](docs/tr/indicators/pvt.md) |
+| `vwmacd` | Hacim Ağırlıklı MACD | [doküman](docs/tr/indicators/vwmacd.md) |
 | `williams_ad` | Williams Birikim/Dağıtım (WAD) | [doküman](docs/tr/indicators/williams_ad.md) |
 
 ### Oynaklık
 
 | İndikatör | Ne yapar | Doküman |
 | --- | --- | --- |
+| `accbands` | İvme Bantları (Acceleration Bands) | [doküman](docs/tr/indicators/accbands.md) |
 | `atr` | Ortalama Gerçek Aralık (ATR) | [doküman](docs/tr/indicators/atr.md) |
 | `bbands` | Bollinger Bantları | [doküman](docs/tr/indicators/bbands.md) |
 | `chaikin_volatility` | Chaikin Oynaklığı (CVI) | [doküman](docs/tr/indicators/chaikin_volatility.md) |
@@ -201,6 +207,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | İndikatör | Ne yapar | Doküman |
 | --- | --- | --- |
 | `adx` | ADX / DMI | [doküman](docs/tr/indicators/adx.md) |
+| `adxr` | ADX Derecelendirmesi (ADXR) | [doküman](docs/tr/indicators/adxr.md) |
 | `aroon` | Aroon ve Aroon Osilatörü | [doküman](docs/tr/indicators/aroon.md) |
 | `chandelier_exit` | Chandelier Exit | [doküman](docs/tr/indicators/chandelier_exit.md) |
 | `choppiness_index` | Sıkışma Endeksi (CHOP) | [doküman](docs/tr/indicators/choppiness_index.md) |
@@ -208,6 +215,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `ichimoku` | Ichimoku | [doküman](docs/tr/indicators/ichimoku.md) |
 | `linreg` | Doğrusal Regresyon Eğimi ve Tahmini | [doküman](docs/tr/indicators/linreg.md) |
 | `parabolic_sar` | Parabolik SAR | [doküman](docs/tr/indicators/parabolic_sar.md) |
+| `qstick` | Qstick | [doküman](docs/tr/indicators/qstick.md) |
 | `supertrend` | SuperTrend | [doküman](docs/tr/indicators/supertrend.md) |
 | `vertical_horizontal_filter` | Dikey Yatay Filtre (VHF) | [doküman](docs/tr/indicators/vertical_horizontal_filter.md) |
 | `vortex` | Vortex İndikatörü | [doküman](docs/tr/indicators/vortex.md) |
@@ -216,6 +224,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 
 | İndikatör | Ne yapar | Doküman |
 | --- | --- | --- |
+| `cpr` | Merkezi Pivot Aralığı (CPR) | [doküman](docs/tr/indicators/cpr.md) |
 | `dfa` | Trendi Arındırılmış Dalgalanma Analizi (DFA) | [doküman](docs/tr/indicators/dfa.md) |
 | `divergence` | Uyumsuzluklar | [doküman](docs/tr/indicators/divergence.md) |
 | `fib_retracement` | Fibonacci Geri Çekilmesi | [doküman](docs/tr/indicators/fib_retracement.md) |

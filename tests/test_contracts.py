@@ -139,6 +139,15 @@ def test_indicators_with_a_reference() -> None:
         "klinger_volume_oscillator",
         "williams_ad",
         "heikin_ashi",
+        "adxr",
+        "qstick",
+        "accbands",
+        "bias",
+        "psl",
+        "cpr",
+        "vwmacd",
+        "kdj",
+        "qqe",
     }
     with_reference = {spec.name for spec in iter_specs() if spec.reference is not None}
     assert with_reference == expected

@@ -5232,4 +5232,380 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.heikin_ashi(df["open"], df["high"], df["low"], df["close"]).tail(3),
         ],
     },
+    "adxr": {
+        "title_en": "ADX Rating (ADXR)",
+        "title_tr": "ADX Derecelendirmesi (ADXR)",
+        "formula_en": "ADXR = (ADX + ADX[length - 1 bars ago]) / 2",
+        "formula_tr": "ADXR = (ADX + ADX[length - 1 bar önce]) / 2",
+        "about_en": (
+            "A smoothed extension of [adx](adx.md): today's ADX averaged with its own "
+            "value from ``length - 1`` bars ago. The same idea `trima`'s double-SMA pass "
+            "applies to price, applied here to ADX instead — trading a bit more lag for "
+            "fewer false tops and bottoms in the trend-strength reading."
+        ),
+        "about_tr": (
+            "[adx](adx.md)'in yumuşatılmış bir uzantısı: bugünün ADX'i, kendi "
+            "``length - 1`` bar önceki değeriyle ortalanır. `trima`'nın çift-SMA "
+            "geçişinin fiyata uyguladığı aynı fikir, burada ADX'e uygulanır — trend-gücü "
+            "okumasındaki sahte tepe ve dipler için biraz daha fazla gecikme ile takas "
+            "edilir."
+        ),
+        "reading_en": (
+            "Read exactly like `adx` — a rising ADXR means the trend (whichever "
+            "direction) is strengthening. Smoother than `adx` itself, so a change in "
+            "ADXR's own direction is a steadier signal that trend strength has peaked or "
+            "bottomed."
+        ),
+        "reading_tr": (
+            "Tam olarak `adx` gibi okunur — yükselen bir ADXR, trendin (hangi yönde "
+            "olursa olsun) güçlendiği anlamına gelir. `adx`'in kendisinden daha "
+            "pürüzsüzdür, bu yüzden ADXR'nin kendi yönündeki bir değişim, trend gücünün "
+            "zirve yaptığının ya da dip yaptığının daha istikrarlı bir sinyalidir."
+        ),
+        "pitfalls_en": (
+            "Needs roughly ``3 * length`` bars before it produces a value — `adx`'s own "
+            "``2 * length``-bar warm-up, plus another ``length - 1`` bars for the lagged "
+            "copy it averages against."
+        ),
+        "pitfalls_tr": (
+            "Bir değer üretmeden önce yaklaşık ``3 * length`` bara ihtiyaç duyar — "
+            "`adx`'in kendi ``2 * length``-barlık ısınması, artı ortalamasını aldığı "
+            "gecikmeli kopya için ``length - 1`` bar daha."
+        ),
+        "example": [
+            lambda df: zeonta.adxr(df["high"], df["low"], df["close"]).tail(3),
+        ],
+    },
+    "qstick": {
+        "title_en": "Qstick",
+        "title_tr": "Qstick",
+        "formula_en": "QS = SMA(Close - Open, length)",
+        "formula_tr": "QS = SMA(Kapanış - Açılış, length)",
+        "about_en": (
+            "Tushar Chande's simplest indicator: a moving average of each bar's own "
+            "body (Close minus Open). Distinct from [bop](bop.md), which normalises the "
+            "same close-minus-open difference by the bar's own high-low range instead of "
+            "smoothing it directly."
+        ),
+        "about_tr": (
+            "Tushar Chande'nin en basit indikatörü: her barın kendi gövdesinin "
+            "(Kapanış eksi Açılış) hareketli ortalaması. [bop](bop.md)'tan farklıdır — o, "
+            "aynı kapanış-eksi-açılış farkını doğrudan yumuşatmak yerine barın kendi "
+            "yüksek-düşük aralığına göre normalize eder."
+        ),
+        "reading_en": (
+            "Positive means closes have consistently landed above opens over the window "
+            "(bullish body bias); negative the mirror. A cross of Qstick's own zero line "
+            "is the standard read."
+        ),
+        "reading_tr": (
+            "Pozitif olması, pencere boyunca kapanışların açılışların üzerinde istikrarlı "
+            "şekilde oturduğu (yükseliş yönlü gövde eğilimi) anlamına gelir; negatif olması "
+            "tam tersidir. Qstick'in kendi sıfır çizgisini kesmesi standart okumadır."
+        ),
+        "pitfalls_en": "No special edge cases — a plain SMA of a simple bar-body difference.",
+        "pitfalls_tr": "Özel bir uç durum yok — basit bir bar-gövdesi farkının düz bir SMA'sı.",
+        "example": [
+            lambda df: zeonta.qstick(df["open"], df["close"]).tail(3),
+        ],
+    },
+    "accbands": {
+        "title_en": "Acceleration Bands",
+        "title_tr": "İvme Bantları (Acceleration Bands)",
+        "formula_en": (
+            "Ratio = c*(High-Low)/(High+Low); "
+            "Upper=SMA(High*(1+Ratio),n); Lower=SMA(Low*(1-Ratio),n); Middle=SMA(Close,n)"
+        ),
+        "formula_tr": (
+            "Oran = c*(Yüksek-Düşük)/(Yüksek+Düşük); "
+            "Üst=SMA(Yüksek*(1+Oran),n); Alt=SMA(Düşük*(1-Oran),n); Orta=SMA(Kapanış,n)"
+        ),
+        "about_en": (
+            "Price Headley's volatility envelope: unlike [bbands](bbands.md) (which "
+            "scales a fixed multiplier by *rolling* standard deviation), the widening "
+            "here comes from each individual bar's *own* high-low range — a single big "
+            "bar pushes the bands apart immediately, with no lag from a deviation window."
+        ),
+        "about_tr": (
+            "Price Headley'nin oynaklık zarfı: [bbands](bbands.md)'ın aksine (sabit bir "
+            "çarpanı *yuvarlanan* standart sapmayla ölçekler), buradaki genişleme her bir "
+            "barın *kendi* yüksek-düşük aralığından gelir — tek büyük bir bar, bir sapma "
+            "penceresinden gecikme olmaksızın bantları anında birbirinden uzaklaştırır."
+        ),
+        "reading_en": (
+            "Read like any envelope: a close outside the bands on a weekly or monthly "
+            "chart is Headley's own preferred breakout signal; on shorter frames the "
+            "bands double as dynamic support/resistance."
+        ),
+        "reading_tr": (
+            "Herhangi bir zarf gibi okunur: haftalık ya da aylık bir grafikte bantların "
+            "dışında bir kapanış, Headley'nin kendi tercih ettiği kırılma sinyalidir; daha "
+            "kısa zaman dilimlerinde bantlar aynı zamanda dinamik destek/direnç görevi "
+            "görür."
+        ),
+        "pitfalls_en": (
+            "A zero-range-and-zero-price bar (High + Low == 0) leaves the ratio "
+            "undefined; the bands fall back to `NaN` for that bar rather than dividing by "
+            "zero."
+        ),
+        "pitfalls_tr": (
+            "Sıfır-aralıklı ve sıfır-fiyatlı bir bar (Yüksek + Düşük == 0), oranı tanımsız "
+            "bırakır; bantlar sıfıra bölme yerine o bar için `NaN`'a döner."
+        ),
+        "example": [
+            lambda df: zeonta.accbands(df["high"], df["low"], df["close"]).tail(3),
+        ],
+    },
+    "bias": {
+        "title_en": "Bias",
+        "title_tr": "Sapma (Bias)",
+        "formula_en": "BIAS = (Close - SMA(Close, length)) / SMA(Close, length) * 100",
+        "formula_tr": "BIAS = (Kapanış - SMA(Kapanış, length)) / SMA(Kapanış, length) * 100",
+        "about_en": (
+            "A staple of Chinese/Taiwanese technical analysis: puts a number on how far "
+            "price has stretched away from its own moving average. Where "
+            "[efficiency_ratio](efficiency_ratio.md) or [choppiness_index](choppiness_index.md) "
+            "describe how a *window* moved, Bias describes a single distance — price's "
+            "current gap from its own average, nothing more."
+        ),
+        "about_tr": (
+            "Çin/Tayvan teknik analizinin bir temel taşı: fiyatın kendi hareketli "
+            "ortalamasından ne kadar uzaklaştığına bir rakam koyar. "
+            "[efficiency_ratio](efficiency_ratio.md) ya da [choppiness_index](choppiness_index.md) "
+            "bir *pencerenin* nasıl hareket ettiğini tanımlarken, Bias tek bir mesafeyi "
+            "tanımlar — fiyatın kendi ortalamasından şu anki farkı, başka bir şey değil."
+        ),
+        "reading_en": (
+            'A large positive or negative reading is commonly read as "stretched too '
+            'far" — a pullback toward the average (if positive) or a rebound away from '
+            "it (if negative) becomes more likely the further Bias strays from zero."
+        ),
+        "reading_tr": (
+            'Büyük bir pozitif ya da negatif okuma genellikle "aşırı gerilmiş" olarak '
+            "okunur — Bias sıfırdan ne kadar uzaklaşırsa, ortalamaya doğru bir geri "
+            "çekilme (pozitifse) ya da ondan uzaklaşan bir sıçrama (negatifse) o kadar "
+            "olası hale gelir."
+        ),
+        "pitfalls_en": "`NaN` wherever the window's SMA is exactly `0`, rather than an undefined division.",
+        "pitfalls_tr": "Pencerenin SMA'sının tam olarak `0` olduğu her yerde, tanımsız bir bölme yerine `NaN` olur.",
+        "example": [
+            lambda df: zeonta.bias(df["close"]).tail(3),
+        ],
+    },
+    "psl": {
+        "title_en": "Psychological Line (PSL)",
+        "title_tr": "Psikolojik Çizgi (PSL)",
+        "formula_en": "PSL = (up-closing bars in the last n) / n * 100",
+        "formula_tr": "PSL = (son n bar içindeki yükseliş-kapanışlı bar sayısı) / n * 100",
+        "about_en": (
+            "A pure vote-counting sentiment gauge: the share of bars in a rolling window "
+            "where price closed above the prior close, as a percentage. Unlike every "
+            "ratio-based oscillator in this library ([rsi](rsi.md), [cmo](cmo.md), ...), "
+            "PSL only asks *how often* price rose, never *by how much*."
+        ),
+        "about_tr": (
+            "Saf bir oy-sayma duyarlılık göstergesi: yuvarlanan bir pencerede fiyatın "
+            "önceki kapanışın üzerinde kapandığı barların oranı, yüzde olarak. Bu "
+            "kütüphanedeki oran-tabanlı her osilatörden ([rsi](rsi.md), [cmo](cmo.md), ...) "
+            "farklı olarak, PSL yalnızca fiyatın *ne sıklıkla* yükseldiğini sorar, *ne "
+            "kadar* yükseldiğini hiç sormaz."
+        ),
+        "reading_en": (
+            "Above 50 means more than half the window's bars closed up; below 50 the "
+            "mirror. Readings above roughly 75 or below 25 are commonly read as "
+            "overbought/oversold sentiment extremes."
+        ),
+        "reading_tr": (
+            "50'nin üstü, pencerenin barlarının yarısından fazlasının yükselişle "
+            "kapandığı anlamına gelir; 50'nin altı tam tersidir. Kabaca 75'in üstü ya da "
+            "25'in altındaki okumalar genellikle aşırı-alım/aşırı-satım duyarlılık "
+            "uçları olarak okunur."
+        ),
+        "pitfalls_en": "A flat close (unchanged from the prior bar) counts as *not* up, the same convention as most up/down-day counters.",
+        "pitfalls_tr": "Değişmeyen bir kapanış (önceki bardan farksız), çoğu yükseliş/düşüş-günü sayacıyla aynı kuralla yükseliş *sayılmaz*.",
+        "example": [
+            lambda df: zeonta.psl(df["close"]).tail(3),
+        ],
+    },
+    "cpr": {
+        "title_en": "Central Pivot Range (CPR)",
+        "title_tr": "Merkezi Pivot Aralığı (CPR)",
+        "formula_en": "Pivot=(H+L+C)/3; BC=(H+L)/2; TC=2*Pivot-BC",
+        "formula_tr": "Pivot=(Y+D+K)/3; BC=(Y+D)/2; TC=2*Pivot-BC",
+        "about_en": (
+            "The same classic pivot [pivot_points](pivot_points.md) computes, plus a "
+            "width band (Bottom Central, Top Central) built from the same previous bar's "
+            "range. The band's width is always exactly two-thirds of the distance "
+            "between the previous close and the previous range's midpoint."
+        ),
+        "about_tr": (
+            "[pivot_points](pivot_points.md)'un hesapladığı aynı klasik pivot, artı aynı "
+            "önceki barın aralığından oluşturulan bir genişlik bandı (Alt Merkez, Üst "
+            "Merkez). Bandın genişliği her zaman tam olarak önceki kapanış ile önceki "
+            "aralığın orta noktası arasındaki mesafenin üçte ikisidir."
+        ),
+        "reading_en": (
+            "A narrow CPR means the prior bar closed near the middle of its own range "
+            "(indecision, often preceding a bigger move); a wide CPR means it closed near "
+            "an extreme (a directional bar, often preceding continuation)."
+        ),
+        "reading_tr": (
+            "Dar bir CPR, önceki barın kendi aralığının ortasına yakın kapandığı "
+            "(kararsızlık, genellikle daha büyük bir hareketin öncüsü) anlamına gelir; "
+            "geniş bir CPR ise bir uca yakın kapandığı (yönlü bir bar, genellikle devamın "
+            "öncüsü) anlamına gelir."
+        ),
+        "pitfalls_en": (
+            "Like `pivot_points`, levels are computed from the **previous** bar and "
+            "apply to the current one — feed daily bars for daily CPR levels, weekly bars "
+            "for weekly ones."
+        ),
+        "pitfalls_tr": (
+            "`pivot_points` gibi, seviyeler **önceki** bardan hesaplanır ve mevcut bara "
+            "uygulanır — günlük CPR seviyeleri için günlük bar, haftalık için haftalık bar "
+            "verin."
+        ),
+        "example": [
+            lambda df: zeonta.cpr(df["high"], df["low"], df["close"]).tail(3),
+        ],
+    },
+    "vwmacd": {
+        "title_en": "Volume-Weighted MACD",
+        "title_tr": "Hacim Ağırlıklı MACD",
+        "formula_en": (
+            "VWMACD = VWMA(fast) - VWMA(slow); Signal = EMA(VWMACD, signal); "
+            "Histogram = VWMACD - Signal"
+        ),
+        "formula_tr": (
+            "VWMACD = VWMA(fast) - VWMA(slow); Sinyal = EMA(VWMACD, signal); "
+            "Histogram = VWMACD - Sinyal"
+        ),
+        "about_en": (
+            "The same fast-minus-slow-then-signal shape as [macd](macd.md), but built "
+            "from [vwma](vwma.md) instead of a plain EMA. Weighting the fast and slow "
+            "lines by volume makes crossovers more representative of moves that traded "
+            "heavily, rather than treating a thin, quiet bar the same as a heavily-traded "
+            "one the way plain MACD does. The signal line stays a plain EMA — the MACD "
+            "line itself already carries the volume weighting."
+        ),
+        "about_tr": (
+            "[macd](macd.md) ile aynı hızlı-eksi-yavaş-sonra-sinyal şekli, ama düz bir EMA "
+            "yerine [vwma](vwma.md)'dan inşa edilir. Hızlı ve yavaş çizgileri hacimle "
+            "ağırlıklandırmak, kesişimleri düz MACD'nin yaptığı gibi ince, sakin bir barı "
+            "yoğun işlem gören biriyle aynı kefeye koymak yerine, yoğun işlem gören "
+            "hareketleri daha temsili hale getirir. Sinyal çizgisi düz bir EMA olarak "
+            "kalır — MACD çizgisinin kendisi zaten hacim ağırlıklandırmasını taşır."
+        ),
+        "reading_en": "Read exactly like `macd` — the crossover between the line and its own signal, or the line crossing zero.",
+        "reading_tr": "Tam olarak `macd` gibi okunur — çizgi ile kendi sinyali arasındaki kesişim, ya da çizginin sıfırı kesmesi.",
+        "pitfalls_en": "Inherits `vwma`'s own zero-total-volume edge case: `NaN` wherever a window's total volume is exactly `0`.",
+        "pitfalls_tr": "`vwma`'nın kendi sıfır-toplam-hacim uç durumunu miras alır: bir pencerenin toplam hacminin tam olarak `0` olduğu her yerde `NaN` olur.",
+        "example": [
+            lambda df: zeonta.vwmacd(df["close"], df["volume"]).tail(3),
+        ],
+    },
+    "kdj": {
+        "title_en": "KDJ",
+        "title_tr": "KDJ",
+        "formula_en": (
+            "RSV = 100*(Close-LL)/(HH-LL); K = Wilder(RSV, signal); "
+            "D = Wilder(K, signal); J = 3*K - 2*D"
+        ),
+        "formula_tr": (
+            "RSV = 100*(Kapanış-DD)/(YY-DD); K = Wilder(RSV, signal); "
+            "D = Wilder(K, signal); J = 3*K - 2*D"
+        ),
+        "about_en": (
+            "A stochastic variant popular in Chinese-market technical analysis. Starts "
+            "from the same Raw Stochastic Value [stoch](stoch.md) calls `%K` before "
+            "smoothing, then smooths it twice with Wilder's recursion (the same one "
+            "[smma](smma.md) exposes) rather than a plain SMA. `J` extrapolates past the "
+            "`K`/`D` move rather than averaging it, so it swings outside the usual 0-100 "
+            "range — the point of it is to flag overbought/oversold conditions *before* "
+            "`K` and `D` reach their own extremes."
+        ),
+        "about_tr": (
+            "Çin piyasası teknik analizinde popüler bir stokastik varyantı. "
+            "[stoch](stoch.md)'un yumuşatmadan önce `%K` dediği aynı Ham Stokastik "
+            "Değer'den başlar, sonra düz bir SMA yerine onu Wilder'ın özyinelemesiyle "
+            "([smma](smma.md)'nın sunduğu aynı yöntem) iki kez yumuşatır. `J`, `K`/`D` "
+            "hareketini ortalamak yerine onun ötesine ekstrapolasyon yapar, bu yüzden "
+            "olağan 0-100 aralığının dışına taşar — amacı, `K` ve `D` kendi uçlarına "
+            "ulaşmadan *önce* aşırı-alım/aşırı-satım koşullarını işaret etmektir."
+        ),
+        "reading_en": (
+            "Read like `stoch`: crossovers between `K` and `D` signal momentum shifts, "
+            "with `J` leading both — a `J` reading well above 100 or below 0 is the "
+            "earliest warning of an extreme."
+        ),
+        "reading_tr": (
+            "`stoch` gibi okunur: `K` ve `D` arasındaki kesişimler momentum kaymalarını "
+            "işaret eder, `J` ikisine de öncülük eder — 100'ün oldukça üstünde ya da 0'ın "
+            "altında bir `J` okuması, bir uç noktanın en erken uyarısıdır."
+        ),
+        "pitfalls_en": "`J` is unbounded by design — do not clamp it to 0-100 the way `K`/`D` naturally are.",
+        "pitfalls_tr": "`J`, tasarım gereği sınırsızdır — `K`/`D`'nin doğal olarak olduğu gibi onu 0-100'e sıkıştırmayın.",
+        "example": [
+            lambda df: zeonta.kdj(df["high"], df["low"], df["close"]).tail(3),
+        ],
+    },
+    "qqe": {
+        "title_en": "Quantitative Qualitative Estimation (QQE)",
+        "title_tr": "Niceliksel Niteliksel Tahmin (QQE)",
+        "formula_en": (
+            "RsiMa = EMA(RSI, smooth); DeltaFastAtrRsi = EMA(EMA(|ΔRsiMa|, 2n-1), 2n-1)*factor; "
+            "trailing band flips like a Supertrend built on RsiMa"
+        ),
+        "formula_tr": (
+            "RsiMa = EMA(RSI, smooth); DeltaFastAtrRsi = EMA(EMA(|ΔRsiMa|, 2n-1), 2n-1)*factor; "
+            "takip eden bant, RsiMa üzerine kurulmuş bir Supertrend gibi döner"
+        ),
+        "about_en": (
+            "Smooths [rsi](rsi.md) with an EMA, measures that smoothed line's own "
+            "bar-to-bar volatility (Wilder-smoothed twice), and uses it to build a "
+            "trailing band around the smoothed RSI — the same one-way-ratchet, "
+            "flip-on-cross construction [supertrend](supertrend.md) uses on price, "
+            "applied to RSI instead. QQE has no single academic paper behind it — it "
+            "originates as a MetaTrader community indicator — but its construction is "
+            "precise and cross-confirmed identically across multiple independent "
+            "implementations, unlike indicators this library has declined for lacking "
+            "exactly that."
+        ),
+        "about_tr": (
+            "[rsi](rsi.md)'yi bir EMA ile yumuşatır, bu yumuşatılmış çizginin kendi "
+            "bar-başı oynaklığını ölçer (iki kez Wilder-yumuşatılmış) ve yumuşatılmış RSI "
+            "etrafında bir takip bandı inşa etmek için kullanır — [supertrend](supertrend.md)'in "
+            "fiyat üzerinde kullandığı aynı tek-yönlü-vinç, kesişimde-dönme inşası, burada "
+            "RSI'ye uygulanır. QQE'nin arkasında tek bir akademik makale yoktur — bir "
+            "MetaTrader topluluk indikatörü olarak ortaya çıkmıştır — ama inşası kesindir "
+            "ve birden fazla bağımsız uygulama arasında aynı şekilde çapraz doğrulanmıştır, "
+            "bu kütüphanenin tam olarak bu eksiklik yüzünden reddettiği indikatörlerden "
+            "farklı olarak."
+        ),
+        "reading_en": (
+            "The trailing line's own value is bullish support while price/RSI stays "
+            "above it, and resistance while below — read the crossover between the "
+            "smoothed RSI and the trailing line the way you would `supertrend`'s flips, "
+            "or watch the smoothed RSI cross its own 50 midline."
+        ),
+        "reading_tr": (
+            "Takip çizgisinin kendi değeri, fiyat/RSI onun üzerinde kaldığı sürece "
+            "yükseliş desteği, altında kaldığında ise dirençtir — yumuşatılmış RSI ile "
+            "takip çizgisi arasındaki kesişimi `supertrend`'in dönüşlerini okuduğunuz gibi "
+            "okuyun, ya da yumuşatılmış RSI'nin kendi 50 orta çizgisini kesmesini izleyin."
+        ),
+        "pitfalls_en": (
+            "Needs a long warm-up — the double-smoothed volatility term alone needs "
+            "roughly `2*(2*length-1)` bars on top of RSI's own warm-up before it produces "
+            "a value."
+        ),
+        "pitfalls_tr": (
+            "Uzun bir ısınma süresine ihtiyaç duyar — çift-yumuşatılmış oynaklık terimi "
+            "tek başına, bir değer üretmeden önce RSI'nin kendi ısınmasının üzerine "
+            "kabaca `2*(2*length-1)` bara ihtiyaç duyar."
+        ),
+        "example": [
+            lambda df: zeonta.qqe(df["close"]).tail(3),
+        ],
+    },
 }

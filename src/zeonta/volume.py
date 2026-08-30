@@ -31,6 +31,7 @@ from ._core import (
     wrap_frame,
     wrap_series,
 )
+from .moving_averages import vwma
 
 __all__ = [
     "adl",
@@ -45,6 +46,7 @@ __all__ = [
     "obv",
     "pvi",
     "pvt",
+    "vwmacd",
     "williams_ad",
 ]
 
@@ -1050,3 +1052,79 @@ def williams_ad(high: ArrayLike, low: ArrayLike, close: ArrayLike) -> pd.Series:
             result[i] = result[i - 1]
 
     return wrap_series(result, common_index(high, low, close), "WAD")
+
+
+@indicator(
+    category="volume",
+    summary="MACD built from Volume-Weighted Moving Averages instead of EMAs.",
+    outputs=("VWMACD", "VWMACDs", "VWMACDh"),
+    reference="https://vectoralpha.dev/projects/ta/indicators/vwmacd/",
+)
+def vwmacd(
+    close: ArrayLike,
+    volume: ArrayLike,
+    fast: int = 12,
+    slow: int = 26,
+    signal: int = 9,
+) -> pd.DataFrame:
+    """Volume-Weighted MACD (Buff Dormeier, 2000).
+
+    The same fast-minus-slow-then-signal shape as :func:`macd`, but built
+    from :func:`vwma` instead of a plain EMA::
+
+        VWMACD = VWMA(Close, fast) - VWMA(Close, slow)
+        Signal = EMA(VWMACD, signal)
+        Histogram = VWMACD - Signal
+
+    Weighting the fast and slow lines by volume makes crossovers more
+    representative of moves that traded heavily, rather than treating a
+    thin, quiet bar the same as a heavily-traded one the way plain MACD
+    does. The signal line stays a plain EMA — the MACD line itself
+    already carries the volume weighting.
+
+    Parameters
+    ----------
+    close, volume:
+        Series of equal length.
+    fast, slow:
+        VWMA lengths; ``fast`` must be smaller than ``slow``.
+    signal:
+        EMA length of the signal line.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``VWMACD_{f}_{s}_{sig}``, ``VWMACDs_{f}_{s}_{sig}``,
+        ``VWMACDh_{f}_{s}_{sig}``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> close = list(range(1, 41))
+    >>> volume = [100.0 + 5.0 * i for i in range(40)]
+    >>> list(zeonta.vwmacd(close, volume, fast=3, slow=6, signal=2).columns)
+    ['VWMACD_3_6_2', 'VWMACDs_3_6_2', 'VWMACDh_3_6_2']
+
+    References
+    ----------
+    https://vectoralpha.dev/projects/ta/indicators/vwmacd/
+    """
+    fast = validate_length(fast, "fast")
+    slow = validate_length(slow, "slow")
+    signal = validate_length(signal, "signal")
+    if fast >= slow:
+        raise ValueError(f"'fast' must be smaller than 'slow', got fast={fast}, slow={slow}")
+
+    fast_vwma = vwma(close, volume, length=fast).to_numpy()
+    slow_vwma = vwma(close, volume, length=slow).to_numpy()
+    macd_line = fast_vwma - slow_vwma
+    signal_line = ema_values(macd_line, signal)
+    histogram = macd_line - signal_line
+
+    suffix = f"{fast}_{slow}_{signal}"
+    order = [f"VWMACD_{suffix}", f"VWMACDs_{suffix}", f"VWMACDh_{suffix}"]
+    return wrap_frame(
+        dict(zip(order, (macd_line, signal_line, histogram), strict=True)),
+        common_index(close, volume),
+        order=order,
+    )

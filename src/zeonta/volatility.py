@@ -31,6 +31,7 @@ from ._core import (
 )
 
 __all__ = [
+    "accbands",
     "atr",
     "bbands",
     "chaikin_volatility",
@@ -809,3 +810,85 @@ def relative_volatility_index(
     result = np.where(np.isfinite(total), result, np.nan)
 
     return wrap_series(result, common_index(close), f"RVI_{stdev_length}_{smooth_length}")
+
+
+@indicator(
+    category="volatility",
+    summary="SMA envelope of High/Low scaled by their own range, widening with volatility.",
+    outputs=("ACCBL", "ACCBM", "ACCBU"),
+    reference="https://help.tc2000.com/m/69445/l/755840-acceleration-bands",
+)
+def accbands(
+    high: ArrayLike,
+    low: ArrayLike,
+    close: ArrayLike,
+    length: int = 20,
+    c: Number = 4.0,
+) -> pd.DataFrame:
+    """Acceleration Bands (Price Headley).
+
+    Widens High and Low outward by a fraction of the bar's own high-low
+    range before averaging::
+
+        Ratio = c * (High - Low) / (High + Low)
+        Upper = SMA(High * (1 + Ratio), length)
+        Lower = SMA(Low * (1 - Ratio), length)
+        Middle = SMA(Close, length)
+
+    Unlike :func:`bbands` (which scales a fixed multiplier by *rolling*
+    standard deviation), the widening here comes from each individual
+    bar's *own* high-low range — a big single bar pushes the bands apart
+    immediately, with no lag from a rolling deviation window.
+
+    Parameters
+    ----------
+    high, low, close:
+        Price series of equal length.
+    length:
+        SMA period applied to all three bands.
+    c:
+        Range-scaling constant. Headley's own default is ``4``.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``ACCBL_{length}`` (lower), ``ACCBM_{length}`` (middle),
+        ``ACCBU_{length}`` (upper).
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> high = [12.0, 13.0, 11.0, 14.0, 15.0]
+    >>> low = [10.0, 11.0, 9.0, 12.0, 13.0]
+    >>> close = [11.0, 12.5, 10.0, 13.5, 14.5]
+    >>> out = zeonta.accbands(high, low, close, length=3)
+    >>> round(float(out['ACCBU_3'].iloc[-1]), 6)
+    17.664469
+
+    References
+    ----------
+    https://help.tc2000.com/m/69445/l/755840-acceleration-bands
+    """
+    length = validate_length(length)
+    factor = validate_multiplier(c, "c")
+
+    require_aligned_index(high=high, low=low, close=close)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    require_same_length(high=high_values, low=low_values, close=close_values)
+
+    denom = high_values + low_values
+    with np.errstate(divide="ignore", invalid="ignore"):
+        ratio = np.where(denom != 0.0, factor * (high_values - low_values) / denom, np.nan)
+
+    upper = rolling_mean(high_values * (1.0 + ratio), length)
+    lower = rolling_mean(low_values * (1.0 - ratio), length)
+    middle = rolling_mean(close_values, length)
+
+    order = [f"ACCBL_{length}", f"ACCBM_{length}", f"ACCBU_{length}"]
+    return wrap_frame(
+        dict(zip(order, (lower, middle, upper), strict=True)),
+        common_index(high, low, close),
+        order=order,
+    )

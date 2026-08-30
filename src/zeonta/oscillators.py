@@ -37,6 +37,7 @@ from ._core import (
 
 __all__ = [
     "awesome_oscillator",
+    "bias",
     "cci",
     "center_of_gravity",
     "cmo",
@@ -44,11 +45,14 @@ __all__ = [
     "dpo",
     "elder_ray",
     "fisher_transform",
+    "kdj",
     "kst",
     "laguerre_rsi",
     "macd",
     "momentum",
     "ppo",
+    "psl",
+    "qqe",
     "roc",
     "rsi",
     "rvgi",
@@ -1722,5 +1726,346 @@ def smi(
     return wrap_frame(
         dict(zip(order, (result, signal_line), strict=True)),
         common_index(high, low, close),
+        order=order,
+    )
+
+
+@indicator(
+    category="oscillators",
+    summary="Percentage deviation of Close from its own SMA.",
+    outputs=("BIAS",),
+    reference="https://research.titanfx.com/technical-analysis/ma/bias",
+)
+def bias(close: ArrayLike, length: int = 26) -> pd.Series:
+    """Bias.
+
+    A staple of Chinese/Taiwanese technical analysis, putting a number on
+    how far price has stretched away from its own moving average::
+
+        BIAS = (Close - SMA(Close, length)) / SMA(Close, length) * 100
+
+    Positive means price sits above its own average by that many percent;
+    negative the mirror. A large reading in either direction is commonly
+    read as "stretched too far, a pullback or rebound is more likely" —
+    unlike :func:`efficiency_ratio` or :func:`choppiness_index`, which
+    describe how a *window* moved, this describes a single distance.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        SMA period. Commonly cited defaults are ``6``, ``12`` or ``24``;
+        this library uses ``26`` to match the value most commonly shipped
+        as the indicator's own default.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``BIAS_{length}``. ``NaN`` wherever the window's SMA is
+        exactly ``0``, rather than an undefined division.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> close = [10.0, 11.0, 9.0, 12.0]
+    >>> round(float(zeonta.bias(close, length=4).iloc[-1]), 6)
+    14.285714
+
+    References
+    ----------
+    https://research.titanfx.com/technical-analysis/ma/bias
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+    average = rolling_mean(values, length)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = np.where(average != 0.0, (values - average) / average * 100.0, np.nan)
+    return wrap_series(result, common_index(close), f"BIAS_{length}")
+
+
+@indicator(
+    category="oscillators",
+    summary="Percentage of up-closes over a rolling window — raw market sentiment.",
+    outputs=("PSL",),
+    reference=(
+        "https://help.tradestation.com/10_00/eng/tradestationhelp/elanalysis/"
+        "indicator/psychological_line_indicator_.htm"
+    ),
+)
+def psl(close: ArrayLike, length: int = 12) -> pd.Series:
+    """Psychological Line.
+
+    The share of up-closing bars over a rolling window, as a percentage::
+
+        PSL = (number of bars where Close > Close[-1] in the last n) / n * 100
+
+    A pure vote-counting sentiment gauge — it only asks *how often* price
+    rose, never *by how much*, unlike every ratio-based oscillator in this
+    module (:func:`rsi`, :func:`cmo`, ...) which weighs the size of each
+    move.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Rolling window, in bars. Commonly cited defaults are ``12`` or
+        ``24``.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``PSL_{length}``, ranging 0-100.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> close = [10.0, 11.0, 10.5, 12.0, 13.0]
+    >>> zeonta.psl(close, length=4).round(4).tolist()
+    [nan, nan, nan, nan, 75.0]
+
+    References
+    ----------
+    https://help.tradestation.com/10_00/eng/tradestationhelp/elanalysis/indicator/psychological_line_indicator_.htm
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+    change = np.diff(values, prepend=np.nan)
+    up_bar = np.where(np.isfinite(change), (change > 0.0).astype("float64"), np.nan)
+    result = rolling_mean(up_bar, length) * 100.0
+    return wrap_series(result, common_index(close), f"PSL_{length}")
+
+
+@indicator(
+    category="oscillators",
+    summary="Stochastic %K/%D reworked with Wilder smoothing, plus a fast, overshooting J line.",
+    outputs=("K", "D", "J"),
+    reference="https://www.tradingview.com/scripts/kdj/",
+)
+def kdj(
+    high: ArrayLike,
+    low: ArrayLike,
+    close: ArrayLike,
+    length: int = 9,
+    signal: int = 3,
+) -> pd.DataFrame:
+    """KDJ — a stochastic variant popular in Chinese-market technical analysis.
+
+    Starts from the same Raw Stochastic Value :func:`stoch` calls ``%K``
+    before smoothing, then smooths it twice with Wilder's recursion
+    (``alpha = 1/signal``, the same recursion :func:`smma` exposes) rather
+    than a plain SMA::
+
+        RSV = 100 * (Close - LowestLow(length)) / (HighestHigh(length) - LowestLow(length))
+        K = Wilder(RSV, signal)
+        D = Wilder(K, signal)
+        J = 3*K - 2*D
+
+    ``J`` extrapolates past the ``K``/``D`` move rather than averaging it,
+    so it swings outside the usual 0-100 range — the point of it is to
+    signal overbought/oversold conditions *before* ``K`` and ``D`` reach
+    their own extremes.
+
+    Parameters
+    ----------
+    high, low, close:
+        Price series of equal length.
+    length:
+        Look-back for the Raw Stochastic Value.
+    signal:
+        Wilder smoothing period applied twice (RSV to K, then K to D).
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``K_{length}_{signal}``, ``D_{length}_{signal}``,
+        ``J_{length}_{signal}``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> high = [12.0, 13.0, 11.0, 14.0, 15.0, 13.5, 16.0]
+    >>> low = [10.0, 11.0, 9.0, 12.0, 13.0, 11.5, 14.0]
+    >>> close = [11.0, 12.5, 10.0, 13.5, 14.5, 12.5, 15.5]
+    >>> out = zeonta.kdj(high, low, close, length=3, signal=2)
+    >>> round(float(out.iloc[-1, 0]), 6)
+    70.233135
+
+    References
+    ----------
+    https://www.tradingview.com/scripts/kdj/
+    """
+    length = validate_length(length)
+    signal = validate_length(signal, "signal")
+    require_aligned_index(high=high, low=low, close=close)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    require_same_length(high=high_values, low=low_values, close=close_values)
+
+    highest = rolling_max(high_values, length)
+    lowest = rolling_min(low_values, length)
+    span = highest - lowest
+    with np.errstate(divide="ignore", invalid="ignore"):
+        fast_k = np.where(span != 0.0, 100.0 * (close_values - lowest) / span, np.nan)
+
+    k_line = wilder_values(fast_k, signal)
+    d_line = wilder_values(k_line, signal)
+    j_line = 3.0 * k_line - 2.0 * d_line
+
+    suffix = f"{length}_{signal}"
+    order = [f"K_{suffix}", f"D_{suffix}", f"J_{suffix}"]
+    return wrap_frame(
+        dict(zip(order, (k_line, d_line, j_line), strict=True)),
+        common_index(high, low, close),
+        order=order,
+    )
+
+
+@indicator(
+    category="oscillators",
+    summary="A smoothed RSI with an ATR-style trailing band, flipping like a Supertrend on RSI.",
+    outputs=("QQE", "QQEl"),
+    reference=(
+        "https://www.prorealcode.com/prorealtime-indicators/"
+        "qqe-indicator-quantitative-qualitative-estimation/"
+    ),
+)
+def qqe(
+    close: ArrayLike,
+    length: int = 14,
+    smooth: int = 5,
+    factor: Number = 4.236,
+) -> pd.DataFrame:
+    """Quantitative Qualitative Estimation.
+
+    Smooths :func:`rsi` with an EMA, measures that smoothed line's own
+    bar-to-bar volatility (Wilder-smoothed twice, at ``2*length - 1``
+    bars — the same "double the RSI period minus one" period Wilder-style
+    indicators use elsewhere), and uses it to build a trailing band around
+    the smoothed RSI — the same one-way-ratchet, flip-on-cross construction
+    :func:`supertrend` uses on price, applied to RSI instead::
+
+        RsiMa = EMA(RSI(length), smooth)
+        AtrRsi = |RsiMa - RsiMa[-1]|
+        DeltaFastAtrRsi = EMA(EMA(AtrRsi, 2*length-1), 2*length-1) * factor
+        newlong = RsiMa - DeltaFastAtrRsi ; newshort = RsiMa + DeltaFastAtrRsi
+
+    ``longband`` only ratchets up while ``RsiMa`` stays above it,
+    ``shortband`` only ratchets down while ``RsiMa`` stays below it, and
+    the trend flips to long when ``RsiMa`` crosses above the previous
+    ``shortband``, or to short when it crosses below the previous
+    ``longband``. The trailing line (``QQEl``) then follows whichever band
+    matches the current trend.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        RSI period.
+    smooth:
+        EMA period smoothing the RSI before everything else is built from it.
+    factor:
+        Multiplier scaling the double-smoothed volatility into a band
+        width. The commonly cited default is ``4.236``.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``QQE_{length}_{smooth}_{factor}`` (the smoothed RSI) and
+        ``QQEl_{length}_{smooth}_{factor}`` (the trailing trend band, on
+        the same 0-100 scale).
+
+    Notes
+    -----
+    QQE has no single academic paper behind it — it originates as a
+    MetaTrader community indicator — but its band and trend-flip
+    construction is precise and cross-confirmed identically across
+    multiple independent implementations (this library verified it
+    against both a documented ProRealTime port and pandas-ta-classic's
+    own source), unlike indicators this library has declined (STC,
+    MavilimW) where the recursion itself could not be pinned down.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> close = list(range(1, 31)) + list(range(29, 14, -1)) + list(range(16, 41))
+    >>> out = zeonta.qqe(close, length=5, smooth=2, factor=2.0)
+    >>> bool(out.iloc[-1, 0] > out.iloc[-1, 1])
+    True
+
+    References
+    ----------
+    https://www.prorealcode.com/prorealtime-indicators/qqe-indicator-quantitative-qualitative-estimation/
+    """
+    length = validate_length(length)
+    smooth = validate_length(smooth, "smooth")
+    factor = validate_multiplier(factor, "factor")
+    values = as_array(close, "close")
+    size = values.shape[0]
+
+    rsi_values = rsi(values, length=length).to_numpy()
+    rsi_ma = ema_values(rsi_values, smooth)
+    atr_rsi = np.abs(np.diff(rsi_ma, prepend=np.nan))
+    wilders_period = 2 * length - 1
+    ma_atr_rsi = ema_values(atr_rsi, wilders_period)
+    delta = ema_values(ma_atr_rsi, wilders_period) * factor
+
+    new_long = rsi_ma - delta
+    new_short = rsi_ma + delta
+
+    long_band = np.full(size, np.nan, dtype="float64")
+    short_band = np.full(size, np.nan, dtype="float64")
+    trend = np.full(size, np.nan, dtype="float64")
+    line = np.full(size, np.nan, dtype="float64")
+
+    # rsi_ma and delta are both built entirely from ema_values()/wilder_values(),
+    # which hold their previous output forward through any gap rather than ever
+    # re-emitting NaN once seeded — so once this loop's own start bar is found,
+    # every later bar is guaranteed finite too; no gap-freeze branch is needed
+    # inside the loop itself, unlike this library's raw-price sequential
+    # indicators (supertrend, laguerre_rsi, heikin_ashi, ...).
+    finite = np.isfinite(delta) & np.isfinite(rsi_ma)
+    start = int(np.argmax(finite)) if finite.any() else -1
+
+    if start >= 0:
+        long_band[start] = new_long[start]
+        short_band[start] = new_short[start]
+        trend[start] = 1.0
+        line[start] = long_band[start]
+
+        for i in range(start + 1, size):
+            previous_rsi_ma = rsi_ma[i - 1]
+            previous_long = long_band[i - 1]
+            previous_short = short_band[i - 1]
+
+            if previous_rsi_ma > previous_long and rsi_ma[i] > previous_long:
+                long_band[i] = max(previous_long, new_long[i])
+            else:
+                long_band[i] = new_long[i]
+
+            if previous_rsi_ma < previous_short and rsi_ma[i] < previous_short:
+                short_band[i] = min(previous_short, new_short[i])
+            else:
+                short_band[i] = new_short[i]
+
+            crossed_above_short = previous_rsi_ma <= previous_short and rsi_ma[i] > previous_short
+            crossed_below_long = previous_rsi_ma >= previous_long and rsi_ma[i] < previous_long
+            if crossed_above_short:
+                trend[i] = 1.0
+            elif crossed_below_long:
+                trend[i] = -1.0
+            else:
+                trend[i] = trend[i - 1]
+
+            line[i] = long_band[i] if trend[i] == 1.0 else short_band[i]
+
+    suffix = f"{length}_{smooth}_{factor}"
+    order = [f"QQE_{suffix}", f"QQEl_{suffix}"]
+    return wrap_frame(
+        dict(zip(order, (rsi_ma, line), strict=True)),
+        common_index(close),
         order=order,
     )

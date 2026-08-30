@@ -489,3 +489,46 @@ def test_vertical_horizontal_filter_is_higher_for_a_clean_trend_than_a_whipsaw()
     trend_vhf = zeonta.vertical_horizontal_filter(trend, length=10).dropna().iloc[-1]
     whipsaw_vhf = zeonta.vertical_horizontal_filter(whipsaw, length=10).dropna().iloc[-1]
     assert trend_vhf > whipsaw_vhf
+
+
+def test_adxr_matches_adx_averaged_with_itself_when_lag_is_zero() -> None:
+    """length=1 makes the lag exactly 0, so ADXR must equal ADX exactly."""
+    prices = np.arange(1.0, 40.0)
+    adx_result = zeonta.adx(prices, prices - 1, prices, length=1)["ADX_1"]
+    adxr_result = zeonta.adxr(prices, prices - 1, prices, length=1)
+    np.testing.assert_allclose(adxr_result.to_numpy(), adx_result.to_numpy(), equal_nan=True)
+
+
+def test_adxr_is_high_in_a_clean_trend() -> None:
+    prices = np.arange(1.0, 80.0)
+    result = zeonta.adxr(prices, prices - 1, prices, length=14)
+    assert result.iloc[-1] > 90
+
+
+def test_adxr_warms_up_later_than_adx() -> None:
+    prices = np.arange(1.0, 80.0)
+    adx_first = zeonta.adx(prices, prices - 1, prices, length=14)["ADX_14"].first_valid_index()
+    adxr_first = zeonta.adxr(prices, prices - 1, prices, length=14).first_valid_index()
+    assert adxr_first > adx_first
+
+
+def test_qstick_matches_the_hand_computed_sma_of_the_body() -> None:
+    open_ = [10.0, 11.0, 10.5, 12.0]
+    close = [11.0, 10.5, 11.2, 13.5]
+    result = zeonta.qstick(open_, close, length=3)
+    np.testing.assert_allclose(result.to_numpy(), [np.nan, np.nan, 0.4, 0.5666666666666667])
+
+
+def test_qstick_is_zero_when_every_bar_closes_flat() -> None:
+    result = zeonta.qstick([10.0] * 10, [10.0] * 10, length=5)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_qstick_is_positive_when_closes_run_above_opens() -> None:
+    result = zeonta.qstick([10.0] * 10, [11.0] * 10, length=5)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 1.0)
+
+
+def test_qstick_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.qstick([1.0, 2.0], [1.5, 2.5], length=0)

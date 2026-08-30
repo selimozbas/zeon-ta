@@ -27,6 +27,7 @@ from ._core import (
     require_same_length,
     rolling_linreg,
     rolling_max,
+    rolling_mean,
     rolling_min,
     rolling_sum,
     validate_length,
@@ -39,6 +40,7 @@ from .volatility import _true_range_values
 
 __all__ = [
     "adx",
+    "adxr",
     "aroon",
     "chandelier_exit",
     "choppiness_index",
@@ -46,6 +48,7 @@ __all__ = [
     "ichimoku",
     "linreg",
     "parabolic_sar",
+    "qstick",
     "supertrend",
     "vertical_horizontal_filter",
     "vortex",
@@ -1075,3 +1078,121 @@ def vertical_horizontal_filter(close: ArrayLike, length: int = 28) -> pd.Series:
         )
 
     return wrap_series(result, common_index(close), f"VHF_{length}")
+
+
+@indicator(
+    category="trend",
+    summary="ADX averaged with its own value from length-1 bars ago, smoothing its tops/bottoms.",
+    outputs=("ADXR",),
+    reference="https://www.fmlabs.com/reference/ADXR.htm",
+)
+def adxr(
+    high: ArrayLike,
+    low: ArrayLike,
+    close: ArrayLike,
+    length: int = 14,
+) -> pd.Series:
+    """Average Directional Movement Rating (J. Welles Wilder).
+
+    A smoothed extension of :func:`adx`, averaging the current ADX with the
+    ADX value from ``length - 1`` bars ago::
+
+        ADXR = (ADX + ADX[length - 1 bars ago]) / 2
+
+    Filters out ADX's own excessive tops and bottoms, at the cost of even
+    more lag stacked on top of ADX's already roughly ``2 * length``-bar
+    warm-up. The ``length - 1`` lag (rather than the more obvious
+    ``length``) matches TA-Lib's own canonical C implementation exactly.
+
+    Parameters
+    ----------
+    high, low, close:
+        Price series of equal length.
+    length:
+        Wilder smoothing period, passed straight through to :func:`adx`
+        and reused as the lag for ADXR's own averaging.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``ADXR_{length}``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> prices = [float(i) for i in range(1, 80)]
+    >>> out = zeonta.adxr(prices, [p - 1 for p in prices], prices, length=14)
+    >>> bool(out.iloc[-1] > 90)
+    True
+
+    References
+    ----------
+    https://www.fmlabs.com/reference/ADXR.htm
+    """
+    length = validate_length(length)
+    adx_values = adx(high, low, close, length=length)[f"ADX_{length}"].to_numpy()
+    size = adx_values.shape[0]
+    lag = length - 1
+    lagged = np.full(size, np.nan, dtype="float64")
+    if lag == 0:
+        lagged = adx_values.copy()
+    elif size > lag:
+        lagged[lag:] = adx_values[:-lag]
+    result = (adx_values + lagged) / 2.0
+    return wrap_series(result, common_index(high, low, close), f"ADXR_{length}")
+
+
+@indicator(
+    category="trend",
+    summary="SMA of each bar's own Close-minus-Open body, a simple candle-bias gauge.",
+    outputs=("QS",),
+    reference=(
+        "https://corporatefinanceinstitute.com/resources/knowledge/"
+        "trading-investing/qstick-indicator/"
+    ),
+)
+def qstick(open: ArrayLike, close: ArrayLike, length: int = 10) -> pd.Series:
+    """Qstick (Tushar Chande).
+
+    A moving average of each bar's own body::
+
+        QS = SMA(Close - Open, length)
+
+    Positive means closes have consistently landed above opens over the
+    window (bullish body bias); negative the mirror. Distinct from
+    :func:`bop`, which normalises the same close-minus-open difference by
+    the bar's own high-low range instead of smoothing it directly.
+
+    Parameters
+    ----------
+    open, close:
+        Series of equal length.
+    length:
+        SMA period. Chande's own default is ``10``.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``QS_{length}``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> open_ = [10.0, 11.0, 10.5, 12.0]
+    >>> close = [11.0, 10.5, 11.2, 13.5]
+    >>> zeonta.qstick(open_, close, length=3).round(4).tolist()
+    [nan, nan, 0.4, 0.5667]
+
+    References
+    ----------
+    https://corporatefinanceinstitute.com/resources/knowledge/trading-investing/qstick-indicator/
+    """
+    length = validate_length(length)
+    require_aligned_index(open=open, close=close)
+    open_values = as_array(open, "open")
+    close_values = as_array(close, "close")
+    require_same_length(open=open_values, close=close_values)
+
+    body = close_values - open_values
+    result = rolling_mean(body, length)
+    return wrap_series(result, common_index(open, close), f"QS_{length}")

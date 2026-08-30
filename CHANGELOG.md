@@ -17,6 +17,45 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **pandas-ta-classic gap-filling batch, round two (9 indicators)** — a
+  third cross-reference pass against `pandas-ta-classic`'s full 224-indicator
+  support matrix, this time the "high-priority classics" group: `kdj`
+  (a stochastic variant popular in Chinese-market analysis — the same
+  Raw Stochastic Value `stoch` calls `%K`, smoothed twice with Wilder's
+  recursion instead of a plain SMA, plus an unbounded `J` line that
+  extrapolates past `K`/`D` to flag extremes earlier), `qqe`
+  (Quantitative Qualitative Estimation — a smoothed RSI with an
+  ATR-style trailing band that flips like a `supertrend` built on RSI
+  instead of price; has no single academic paper behind it, but its
+  band and trend-flip construction was cross-confirmed identically
+  across three independent implementations — a documented ProRealTime
+  port, pandas-ta-classic's own source, and TA-Lib-adjacent community
+  descriptions — clearing the bar that `stc`/`MavilimW`/`IFT-CCI`
+  couldn't), `thermo` (Elder's Thermometer, **investigated and
+  declined** for this batch: freely available sources genuinely
+  disagree on the core formula — pandas-ta-classic's own
+  implementation uses unconditional absolute differences, while an
+  independently-published reimplementation clamps inward range
+  contraction to zero — and the original primary source is a
+  print-only book chapter this project could not consult to resolve
+  it), `accbands` (Acceleration Bands, Price Headley — an SMA envelope
+  that widens by each bar's *own* high-low range rather than a rolling
+  standard deviation, so a single big bar pushes the bands apart with
+  no lag), `bias` (a staple of Chinese/Taiwanese analysis — percentage
+  deviation of Close from its own SMA), `psl` (Psychological Line — a
+  pure vote-counting sentiment gauge: percentage of up-closing bars in
+  a window, asking only *how often* price rose, never *by how much*),
+  `cpr` (Central Pivot Range — the same classic pivot `pivot_points`
+  computes, plus a Top/Bottom Central width band from the same
+  previous bar), `vwmacd` (Volume-Weighted MACD, Buff Dormeier — `macd`
+  built from `vwma` instead of a plain EMA), `adxr` (ADX Rating —
+  `adx` averaged with its own value from `length - 1` bars ago, the
+  exact lag confirmed against TA-Lib's own canonical C implementation
+  after a community reimplementation was found to use a different,
+  incorrect lag), and `qstick` (Tushar Chande — the simplest indicator
+  in this batch: an SMA of each bar's own Close-minus-Open body).
+  Registered indicators: 102 -> 111.
+
 - **pandas-ta-classic gap-filling batch (14 indicators)** — a second
   cross-reference pass, this time against `pandas-ta-classic`
   (`xgboosted/pandas-ta-classic`, the maintained community successor to

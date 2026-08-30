@@ -18,6 +18,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Four new examples**, up from one: `accessor_pipeline.py` (chaining
+  `.zta` calls into a feature table), `signal_walkthrough.py` (combining
+  a SuperTrend flip with an RSI confirmation into one signal column —
+  illustrative of wiring indicators together, explicitly not a trading
+  strategy), `next_gen_indicators.py` (the OHLC volatility estimators and
+  Ehlers cycle filters most TA libraries don't carry), and
+  `cross_asset.py` (the two-asset functions that live outside the
+  registry: `correlation`, `beta`, `wavelet_lead_lag`). A new
+  `tests/test_examples.py` runs every script in `examples/` as part of
+  the test suite, so a stale example now fails CI instead of silently
+  rotting.
+
 - **Ehlers cycle-filter family (5 indicators, 122 -> 127)**, completing the
   "next-generation indicators" scope: `roofing_filter` (a 2-pole highpass
   then a `super_smoother` low-pass, isolating a chosen band of cycles —

@@ -1,4 +1,4 @@
-"""Render the English and Turkish indicator documentation.
+"""Render the indicator documentation published at the project's GitHub Pages site.
 
 Run with ``python tools/gen_docs.py``; pass ``--check`` to verify the committed
 files are up to date without writing anything, which is what CI and
@@ -9,6 +9,12 @@ names are read from the indicator registry, and every example is a real callable
 that is invoked against the test fixture — the snippet shown in the docs is
 recovered from that same callable's source, so the code you read and the output
 you read cannot disagree, and neither can drift away from the library.
+
+README.md is generated too, but deliberately stays a short pitch for the
+project (what it is, why, install, quick start) with a link out to the full
+docs site — the per-indicator reference used to be embedded directly in the
+README as one giant table per category, which made it slow to read and slow
+to regenerate; that detail now lives only in ``docs/``.
 """
 
 from __future__ import annotations
@@ -34,64 +40,42 @@ from zeonta._core import IndicatorSpec, iter_specs  # noqa: E402
 DOCS = ROOT / "docs"
 FIXTURE = ROOT / "tests" / "data" / "ohlcv.csv"
 
+#: GitHub Pages URL this project's docs/ folder is published at (Settings ->
+#: Pages -> Deploy from a branch -> main / docs).
+PAGES_URL = "https://selimozbas.github.io/zeon-ta/"
+
 LABELS = {
-    "en": {
-        "measures": "What it measures",
-        "formula": "Formula",
-        "params": "Parameters",
-        "returns": "Returns",
-        "usage": "Usage",
-        "reading": "How to read it",
-        "pitfalls": "Pitfalls",
-        "reference": "Reference",
-        "param": "Parameter",
-        "default": "Default",
-        "column": "Column",
-        "inputs": "Required inputs",
-        "accessor": "Accessor form",
-        "source": "Formula source",
-        "other_lang": "Türkçe",
-        "back": "All indicators",
-        "none": "None.",
-        "note": (
-            "Examples run against the 300-bar OHLCV fixture in `tests/data/ohlcv.csv`, loaded as "
-            "`df`. The output shown is the real output."
-        ),
-    },
-    "tr": {
-        "measures": "Ne ölçer",
-        "formula": "Formül",
-        "params": "Parametreler",
-        "returns": "Döndürdükleri",
-        "usage": "Kullanım",
-        "reading": "Nasıl okunur",
-        "pitfalls": "Dikkat edilmesi gerekenler",
-        "reference": "Kaynak",
-        "param": "Parametre",
-        "default": "Varsayılan",
-        "column": "Kolon",
-        "inputs": "Gerekli girdiler",
-        "accessor": "Accessor biçimi",
-        "source": "Formül kaynağı",
-        "other_lang": "English",
-        "back": "Tüm indikatörler",
-        "none": "Yok.",
-        "note": (
-            "Örnekler, `df` olarak yüklenen `tests/data/ohlcv.csv` içindeki 300 barlık OHLCV "
-            "fixture üzerinde çalışır. Gösterilen çıktı gerçek çıktıdır."
-        ),
-    },
+    "measures": "What it measures",
+    "formula": "Formula",
+    "params": "Parameters",
+    "returns": "Returns",
+    "usage": "Usage",
+    "reading": "How to read it",
+    "pitfalls": "Pitfalls",
+    "reference": "Reference",
+    "param": "Parameter",
+    "default": "Default",
+    "column": "Column",
+    "inputs": "Required inputs",
+    "accessor": "Accessor form",
+    "source": "Formula source",
+    "back": "All indicators",
+    "none": "None.",
+    "note": (
+        "Examples run against the 300-bar OHLCV fixture in `tests/data/ohlcv.csv`, loaded as "
+        "`df`. The output shown is the real output."
+    ),
 }
 
 CATEGORY_TITLES = {
-    "foundations": ("Foundations", "Temeller"),
-    "moving_averages": ("Moving Averages", "Hareketli Ortalamalar"),
-    "oscillators": ("Oscillators", "Osilatörler"),
-    "volume": ("Volume", "Hacim"),
-    "volatility": ("Volatility", "Oynaklık"),
-    "trend": ("Trend Systems", "Trend Sistemleri"),
-    "advanced": ("Advanced Tools", "İleri Seviye Araçlar"),
-    "statistics": ("Statistics", "İstatistik"),
+    "foundations": "Foundations",
+    "moving_averages": "Moving Averages",
+    "oscillators": "Oscillators",
+    "volume": "Volume",
+    "volatility": "Volatility",
+    "trend": "Trend Systems",
+    "advanced": "Advanced Tools",
+    "statistics": "Statistics",
 }
 
 
@@ -123,11 +107,10 @@ def format_default(value: object) -> str:
     return f"`{value!r}`" if isinstance(value, str) else f"`{value}`"
 
 
-def parameter_table(spec: IndicatorSpec, lang: str) -> list[str]:
-    labels = LABELS[lang]
+def parameter_table(spec: IndicatorSpec) -> list[str]:
     if not spec.params:
-        return [f"_{labels['none']}_", ""]
-    lines = [f"| {labels['param']} | {labels['default']} |", "| --- | --- |"]
+        return [f"_{LABELS['none']}_", ""]
+    lines = [f"| {LABELS['param']} | {LABELS['default']} |", "| --- | --- |"]
     lines += [f"| `{name}` | {format_default(value)} |" for name, value in spec.params.items()]
     lines.append("")
     return lines
@@ -144,42 +127,41 @@ def output_columns(spec: IndicatorSpec) -> list[str]:
     return [str(name) for name in result.columns]
 
 
-def render(spec: IndicatorSpec, lang: str, examples: list[tuple[str, str]]) -> str:
+def render(spec: IndicatorSpec, examples: list[tuple[str, str]]) -> str:
     doc = CONTENT[spec.name]
-    labels = LABELS[lang]
-    other = "tr" if lang == "en" else "en"
 
     lines = [
-        f"# {doc[f'title_{lang}']}",
+        "---",
+        f"title: {doc['title']}",
+        "---",
         "",
-        f"[← {labels['back']}](../index.md) · "
-        f"[{labels['other_lang']}](../../{other}/indicators/{spec.name}.md)",
+        f"[← {LABELS['back']}](../index.md)",
         "",
         f"`zeonta.{spec.name}()` — {spec.summary}",
         "",
-        f"## {labels['measures']}",
+        f"## {LABELS['measures']}",
         "",
-        doc[f"about_{lang}"],
+        doc["about"],
         "",
-        f"## {labels['formula']}",
+        f"## {LABELS['formula']}",
         "",
         "```text",
-        doc[f"formula_{lang}"],
+        doc["formula"],
         "```",
         "",
-        f"## {labels['params']}",
+        f"## {LABELS['params']}",
         "",
-        f"**{labels['inputs']}:** " + ", ".join(f"`{field}`" for field in spec.inputs),
+        f"**{LABELS['inputs']}:** " + ", ".join(f"`{field}`" for field in spec.inputs),
         "",
     ]
-    lines += parameter_table(spec, lang)
-    lines += [f"## {labels['returns']}", "", f"| {labels['column']} |", "| --- |"]
+    lines += parameter_table(spec)
+    lines += [f"## {LABELS['returns']}", "", f"| {LABELS['column']} |", "| --- |"]
     lines += [f"| `{name}` |" for name in output_columns(spec)]
     lines += [
         "",
-        f"## {labels['usage']}",
+        f"## {LABELS['usage']}",
         "",
-        labels["note"],
+        LABELS["note"],
         "",
         "```python",
         "import pandas as pd",
@@ -192,55 +174,55 @@ def render(spec: IndicatorSpec, lang: str, examples: list[tuple[str, str]]) -> s
     for expression, output in examples:
         lines += ["```python", expression, "```", "", "```text", output, "```", ""]
     lines += [
-        f"**{labels['accessor']}:** `df.zta.{spec.name}(...)`",
+        f"**{LABELS['accessor']}:** `df.zta.{spec.name}(...)`",
         "",
-        f"## {labels['reading']}",
+        f"## {LABELS['reading']}",
         "",
-        doc[f"reading_{lang}"],
+        doc["reading"],
         "",
-        f"## {labels['pitfalls']}",
+        f"## {LABELS['pitfalls']}",
         "",
-        doc[f"pitfalls_{lang}"],
+        doc["pitfalls"],
     ]
     if spec.url is not None:
         lines += [
             "",
-            f"## {labels['reference']}",
+            f"## {LABELS['reference']}",
             "",
-            f"{labels['source']}: [{spec.url}]({spec.url})",
+            f"{LABELS['source']}: [{spec.url}]({spec.url})",
         ]
     return "\n".join(lines).rstrip() + "\n"
 
 
-def render_index(lang: str) -> str:
-    labels = LABELS[lang]
-    other = "tr" if lang == "en" else "en"
-    heading = "Indicator Reference" if lang == "en" else "İndikatör Referansı"
+def render_index() -> str:
     intro = (
         "Every indicator in `zeon-ta`, grouped by module. A few indicators additionally "
         "link to the external source their formula was verified against — see "
         "[methodology.md](methodology.md) for how that verification is done."
-        if lang == "en"
-        else "`zeon-ta` içindeki tüm indikatörler, modüllere göre gruplanmıştır. Birkaç "
-        "indikatör, formülünün doğrulandığı dış kaynağa ek olarak bağlantı verir — bu "
-        "doğrulamanın nasıl yapıldığı için bkz. [methodology.md](methodology.md)."
     )
-    header = "| Indicator | Summary |" if lang == "en" else "| İndikatör | Özet |"
-    lines = [f"# {heading}", "", f"[{labels['other_lang']}](../{other}/index.md)", "", intro, ""]
-    for category, (title_en, title_tr) in CATEGORY_TITLES.items():
+    lines = [
+        "---",
+        "title: Indicator Reference",
+        "---",
+        "",
+        "# Indicator Reference",
+        "",
+        intro,
+        "",
+    ]
+    for category, title in CATEGORY_TITLES.items():
         specs = [spec for spec in iter_specs() if spec.category == category]
         if not specs:
             continue
-        lines += [f"## {title_en if lang == 'en' else title_tr}", "", header, "| --- | --- |"]
+        lines += [f"## {title}", "", "| Indicator | Summary |", "| --- | --- |"]
         for spec in specs:
-            title = CONTENT[spec.name][f"title_{lang}"]
-            lines.append(f"| [`{spec.name}`](indicators/{spec.name}.md) | {title} |")
+            title_text = CONTENT[spec.name]["title"]
+            lines.append(f"| [`{spec.name}`](indicators/{spec.name}.md) | {title_text} |")
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
 
 
-README_INTRO = {
-    "en": """# zeon-ta
+README = """# zeon-ta
 
 [![CI](https://github.com/selimozbas/zeon-ta/actions/workflows/ci.yml/badge.svg)](https://github.com/selimozbas/zeon-ta/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
@@ -331,11 +313,18 @@ Single-line indicators return a named `Series`; multi-line ones return a
 `MACD_12_26_9`, `SUPERT_10_3.0`). `ichimoku` additionally returns the part of
 the cloud that projects past the last bar, rather than discarding it.
 
-## Indicators
+## Documentation
 
-{tables}
+The full indicator reference — {count} indicators across {categories} categories,
+each with its formula, parameters, worked examples and (where one exists) the
+external source it was verified against — is published at:
 
-### Cross-asset utilities (outside the registry)
+**{pages_url}**
+
+It's generated straight from the code and from actually running every
+example (see `tools/gen_docs.py`), so it never drifts out of sync with what's
+installed. Browse it locally under [docs/](docs/index.md) instead if you'd
+rather not leave the repo.
 
 `zeonta.cross_asset.wavelet_lead_lag(close_a, close_b, period=20)` compares
 *two independent* price series — which one is leading the other, and by how
@@ -361,7 +350,7 @@ itself and from actually running each example. A test fails if the committed
 files drift.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow, and
-[docs/en/methodology.md](docs/en/methodology.md) for how a formula gets
+[docs/methodology.md](docs/methodology.md) for how a formula gets
 verified before it's implemented. This project follows a
 [Code of Conduct](CODE_OF_CONDUCT.md); see [SECURITY.md](SECURITY.md) to
 report a vulnerability privately.
@@ -369,181 +358,25 @@ report a vulnerability privately.
 ## License
 
 GPL-3.0-or-later — see [LICENSE](LICENSE).
-""",
-    "tr": """# zeon-ta
-
-[![CI](https://github.com/selimozbas/zeon-ta/actions/workflows/ci.yml/badge.svg)](https://github.com/selimozbas/zeon-ta/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/python-3.12%2B-blue)](pyproject.toml)
-[![Lisans](https://img.shields.io/github/license/selimozbas/zeon-ta)](LICENSE)
-
-**English: [README.md](README.md)**
-
-Python için teknik analiz — RSI'dan causal bir cross-wavelet lead-lag
-dönüşümüne kadar. Standart indikatör setinin yanında zeon-ta, daha yeni ve
-akademik kaynaklı araçlar da içerir — Ehlers'in döngü-analizi filtreleri,
-Hurst üsteli, dalgacık tabanlı gürültü giderme ve çok ölçekli oynaklık,
-varlıklar-arası bir lead-lag dönüşümü — her biri bir halk anlatısı
-formülüne değil, geldiği belirli makaleye dayanır.
-
-Formüller, mevcut olduğunda standart ve yaygın olarak yayımlanmış teknik
-analiz tanımlarını izler. Bir formülün kaynağı kendi akademik makalesi
-olduğunda, ya da bir aday indikatörün kaynaklar arasında tek bir mutabık
-formülü olmadığı ortaya çıktığında, docstring hangisinin ve nedenini
-söyler.
-
-## Neden bir TA kütüphanesi daha
-
-- **Klasik ve modern, ikisi de formülü doğrulanmış.** İster RSI olsun
-  ister bir MODWT dalgacık-varyans ayrıştırması, her indikatör formülünün
-  neye karşı doğrulandığını belirtir; kaynaklar arasında tek bir mutabık
-  formülü olmayan bir aday indikatör tahmin edilmek yerine doğrudan
-  reddedilir (her iki durumda da [CHANGELOG.md](CHANGELOG.md)'de
-  belgelenir).
-- **Derleme adımı yok.** Her bağımlılık önceden derlenmiş wheel olarak gelir,
-  bu yüzden `pip install` her yerde sorunsuz çalışır — ARM Mac'ler ve ince
-  konteynerler dâhil.
-- **Tek sözleşme, tüm indikatörler.** `Series`, dizi ya da liste verin; index'iniz
-  korunmuş ve girdinizle aynı uzunlukta pandas nesnesi alın. Isınma barları
-  kırpılmaz, `NaN` kalır; böylece geriye dönük testin altından hiçbir şey sessizce
-  kaymaz.
-- **İki çağırma biçimi.** Fonksiyonel API ve tam olarak aynı koda yönlenen `.zta`
-  DataFrame accessor'ı — eşitlikleri gelenekle değil, testlerle doğrulanır.
-- **Dürüst dokümantasyon.** Her indikatörün sayfası, hangi çıktının geleceğe bakma
-  bilgisi içerdiği ve buna karşı ne yapılacağı dâhil, tuzaklarını açıkça yazar.
-- **Varsayılan değil, ölçülmüş performans.** Her indikatör 1M bar'a kadar
-  ölçülür; gerçek sayılar ve yöntem [BENCHMARKS.md](BENCHMARKS.md) içinde —
-  çoğu bu ölçekte bile düşük milisaniyelerde tamamlanır.
-
-## Kurulum
-
-Henüz PyPI'de değil — doğrudan GitHub'dan kurun:
-
-```bash
-pip install git+https://github.com/selimozbas/zeon-ta.git
-```
-
-Ya da klonlayıp yerel olarak kurun:
-
-```bash
-git clone https://github.com/selimozbas/zeon-ta.git
-cd zeon-ta
-pip install .
-```
-
-Python 3.12+ gerektirir.
-
-## Hızlı başlangıç
-
-```python
-import pandas as pd
-import zeonta
-
-df = pd.read_csv('ohlcv.csv', parse_dates=['date']).set_index('date')
-
-# Fonksiyonel
-rsi = zeonta.rsi(df['close'], length=14)
-bands = zeonta.bbands(df['close'], length=20, std=2)
-
-# Accessor — birebir aynı sonuç
-rsi = df.zta.rsi(length=14)
-trend = df.zta.supertrend(length=10, multiplier=3)
-
-# Mevcut her şeyi listele
-print(zeonta.list_indicators())
-```
-
-Daha fazlası için, gömülü bir örnek veri setine karşı doğrudan çalıştırılabilen
-[examples/](examples/) dizinine bakın.
-
-## Çıktı sözleşmesi
-
-| Girdi | Çıktı |
-| --- | --- |
-| `pd.Series` | Aynı index'e sahip `Series` / `DataFrame` |
-| `np.ndarray` veya `list` | `RangeIndex`'li `Series` / `DataFrame` |
-
-Tek çizgili indikatörler isimlendirilmiş bir `Series`, çok çizgili olanlar ise
-kolon adlarında kullanılan ayarları taşıyan bir `DataFrame` döndürür (`RSI_14`,
-`MACD_12_26_9`, `SUPERT_10_3.0`). `ichimoku` ayrıca bulutun son barın ötesine
-düşen kısmını atmak yerine ek olarak döndürür.
-
-## İndikatörler
-
-{tables}
-
-### Varlıklar-arası araçlar (registry dışında)
-
-`zeonta.cross_asset.wavelet_lead_lag(close_a, close_b, period=20)`, *iki
-bağımsız* fiyat serisini karşılaştırır — seçilen bir zaman ölçeğinde
-hangisinin diğerine öncülük ettiğini ve ne kadar — causal bir Morlet
-Cross-Wavelet Dönüşümü ile (Torrence & Compo, 1998). `list_indicators()`'da
-veya `.zta` accessor'ında yer almaz: kayıtlı her indikatör tek bir varlığın
-kendi OHLCV kolonlarını varsayar, ikinci bağımsız bir seri bu sözleşmeye
-uymaz. Doğrudan import edip çağırın; tam yöntem ve belgelenmiş bir gecikme
-tahmini uyarısı için kendi docstring'ine bakın.
-
-## Geliştirme
-
-```bash
-pip install -e ".[dev]"
-pytest                      # test paketi
-ruff check . && mypy src/   # lint ve tip kontrolü
-python tools/gen_docs.py    # dokümanları yeniden üret
-```
-
-Dokümantasyon üretilir: metinler `tools/docs_content.py` içinde yaşar; parametre
-tabloları, kolon adları ve örnek çıktılar ise doğrudan koddan ve her örneğin
-fiilen çalıştırılmasından alınır. Commit'lenmiş dosyalar saparsa bir test
-başarısız olur.
-
-Tam iş akışı için bkz. [CONTRIBUTING.md](CONTRIBUTING.md); bir formülün
-uygulanmadan önce nasıl doğrulandığı için bkz.
-[docs/tr/methodology.md](docs/tr/methodology.md). Bu proje bir
-[Davranış Kuralları](CODE_OF_CONDUCT.md) belgesine sahiptir; bir güvenlik
-açığını gizli olarak bildirmek için bkz. [SECURITY.md](SECURITY.md).
-
-## Lisans
-
-GPL-3.0-or-later — bkz. [LICENSE](LICENSE).
-""",
-}
+"""
 
 
-def render_readme(lang: str) -> str:
-    header = (
-        "| Indicator | What it does | Docs |"
-        if lang == "en"
-        else ("| İndikatör | Ne yapar | Doküman |")
+def render_readme() -> str:
+    return README.format(
+        count=len(list(iter_specs())),
+        categories=len({spec.category for spec in iter_specs()}),
+        pages_url=PAGES_URL,
     )
-    docs_label = "docs" if lang == "en" else "doküman"
-    blocks: list[str] = []
-    for category, (title_en, title_tr) in CATEGORY_TITLES.items():
-        specs = [spec for spec in iter_specs() if spec.category == category]
-        if not specs:
-            continue
-        heading = title_en if lang == "en" else title_tr
-        blocks += [f"### {heading}", "", header, "| --- | --- | --- |"]
-        for spec in specs:
-            title = CONTENT[spec.name][f"title_{lang}"]
-            link = f"docs/{lang}/indicators/{spec.name}.md"
-            blocks.append(f"| `{spec.name}` | {title} | [{docs_label}]({link}) |")
-        blocks.append("")
-    return README_INTRO[lang].replace("{tables}", "\n".join(blocks).rstrip())
 
 
 def build() -> dict[Path, str]:
     """Every documentation file mapped to the content it should hold."""
     files: dict[Path, str] = {}
-    files[ROOT / "README.md"] = render_readme("en")
-    files[ROOT / "README.tr.md"] = render_readme("tr")
+    files[ROOT / "README.md"] = render_readme()
     evaluated = {spec.name: evaluate(CONTENT[spec.name]["example"]) for spec in iter_specs()}
     for spec in iter_specs():
-        for lang in ("en", "tr"):
-            files[DOCS / lang / "indicators" / f"{spec.name}.md"] = render(
-                spec, lang, evaluated[spec.name]
-            )
-    for lang in ("en", "tr"):
-        files[DOCS / lang / "index.md"] = render_index(lang)
+        files[DOCS / "indicators" / f"{spec.name}.md"] = render(spec, evaluated[spec.name])
+    files[DOCS / "index.md"] = render_index()
     return files
 
 

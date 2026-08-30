@@ -89,160 +89,18 @@ Single-line indicators return a named `Series`; multi-line ones return a
 `MACD_12_26_9`, `SUPERT_10_3.0`). `ichimoku` additionally returns the part of
 the cloud that projects past the last bar, rather than discarding it.
 
-## Indicators
+## Documentation
 
-### Foundations
+The full indicator reference — 111 indicators across 8 categories,
+each with its formula, parameters, worked examples and (where one exists) the
+external source it was verified against — is published at:
 
-| Indicator | What it does | Docs |
-| --- | --- | --- |
-| `candles` | Candlestick Anatomy and Patterns | [docs](docs/en/indicators/candles.md) |
-| `heikin_ashi` | Heikin-Ashi Candles | [docs](docs/en/indicators/heikin_ashi.md) |
-| `relative_volume` | Volume Basics | [docs](docs/en/indicators/relative_volume.md) |
-| `support_resistance` | Support and Resistance | [docs](docs/en/indicators/support_resistance.md) |
-| `trend_channel` | Trend Basics and Trend Channels | [docs](docs/en/indicators/trend_channel.md) |
+**https://selimozbas.github.io/zeon-ta/**
 
-### Moving Averages
-
-| Indicator | What it does | Docs |
-| --- | --- | --- |
-| `alma` | Arnaud Legoux Moving Average (ALMA) | [docs](docs/en/indicators/alma.md) |
-| `dema` | Double Exponential Moving Average (DEMA) | [docs](docs/en/indicators/dema.md) |
-| `efficiency_ratio` | Kaufman's Efficiency Ratio (ER) | [docs](docs/en/indicators/efficiency_ratio.md) |
-| `ema` | Exponential Moving Average (EMA) | [docs](docs/en/indicators/ema.md) |
-| `ema_ribbon` | EMA Ribbon | [docs](docs/en/indicators/ema_ribbon.md) |
-| `emd_imf1` | Empirical Mode Decomposition — First IMF | [docs](docs/en/indicators/emd_imf1.md) |
-| `hma` | Hull Moving Average (HMA) | [docs](docs/en/indicators/hma.md) |
-| `instantaneous_trendline` | Instantaneous Trendline (Ehlers) | [docs](docs/en/indicators/instantaneous_trendline.md) |
-| `kama` | Kaufman's Adaptive Moving Average (KAMA) | [docs](docs/en/indicators/kama.md) |
-| `ma_cross` | Moving Average Crossovers | [docs](docs/en/indicators/ma_cross.md) |
-| `mcgd` | McGinley Dynamic | [docs](docs/en/indicators/mcgd.md) |
-| `sma` | Simple Moving Average (SMA) | [docs](docs/en/indicators/sma.md) |
-| `smma` | Smoothed Moving Average (SMMA) | [docs](docs/en/indicators/smma.md) |
-| `super_smoother` | Super Smoother Filter (Ehlers) | [docs](docs/en/indicators/super_smoother.md) |
-| `t3` | T3 Moving Average (Tillson) | [docs](docs/en/indicators/t3.md) |
-| `tema` | Triple Exponential Moving Average (TEMA) | [docs](docs/en/indicators/tema.md) |
-| `trima` | Triangular Moving Average (TRIMA) | [docs](docs/en/indicators/trima.md) |
-| `vidya` | Variable Index Dynamic Average (VIDYA) | [docs](docs/en/indicators/vidya.md) |
-| `vwma` | Volume-Weighted Moving Average (VWMA) | [docs](docs/en/indicators/vwma.md) |
-| `wavelet_denoise` | Wavelet-Denoised Price (Discrete Wavelet Transform) | [docs](docs/en/indicators/wavelet_denoise.md) |
-| `wma` | Weighted Moving Average (WMA) | [docs](docs/en/indicators/wma.md) |
-| `zlema` | Zero-Lag Exponential Moving Average (ZLEMA) | [docs](docs/en/indicators/zlema.md) |
-
-### Oscillators
-
-| Indicator | What it does | Docs |
-| --- | --- | --- |
-| `awesome_oscillator` | Awesome Oscillator (AO) | [docs](docs/en/indicators/awesome_oscillator.md) |
-| `bias` | Bias | [docs](docs/en/indicators/bias.md) |
-| `cci` | Commodity Channel Index (CCI) | [docs](docs/en/indicators/cci.md) |
-| `center_of_gravity` | Center of Gravity Oscillator (CG) | [docs](docs/en/indicators/center_of_gravity.md) |
-| `cmo` | Chande Momentum Oscillator (CMO) | [docs](docs/en/indicators/cmo.md) |
-| `coppock_curve` | Coppock Curve | [docs](docs/en/indicators/coppock_curve.md) |
-| `dpo` | Detrended Price Oscillator (DPO) | [docs](docs/en/indicators/dpo.md) |
-| `elder_ray` | Elder Ray (Bull Power / Bear Power) | [docs](docs/en/indicators/elder_ray.md) |
-| `fisher_transform` | Fisher Transform (Ehlers) | [docs](docs/en/indicators/fisher_transform.md) |
-| `kdj` | KDJ | [docs](docs/en/indicators/kdj.md) |
-| `kst` | Pring's Know Sure Thing (KST) | [docs](docs/en/indicators/kst.md) |
-| `laguerre_rsi` | Laguerre RSI | [docs](docs/en/indicators/laguerre_rsi.md) |
-| `macd` | MACD (Moving Average Convergence Divergence) | [docs](docs/en/indicators/macd.md) |
-| `momentum` | Momentum | [docs](docs/en/indicators/momentum.md) |
-| `ppo` | Percentage Price Oscillator (PPO) | [docs](docs/en/indicators/ppo.md) |
-| `psl` | Psychological Line (PSL) | [docs](docs/en/indicators/psl.md) |
-| `qqe` | Quantitative Qualitative Estimation (QQE) | [docs](docs/en/indicators/qqe.md) |
-| `roc` | Rate of Change (ROC) | [docs](docs/en/indicators/roc.md) |
-| `rsi` | Relative Strength Index (RSI) | [docs](docs/en/indicators/rsi.md) |
-| `rvgi` | Relative Vigor Index (RVGI) | [docs](docs/en/indicators/rvgi.md) |
-| `smi` | Stochastic Momentum Index (SMI) | [docs](docs/en/indicators/smi.md) |
-| `stoch` | Stochastic Oscillator | [docs](docs/en/indicators/stoch.md) |
-| `stoch_rsi` | Stochastic RSI (StochRSI) | [docs](docs/en/indicators/stoch_rsi.md) |
-| `trix` | TRIX (Triple Exponential Average) | [docs](docs/en/indicators/trix.md) |
-| `tsi` | True Strength Index (TSI) | [docs](docs/en/indicators/tsi.md) |
-| `ultimate_oscillator` | Ultimate Oscillator | [docs](docs/en/indicators/ultimate_oscillator.md) |
-| `williams_r` | Williams %R | [docs](docs/en/indicators/williams_r.md) |
-
-### Volume
-
-| Indicator | What it does | Docs |
-| --- | --- | --- |
-| `adl` | Accumulation/Distribution Line (ADL) | [docs](docs/en/indicators/adl.md) |
-| `bop` | Balance of Power (BOP) | [docs](docs/en/indicators/bop.md) |
-| `chaikin_oscillator` | Chaikin Oscillator | [docs](docs/en/indicators/chaikin_oscillator.md) |
-| `cmf` | Chaikin Money Flow (CMF) | [docs](docs/en/indicators/cmf.md) |
-| `ease_of_movement` | Ease of Movement (EMV) | [docs](docs/en/indicators/ease_of_movement.md) |
-| `force_index` | Force Index | [docs](docs/en/indicators/force_index.md) |
-| `klinger_volume_oscillator` | Klinger Volume Oscillator (KVO) | [docs](docs/en/indicators/klinger_volume_oscillator.md) |
-| `mfi` | Money Flow Index (MFI) | [docs](docs/en/indicators/mfi.md) |
-| `nvi` | Negative Volume Index (NVI) | [docs](docs/en/indicators/nvi.md) |
-| `obv` | On-Balance Volume (OBV) | [docs](docs/en/indicators/obv.md) |
-| `pvi` | Positive Volume Index (PVI) | [docs](docs/en/indicators/pvi.md) |
-| `pvt` | Price Volume Trend (PVT) | [docs](docs/en/indicators/pvt.md) |
-| `vwmacd` | Volume-Weighted MACD | [docs](docs/en/indicators/vwmacd.md) |
-| `williams_ad` | Williams Accumulation/Distribution (WAD) | [docs](docs/en/indicators/williams_ad.md) |
-
-### Volatility
-
-| Indicator | What it does | Docs |
-| --- | --- | --- |
-| `accbands` | Acceleration Bands | [docs](docs/en/indicators/accbands.md) |
-| `atr` | Average True Range (ATR) | [docs](docs/en/indicators/atr.md) |
-| `bbands` | Bollinger Bands | [docs](docs/en/indicators/bbands.md) |
-| `chaikin_volatility` | Chaikin Volatility (CVI) | [docs](docs/en/indicators/chaikin_volatility.md) |
-| `keltner` | Keltner Channels | [docs](docs/en/indicators/keltner.md) |
-| `mass_index` | Mass Index | [docs](docs/en/indicators/mass_index.md) |
-| `natr` | Normalized Average True Range (NATR) | [docs](docs/en/indicators/natr.md) |
-| `relative_volatility_index` | Relative Volatility Index (RVI) | [docs](docs/en/indicators/relative_volatility_index.md) |
-| `squeeze` | The Squeeze (TTM Squeeze) | [docs](docs/en/indicators/squeeze.md) |
-| `true_range` | True Range | [docs](docs/en/indicators/true_range.md) |
-| `ulcer_index` | Ulcer Index | [docs](docs/en/indicators/ulcer_index.md) |
-| `wavelet_variance` | Multi-Scale Wavelet Variance (MODWT) | [docs](docs/en/indicators/wavelet_variance.md) |
-
-### Trend Systems
-
-| Indicator | What it does | Docs |
-| --- | --- | --- |
-| `adx` | ADX / DMI | [docs](docs/en/indicators/adx.md) |
-| `adxr` | ADX Rating (ADXR) | [docs](docs/en/indicators/adxr.md) |
-| `aroon` | Aroon and the Aroon Oscillator | [docs](docs/en/indicators/aroon.md) |
-| `chandelier_exit` | Chandelier Exit | [docs](docs/en/indicators/chandelier_exit.md) |
-| `choppiness_index` | Choppiness Index (CHOP) | [docs](docs/en/indicators/choppiness_index.md) |
-| `donchian` | Donchian Channels | [docs](docs/en/indicators/donchian.md) |
-| `ichimoku` | Ichimoku | [docs](docs/en/indicators/ichimoku.md) |
-| `linreg` | Linear Regression Slope & Forecast | [docs](docs/en/indicators/linreg.md) |
-| `parabolic_sar` | Parabolic SAR | [docs](docs/en/indicators/parabolic_sar.md) |
-| `qstick` | Qstick | [docs](docs/en/indicators/qstick.md) |
-| `supertrend` | SuperTrend | [docs](docs/en/indicators/supertrend.md) |
-| `vertical_horizontal_filter` | Vertical Horizontal Filter (VHF) | [docs](docs/en/indicators/vertical_horizontal_filter.md) |
-| `vortex` | Vortex Indicator | [docs](docs/en/indicators/vortex.md) |
-
-### Advanced Tools
-
-| Indicator | What it does | Docs |
-| --- | --- | --- |
-| `cpr` | Central Pivot Range (CPR) | [docs](docs/en/indicators/cpr.md) |
-| `dfa` | Detrended Fluctuation Analysis (DFA) | [docs](docs/en/indicators/dfa.md) |
-| `divergence` | Divergences | [docs](docs/en/indicators/divergence.md) |
-| `fib_retracement` | Fibonacci Retracement | [docs](docs/en/indicators/fib_retracement.md) |
-| `hurst_exponent` | Hurst Exponent (Rescaled Range Analysis) | [docs](docs/en/indicators/hurst_exponent.md) |
-| `ou_half_life` | Ornstein-Uhlenbeck Half-Life of Mean Reversion | [docs](docs/en/indicators/ou_half_life.md) |
-| `pivot_points` | Pivot Points | [docs](docs/en/indicators/pivot_points.md) |
-| `sample_entropy` | Sample Entropy (SampEn) | [docs](docs/en/indicators/sample_entropy.md) |
-| `vwap` | VWAP (Volume-Weighted Average Price) | [docs](docs/en/indicators/vwap.md) |
-
-### Statistics
-
-| Indicator | What it does | Docs |
-| --- | --- | --- |
-| `cumulative_return` | Cumulative Return | [docs](docs/en/indicators/cumulative_return.md) |
-| `drawdown` | Drawdown | [docs](docs/en/indicators/drawdown.md) |
-| `kurtosis` | Kurtosis | [docs](docs/en/indicators/kurtosis.md) |
-| `log_return` | Logarithmic Return | [docs](docs/en/indicators/log_return.md) |
-| `mad` | Median Absolute Deviation (MAD) | [docs](docs/en/indicators/mad.md) |
-| `skewness` | Skewness | [docs](docs/en/indicators/skewness.md) |
-| `stddev` | Standard Deviation | [docs](docs/en/indicators/stddev.md) |
-| `variance` | Variance | [docs](docs/en/indicators/variance.md) |
-| `zscore` | Z-Score | [docs](docs/en/indicators/zscore.md) |
-
-### Cross-asset utilities (outside the registry)
+It's generated straight from the code and from actually running every
+example (see `tools/gen_docs.py`), so it never drifts out of sync with what's
+installed. Browse it locally under [docs/](docs/index.md) instead if you'd
+rather not leave the repo.
 
 `zeonta.cross_asset.wavelet_lead_lag(close_a, close_b, period=20)` compares
 *two independent* price series — which one is leading the other, and by how
@@ -268,7 +126,7 @@ itself and from actually running each example. A test fails if the committed
 files drift.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow, and
-[docs/en/methodology.md](docs/en/methodology.md) for how a formula gets
+[docs/methodology.md](docs/methodology.md) for how a formula gets
 verified before it's implemented. This project follows a
 [Code of Conduct](CODE_OF_CONDUCT.md); see [SECURITY.md](SECURITY.md) to
 report a vulnerability privately.

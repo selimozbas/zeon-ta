@@ -21,7 +21,7 @@ so a source link here speeds that up considerably.
 
 A short description of what the indicator is for and how it differs from
 what's already in the library (check
-[the indicator index](../../docs/en/index.md) first — a near-duplicate of an
+[the indicator index](../../docs/index.md) first — a near-duplicate of an
 existing one is a good reason to close as not planned).
 
 ## Suggested category

@@ -8,6 +8,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **Documentation is English-only, and the full indicator reference moved
+  out of the README onto a GitHub Pages site.** `README.tr.md`, `docs/tr/`,
+  and every `_tr` field in `tools/docs_content.py` are removed — Turkish
+  translation was adding real maintenance drag (every prose edit needed a
+  matching translation kept in sync, checked by its own test) without a
+  clear audience for it. `docs/en/` moved to `docs/` (flattened, no more
+  language subfolder), and `tools/gen_docs.py` now publishes it as a Jekyll
+  site (`docs/_config.yml`) intended for GitHub Pages
+  (`https://selimozbas.github.io/zeon-ta/`) rather than only as
+  browsable-on-GitHub markdown. README.md, which used to embed one giant
+  table of every indicator per category (slow to read, slow to
+  regenerate), is now a short pitch for the project — what it is, why,
+  install, quick start, output contract — with a link out to the docs
+  site for the per-indicator reference. `tests/test_docs.py` was
+  rewritten to match: no more per-language parametrization, and a new
+  `test_readme_links_to_the_docs_site` in place of the old
+  `test_readmes_link_every_indicator`.
+
 - **New dependency: PyWavelets (`pywavelets>=1.9`).** Needed for
   `wavelet_denoise` below — no wavelet transform exists in NumPy or pandas
   themselves (NumPy's FFT gives frequency information but discards *when*

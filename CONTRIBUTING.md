@@ -109,7 +109,7 @@ Before writing any code:
 3. Put the confirmed source URL in `reference=` on the decorator and in the
    `References` section of the docstring.
 
-See `docs/en/methodology.md` for the full writeup of this process and past
+See `docs/methodology.md` for the full writeup of this process and past
 examples of formulas that turned out to be wrong.
 
 **Never guess a doctest or example value.** Compute it by actually running
@@ -147,17 +147,20 @@ exists.
 ## Documentation workflow
 
 Prose lives in exactly one place: `tools/docs_content.py`, one dict entry per
-indicator with English and Turkish `title`, `formula`, `about`, `reading`,
-and `pitfalls` fields, plus an `example` list of `lambda df: ...` callables
-run against `tests/data/ohlcv.csv`. Everything else — parameter tables,
-output column names, the rendered example output, the README indicator
-tables, the per-language indicator indexes — is derived mechanically from
-the registry and from actually executing the examples.
+indicator with `title`, `formula`, `about`, `reading`, and `pitfalls` fields,
+plus an `example` list of `lambda df: ...` callables run against
+`tests/data/ohlcv.csv`. Everything else — parameter tables, output column
+names, the rendered example output, the per-indicator index — is derived
+mechanically from the registry and from actually executing the examples.
+
+The full indicator reference lives under `docs/` (English only) and is
+published via GitHub Pages, not embedded in the README — README.md stays a
+short pitch for the project with a link out to the docs site.
 
 After adding or changing an indicator:
 
 ```bash
-python tools/gen_docs.py          # regenerates docs/, README.md, README.tr.md
+python tools/gen_docs.py          # regenerates docs/ and README.md
 python tools/gen_docs.py --check  # verifies nothing is stale, no writes (what CI runs)
 ```
 

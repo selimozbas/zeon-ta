@@ -150,3 +150,42 @@ def test_relative_volume_is_undefined_when_nothing_traded() -> None:
 def test_relative_volume_rejects_negative_volume() -> None:
     with pytest.raises(ValueError, match="'volume' must not contain negative values"):
         zeonta.relative_volume([100.0, -1.0, 100.0], length=2)
+
+
+def test_heikin_ashi_matches_the_hand_computed_recursion() -> None:
+    open_ = [10.0, 11.0, 10.5, 12.0]
+    high = [12.0, 13.0, 11.5, 14.0]
+    low = [9.0, 10.0, 9.5, 11.0]
+    close = [11.0, 10.5, 11.2, 13.5]
+    out = zeonta.heikin_ashi(open_, high, low, close)
+    np.testing.assert_allclose(out["HAclose"].to_numpy(), [10.5, 11.125, 10.675, 12.625])
+    np.testing.assert_allclose(out["HAopen"].iloc[0], 10.5)
+
+
+def test_heikin_ashi_high_and_low_bracket_open_and_close() -> None:
+    open_ = [10.0, 11.0, 10.5, 12.0]
+    high = [12.0, 13.0, 11.5, 14.0]
+    low = [9.0, 10.0, 9.5, 11.0]
+    close = [11.0, 10.5, 11.2, 13.5]
+    out = zeonta.heikin_ashi(open_, high, low, close)
+    assert (out["HAhigh"] >= out[["HAopen", "HAclose"]].max(axis=1)).all()
+    assert (out["HAlow"] <= out[["HAopen", "HAclose"]].min(axis=1)).all()
+
+
+def test_heikin_ashi_is_never_nan_for_finite_input() -> None:
+    out = zeonta.heikin_ashi([10.0] * 10, [11.0] * 10, [9.0] * 10, [10.0] * 10)
+    assert out.notna().all().all()
+
+
+def test_heikin_ashi_holds_the_prior_open_through_a_gap() -> None:
+    """A fully missing bar has no *own* open to compute (its HAclose is
+    NaN), so the bar right after it freezes at the gap bar's HAopen
+    instead of advancing the recursion — the gap-freeze convention this
+    library applies elsewhere, adapted to a value with no fixed window."""
+    open_ = [10.0, 11.0, np.nan, 12.0]
+    high = [12.0, 13.0, np.nan, 14.0]
+    low = [9.0, 10.0, np.nan, 11.0]
+    close = [11.0, 10.5, np.nan, 13.5]
+    out = zeonta.heikin_ashi(open_, high, low, close)
+    assert out["HAclose"].iloc[2:].isna().to_numpy().tolist() == [True, False]
+    assert out["HAopen"].iloc[3] == out["HAopen"].iloc[2]

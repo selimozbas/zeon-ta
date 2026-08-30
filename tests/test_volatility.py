@@ -280,3 +280,42 @@ def test_mass_index_rejects_non_positive_ema_length() -> None:
 def test_mass_index_rejects_non_positive_sum_length() -> None:
     with pytest.raises(ValueError, match="'sum_length' must be >="):
         zeonta.mass_index([2.0] * 10, [1.0] * 10, sum_length=0)
+
+
+def test_chaikin_volatility_matches_the_hand_computed_roc_of_the_smoothed_range() -> None:
+    high = [12.0, 13.5, 11.0, 15.0, 17.0, 14.5, 18.0]
+    low = [10.0, 11.0, 9.5, 11.0, 12.0, 11.0, 12.5]
+    result = zeonta.chaikin_volatility(high, low, length=3)
+    np.testing.assert_allclose(result.dropna().to_numpy(), [87.5, 54.166666666666664])
+
+
+def test_chaikin_volatility_is_zero_on_a_constant_range() -> None:
+    result = zeonta.chaikin_volatility([12.0] * 10, [10.0] * 10, length=3)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_chaikin_volatility_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.chaikin_volatility([2.0, 3.0], [1.0, 1.5], length=0)
+
+
+def test_relative_volatility_index_stays_within_bounds(ohlcv: pd.DataFrame) -> None:
+    result = zeonta.relative_volatility_index(ohlcv["close"])
+    values = result.dropna().to_numpy()
+    assert (values >= 0.0).all() and (values <= 100.0).all()
+
+
+def test_relative_volatility_index_matches_the_hand_computed_value() -> None:
+    close = [10.0, 10.5, 10.2, 10.8, 10.3, 10.9, 10.4, 11.0, 10.6, 11.2]
+    result = zeonta.relative_volatility_index(close, stdev_length=4, smooth_length=3)
+    np.testing.assert_allclose(result.iloc[-1], 72.21514421674283)
+
+
+def test_relative_volatility_index_rejects_non_positive_stdev_length() -> None:
+    with pytest.raises(ValueError, match="'stdev_length' must be >="):
+        zeonta.relative_volatility_index([1.0, 2.0, 3.0], stdev_length=0)
+
+
+def test_relative_volatility_index_rejects_non_positive_smooth_length() -> None:
+    with pytest.raises(ValueError, match="'smooth_length' must be >="):
+        zeonta.relative_volatility_index([1.0, 2.0, 3.0], smooth_length=0)

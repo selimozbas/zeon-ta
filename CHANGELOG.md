@@ -17,6 +17,67 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **pandas-ta-classic gap-filling batch (14 indicators)** — a second
+  cross-reference pass, this time against `pandas-ta-classic`
+  (`xgboosted/pandas-ta-classic`, the maintained community successor to
+  the now-archived `twopirllc/pandas-ta`), covering three of its
+  candidate groups end to end:
+
+  - *High-priority classics*: `heikin_ashi` (the recursive "average bar"
+    OHLC transform — explicitly documented as the one indicator in this
+    library where a single missing bar changes every later value, since
+    there is no fixed window for the effect to age out of, unlike
+    everything else here), `kst` (Pring's Know Sure Thing — four
+    ROC-then-SMA cycles weighted by increasing multiples), `rvgi`
+    (Relative Vigor Index — `bop`'s body/range idea, symmetrically
+    4-bar-weighted and smoothed twice), `smi` (Stochastic Momentum
+    Index, William Blau — `stoch` reworked around distance from the
+    range midpoint, double-EMA-smoothed both sides), `chaikin_volatility`
+    (Marc Chaikin — rate of change of an EMA-smoothed high-low range),
+    `vidya` (Chande's Variable Index Dynamic Average — an EMA whose
+    smoothing constant is scaled by `cmo`'s momentum reading; required
+    converting `cmo`'s `[-100, 100]` scale down to `[-1, 1]` to match
+    Chande's original formula, a scale mismatch caught by an absurd
+    doctest value before it shipped), `trima` (Triangular Moving
+    Average — an SMA of an SMA with matched window halves, giving a
+    triangular rather than rectangular weighting), `drawdown` (running
+    percentage decline from the series' own all-time high; uses
+    `pandas`' own `cummax()` rather than `np.maximum.accumulate()` so a
+    single gap bar doesn't poison every later running peak — the same
+    bug class already fixed in `adl()`), `efficiency_ratio`
+    (Kaufman's adaptive core, extracted out of `kama()` into its own
+    indicator and shared via a new private helper), `relative_volatility_index`
+    (Donald Dorsey — `rsi`'s up/down-split-then-smooth structure applied
+    to a rolling standard deviation instead of price change, giving
+    volatility a direction), `klinger_volume_oscillator` (Stephen
+    Klinger — `obv` reworked with a "volume force" scaled by how each
+    bar's own range compares to the accumulated range since the trend
+    last flipped), and `williams_ad` (Larry Williams — `adl`'s
+    predecessor, anchoring each bar against the *prior* close rather
+    than that bar's own range, with no volume term despite the name).
+  - *Ehlers family*: `center_of_gravity` (John Ehlers — a near-zero-lag
+    balance-point oscillator, formula verified directly against Ehlers'
+    own "The CG Oscillator" paper) and `laguerre_rsi` (John Ehlers — a
+    4-stage Laguerre filter cascade standing in for RSI's Wilder
+    smoothing, formula verified directly against Ehlers' own "Time Warp
+    – Without Space Travel" paper; empirically settles at exactly `1.0`
+    after a clean uptrend and `0.0` after a clean downtrend).
+  - *Two-asset statistics*: `correlation` (rolling Pearson correlation
+    coefficient) and `beta` (rolling regression beta against a second
+    asset's returns) — both, like `wavelet_lead_lag` before them, take
+    two independent price series and are deliberately **not** registered
+    in the indicator registry, since the registry's OHLCV-named-input
+    convention doesn't fit a genuinely two-asset function.
+
+  `stc` (Schaff Trend Cycle) was investigated and declined for this
+  batch: no source consulted gave a single, unambiguous recursive
+  %D/%K/PF/PFF algorithm precise enough to implement without guessing,
+  the same class of decision already made for `MavilimW`, `IFT-CCI` and
+  `Wavelet MACD`. `JMA`, `MAMA`/Hilbert Transform and `TD Sequential`
+  were ruled out on sight as proprietary or unverifiable. The ~60-strong
+  TA-Lib candlestick-pattern battery remains out of scope. Registered
+  indicators: 88 -> 102.
+
 - **Oscillators** — `cmo` (Chande Momentum Oscillator, Tushar Chande
   1994), the sixth and last indicator of the coverage-review batch. Built
   from the same up-move/down-move split as `rsi`, but combined

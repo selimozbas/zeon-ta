@@ -28,6 +28,7 @@ from ._core import (
     rolling_mean,
     rolling_sum,
     validate_length,
+    wrap_frame,
     wrap_series,
 )
 
@@ -38,11 +39,13 @@ __all__ = [
     "cmf",
     "ease_of_movement",
     "force_index",
+    "klinger_volume_oscillator",
     "mfi",
     "nvi",
     "obv",
     "pvi",
     "pvt",
+    "williams_ad",
 ]
 
 
@@ -857,3 +860,193 @@ def pvi(close: ArrayLike, volume: ArrayLike) -> pd.Series:
 
     result = _volume_conditioned_index(close_values, volume_values, rises=True)
     return wrap_series(result, common_index(close, volume), "PVI")
+
+
+@indicator(
+    category="volume",
+    summary="Difference of two EMAs of a trend-and-range-scaled volume force.",
+    reference="https://tulipindicators.org/kvo",
+    outputs=("KVO", "KVOs"),
+)
+def klinger_volume_oscillator(
+    high: ArrayLike,
+    low: ArrayLike,
+    close: ArrayLike,
+    volume: ArrayLike,
+    fast: int = 34,
+    slow: int = 55,
+    signal_length: int = 13,
+) -> pd.DataFrame:
+    """Klinger Volume Oscillator (Stephen Klinger).
+
+    Builds a "volume force" that signs each bar's volume by trend and
+    scales it by how the bar's own range compares to the accumulated
+    range since the trend last flipped, then takes the difference of two
+    EMAs of that force::
+
+        HLC = High + Low + Close
+        Trend = +1 if HLC rose vs. the prior bar, -1 if it fell, else carried forward
+        dm = High - Low
+        cm = dm[-1] + dm if Trend flipped, else cm[-1] + dm
+        VF = 100 * Volume * Trend * |2*(dm/cm) - 1|
+        KVO = EMA(VF, fast) - EMA(VF, slow)
+
+    with an EMA of ``KVO`` as its own signal line. Where :func:`obv` signs
+    a bar's *entire* volume by direction alone, Klinger's volume force is
+    scaled down when a bar's own range is small relative to the
+    accumulated move (a half-hearted push) and scaled up when the range
+    dominates it (full commitment behind the move).
+
+    Parameters
+    ----------
+    high, low, close, volume:
+        Series of equal length.
+    fast, slow:
+        EMA periods for the volume force. Klinger's own commonly cited
+        defaults are ``34`` and ``55``.
+    signal_length:
+        EMA period for the signal line. Klinger's own default is ``13``.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``KVO_{fast}_{slow}`` and ``KVOs_{fast}_{slow}`` (the
+        signal line).
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> high = [12.0, 13.0, 11.0, 14.0, 15.0, 13.5, 16.0]
+    >>> low = [10.0, 11.0, 9.0, 12.0, 13.0, 11.5, 14.0]
+    >>> close = [11.0, 12.5, 10.0, 13.5, 14.5, 12.5, 15.5]
+    >>> volume = [100.0, 150.0, 200.0, 120.0, 180.0, 90.0, 210.0]
+    >>> out = zeonta.klinger_volume_oscillator(high, low, close, volume, fast=3, slow=5)
+    >>> round(float(out.iloc[-1, 0]), 6)
+    -463.888889
+
+    References
+    ----------
+    https://tulipindicators.org/kvo
+    """
+    fast = validate_length(fast, "fast")
+    slow = validate_length(slow, "slow")
+    signal_length = validate_length(signal_length, "signal_length")
+    require_aligned_index(high=high, low=low, close=close, volume=volume)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    volume_values = as_array(volume, "volume")
+    size = require_same_length(
+        high=high_values, low=low_values, close=close_values, volume=volume_values
+    )
+    require_non_negative(volume=volume_values)
+
+    hlc = high_values + low_values + close_values
+    dm = high_values - low_values
+
+    trend = np.zeros(size, dtype="float64")
+    cm = np.zeros(size, dtype="float64")
+    if size > 0:
+        trend[0] = 1.0
+        cm[0] = dm[0]
+    for i in range(1, size):
+        if not np.isfinite(hlc[i] - hlc[i - 1]):
+            trend[i] = trend[i - 1]
+        elif hlc[i] > hlc[i - 1]:
+            trend[i] = 1.0
+        elif hlc[i] < hlc[i - 1]:
+            trend[i] = -1.0
+        else:
+            trend[i] = trend[i - 1]
+        cm[i] = (dm[i - 1] + dm[i]) if trend[i] != trend[i - 1] else (cm[i - 1] + dm[i])
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        ratio = np.where(cm != 0.0, dm / cm, 0.0)
+    volume_force = 100.0 * volume_values * trend * np.abs(2.0 * ratio - 1.0)
+    volume_force = np.where(np.isfinite(hlc) & np.isfinite(volume_values), volume_force, np.nan)
+
+    short_ema = ema_values(volume_force, fast)
+    long_ema = ema_values(volume_force, slow)
+    result = short_ema - long_ema
+    signal = ema_values(result, signal_length)
+
+    order = [f"KVO_{fast}_{slow}", f"KVOs_{fast}_{slow}"]
+    return wrap_frame(
+        dict(zip(order, (result, signal), strict=True)),
+        common_index(high, low, close, volume),
+        order=order,
+    )
+
+
+@indicator(
+    category="volume",
+    summary="Running total gated by whether today extended a rising or falling close.",
+    reference="https://tulipindicators.org/wad",
+    outputs=("WAD",),
+)
+def williams_ad(high: ArrayLike, low: ArrayLike, close: ArrayLike) -> pd.Series:
+    """Williams Accumulation/Distribution (Larry Williams).
+
+    ``WAD[0] = 0``; for every following bar::
+
+        TRH = max(Close[i-1], High[i])
+        TRL = min(Close[i-1], Low[i])
+        WAD[i] = WAD[i-1] + (Close[i] - TRL)   if Close[i] > Close[i-1]
+        WAD[i] = WAD[i-1] + (Close[i] - TRH)   if Close[i] < Close[i-1]
+        WAD[i] = WAD[i-1]                      if Close[i] == Close[i-1]
+
+    Unlike :func:`adl` (which weighs every bar by where the close sits in
+    *that bar's own* range), WAD anchors each bar against the *prior
+    close* — a bar that gapped up still only gets credit for the move
+    above yesterday's close, not its own full range. No volume term
+    despite the name and the category it sits in; it is purely a price
+    construction, predating :func:`adl`.
+
+    Parameters
+    ----------
+    high, low, close:
+        Price series of equal length.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``WAD``. Never ``NaN`` — a running total, not a windowed
+        statistic. The absolute level is arbitrary; only its slope and
+        its divergence from price are meaningful.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> high = [12.0, 13.0, 11.0, 14.0, 15.0]
+    >>> low = [10.0, 11.0, 9.0, 12.0, 13.0]
+    >>> close = [11.0, 12.5, 10.0, 13.5, 14.5]
+    >>> zeonta.williams_ad(high, low, close).tolist()
+    [0.0, 1.5, -1.0, 2.5, 4.0]
+
+    References
+    ----------
+    https://tulipindicators.org/wad
+    """
+    require_aligned_index(high=high, low=low, close=close)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    size = require_same_length(high=high_values, low=low_values, close=close_values)
+
+    result = np.zeros(size, dtype="float64")
+    for i in range(1, size):
+        previous_close = close_values[i - 1]
+        current_close = close_values[i]
+        if not np.isfinite(previous_close + current_close + high_values[i] + low_values[i]):
+            result[i] = result[i - 1]
+            continue
+        true_range_high = max(previous_close, high_values[i])
+        true_range_low = min(previous_close, low_values[i])
+        if current_close > previous_close:
+            result[i] = result[i - 1] + (current_close - true_range_low)
+        elif current_close < previous_close:
+            result[i] = result[i - 1] + (current_close - true_range_high)
+        else:
+            result[i] = result[i - 1]
+
+    return wrap_series(result, common_index(high, low, close), "WAD")

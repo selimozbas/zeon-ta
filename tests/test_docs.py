@@ -41,7 +41,7 @@ def test_no_orphan_documentation() -> None:
 def test_parameter_table_matches_the_signature(spec: IndicatorSpec, lang: str) -> None:
     """The documented parameters and defaults must be the real ones."""
     text = doc_path(spec.name, lang).read_text(encoding="utf-8")
-    rows = dict(re.findall(r"^\| `([a-z_]+)` \| `(.+?)` \|$", text, re.MULTILINE))
+    rows = dict(re.findall(r"^\| `([a-z_][a-z0-9_]*)` \| `(.+?)` \|$", text, re.MULTILINE))
     for name, default in spec.params.items():
         assert name in rows, f"{spec.name} ({lang}): {name} is not documented"
         expected = repr(default) if isinstance(default, str) else str(default)

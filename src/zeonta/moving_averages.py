@@ -32,10 +32,12 @@ from ._core import (
     wrap_frame,
     wrap_series,
 )
+from .oscillators import cmo
 
 __all__ = [
     "alma",
     "dema",
+    "efficiency_ratio",
     "ema",
     "ema_ribbon",
     "emd_imf1",
@@ -49,6 +51,8 @@ __all__ = [
     "super_smoother",
     "t3",
     "tema",
+    "trima",
+    "vidya",
     "vwma",
     "wavelet_denoise",
     "wma",
@@ -442,6 +446,76 @@ def ema_ribbon(
     return wrap_frame(columns, common_index(close), order=list(columns))
 
 
+def _efficiency_ratio_values(values: np.ndarray, length: int) -> np.ndarray:
+    """Kaufman's Efficiency Ratio, the shared core of :func:`kama` and :func:`efficiency_ratio`.
+
+    ``ER = |Close - Close[n ago]| / Sum(|Close[i] - Close[i-1]|, n)`` — net
+    movement over total movement, ``1`` for a bar that trended in a
+    straight line, ``0`` for a perfectly flat window (which has no
+    movement at all, efficient or not, rather than an undefined ``0/0``).
+    """
+    size = values.shape[0]
+    abs_change = np.abs(np.diff(values, prepend=np.nan))
+    volatility = np.full(size, np.nan, dtype="float64")
+    volatility[1:] = rolling_sum(abs_change[1:], length)
+
+    net_change = np.full(size, np.nan, dtype="float64")
+    if size > length:
+        net_change[length:] = np.abs(values[length:] - values[:-length])
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        efficiency = net_change / volatility
+    return np.where(volatility == 0.0, 0.0, efficiency)
+
+
+@indicator(
+    category="moving_averages",
+    summary="How efficiently price is trending: net movement over total movement.",
+    reference=(
+        "https://chartschool.stockcharts.com/table-of-contents/"
+        "technical-indicators-and-overlays/technical-overlays/kaufmans-adaptive-moving-average-kama"
+    ),
+    outputs=("ER",),
+)
+def efficiency_ratio(close: ArrayLike, length: int = 10) -> pd.Series:
+    """Kaufman's Efficiency Ratio.
+
+    ``ER = |Close - Close[n ago]| / Sum(|Close[i] - Close[i-1]|, n)`` — the
+    same ratio :func:`kama` blends into its own adaptive smoothing
+    constant, exposed here on its own. ``1`` means the window trended in
+    a straight line (every bar's movement contributed to the net move);
+    near ``0`` means the window churned in place (a lot of bar-to-bar
+    movement that mostly cancelled itself out).
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Look-back window. Must be >= 1.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``ER_{length}``, ranging 0 to 1. ``0`` on a perfectly flat
+        window rather than an undefined ``0/0``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> float(zeonta.efficiency_ratio(list(range(1, 10)), length=5).iloc[-1])
+    1.0
+
+    References
+    ----------
+    https://chartschool.stockcharts.com/table-of-contents/technical-indicators-and-overlays/technical-overlays/kaufmans-adaptive-moving-average-kama
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+    result = _efficiency_ratio_values(values, length)
+    return wrap_series(result, common_index(close), f"ER_{length}")
+
+
 @indicator(
     category="moving_averages",
     summary="Adapts its own smoothing to how efficiently price is trending.",
@@ -516,19 +590,7 @@ def kama(close: ArrayLike, length: int = 10, fast: int = 2, slow: int = 30) -> p
 
     values = as_array(close, "close")
     size = values.shape[0]
-
-    abs_change = np.abs(np.diff(values, prepend=np.nan))
-    volatility = np.full(size, np.nan, dtype="float64")
-    volatility[1:] = rolling_sum(abs_change[1:], length)
-
-    net_change = np.full(size, np.nan, dtype="float64")
-    if size > length:
-        net_change[length:] = np.abs(values[length:] - values[:-length])
-
-    with np.errstate(divide="ignore", invalid="ignore"):
-        efficiency = net_change / volatility
-    # A perfectly flat window has no movement at all, efficient or not.
-    efficiency = np.where(volatility == 0.0, 0.0, efficiency)
+    efficiency = _efficiency_ratio_values(values, length)
 
     fast_sc = 2.0 / (fast + 1.0)
     slow_sc = 2.0 / (slow + 1.0)
@@ -1434,3 +1496,125 @@ def mcgd(close: ArrayLike, length: int = 10) -> pd.Series:
         result[i] = previous + (current - previous) / (length * (current / previous) ** 4)
 
     return wrap_series(result, common_index(close), f"MCGD_{length}")
+
+
+@indicator(
+    category="moving_averages",
+    summary="An SMA of an SMA, weighting the middle of the window most heavily.",
+    reference="https://tulipindicators.org/trima",
+    outputs=("TRIMA",),
+)
+def trima(close: ArrayLike, length: int = 20) -> pd.Series:
+    """Triangular Moving Average.
+
+    An :func:`sma` of an :func:`sma`, with the two window sizes chosen so
+    the combined effect is a triangular (rather than rectangular) set of
+    weights across the full ``length`` bars — the middle of the window
+    counts for the most, tapering off toward both edges::
+
+        even length: TRIMA = SMA(SMA(Close, n/2), n/2 + 1)
+        odd length:  TRIMA = SMA(SMA(Close, (n+1)/2), (n+1)/2)
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Overall window. Must be >= 1.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``TRIMA_{length}``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> zeonta.trima(list(range(1, 8)), length=5).tolist()
+    [nan, nan, nan, nan, 3.0, 4.0, 5.0]
+
+    References
+    ----------
+    https://tulipindicators.org/trima
+    """
+    length = validate_length(length)
+    values = as_array(close, "close")
+    if length % 2 == 0:
+        first_length, second_length = length // 2, length // 2 + 1
+    else:
+        first_length = second_length = (length + 1) // 2
+
+    first_pass = rolling_mean(values, first_length)
+    result = rolling_mean(first_pass, second_length)
+    return wrap_series(result, common_index(close), f"TRIMA_{length}")
+
+
+@indicator(
+    category="moving_averages",
+    summary="An EMA whose smoothing speed adapts bar by bar to CMO's momentum reading.",
+    reference="https://www.tradingpedia.com/forex-trading-indicators/chandes-variable-index-dynamic-average/",
+    outputs=("VIDYA",),
+)
+def vidya(close: ArrayLike, length: int = 14, cmo_length: int = 9) -> pd.Series:
+    """Variable Index Dynamic Average (Tushar Chande, 1992; revised 1995).
+
+    ``VIDYA[i] = Close[i] * F * |CMO[i]| + VIDYA[i-1] * (1 - F * |CMO[i]|)``,
+    where ``F = 2 / (length + 1)`` is an ordinary EMA smoothing constant.
+    ``CMO`` here is Chande's own volatility index in his original ``[-1, 1]``
+    scale (his own 1995 revision, replacing an earlier standard-deviation-
+    based one) — :func:`cmo` in this library reports the same quantity on
+    the ``[-100, 100]`` percentage scale most charting platforms use, so it
+    is divided by ``100`` before use here. ``|CMO/100|`` ranges 0 to 1, so
+    this behaves like an EMA whose smoothing constant is scaled down toward
+    ``0`` (freezing the average) whenever momentum is weak and choppy, and
+    scaled up toward the full ``F`` whenever momentum is strongly one-sided.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Period for the base EMA smoothing constant ``F``. Must be >= 1.
+    cmo_length:
+        Look-back for the :func:`cmo` volatility index. Must be >= 1.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``VIDYA_{length}_{cmo_length}``. ``NaN`` until ``cmo_length``
+        bars of :func:`cmo` are available, then seeded with ``Close``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> round(float(zeonta.vidya(list(range(1, 20)), length=5, cmo_length=4).iloc[-1]), 4)
+    17.0069
+
+    References
+    ----------
+    https://www.tradingpedia.com/forex-trading-indicators/chandes-variable-index-dynamic-average/
+    """
+    length = validate_length(length)
+    cmo_length = validate_length(cmo_length, "cmo_length")
+    values = as_array(close, "close")
+    size = values.shape[0]
+
+    alpha = np.abs(cmo(values, length=cmo_length).to_numpy() / 100.0) * (2.0 / (length + 1.0))
+
+    result = np.full(size, np.nan, dtype="float64")
+    previous = np.nan
+    for i in range(size):
+        value = values[i]
+        factor = alpha[i]
+        valid = np.isfinite(value) and np.isfinite(factor)
+        if not np.isfinite(previous):
+            if valid:
+                previous = value
+                result[i] = previous
+            continue
+        if valid:
+            previous = value * factor + previous * (1.0 - factor)
+        # else: hold `previous` across the gap, matching kama()'s convention.
+        result[i] = previous
+
+    return wrap_series(result, common_index(close), f"VIDYA_{length}_{cmo_length}")

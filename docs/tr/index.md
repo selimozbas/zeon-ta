@@ -9,6 +9,7 @@
 | İndikatör | Özet |
 | --- | --- |
 | [`candles`](indicators/candles.md) | Mum Anatomisi ve Formasyonlar |
+| [`heikin_ashi`](indicators/heikin_ashi.md) | Heikin-Ashi Mumları |
 | [`relative_volume`](indicators/relative_volume.md) | Hacim Temelleri |
 | [`support_resistance`](indicators/support_resistance.md) | Destek ve Direnç |
 | [`trend_channel`](indicators/trend_channel.md) | Trend Temelleri ve Trend Kanalları |
@@ -19,6 +20,7 @@
 | --- | --- |
 | [`alma`](indicators/alma.md) | Arnaud Legoux Hareketli Ortalaması (ALMA) |
 | [`dema`](indicators/dema.md) | Çift Üssel Hareketli Ortalama (DEMA) |
+| [`efficiency_ratio`](indicators/efficiency_ratio.md) | Kaufman Verimlilik Oranı (ER) |
 | [`ema`](indicators/ema.md) | Üssel Hareketli Ortalama (EMA) |
 | [`ema_ribbon`](indicators/ema_ribbon.md) | EMA Şeridi |
 | [`emd_imf1`](indicators/emd_imf1.md) | Ampirik Mod Ayrıştırması — Birinci IMF |
@@ -32,6 +34,8 @@
 | [`super_smoother`](indicators/super_smoother.md) | Super Smoother Filtresi (Ehlers) |
 | [`t3`](indicators/t3.md) | T3 Hareketli Ortalaması (Tillson) |
 | [`tema`](indicators/tema.md) | Üçlü Üssel Hareketli Ortalama (TEMA) |
+| [`trima`](indicators/trima.md) | Üçgen Hareketli Ortalama (TRIMA) |
+| [`vidya`](indicators/vidya.md) | Değişken Endeks Dinamik Ortalaması (VIDYA) |
 | [`vwma`](indicators/vwma.md) | Hacim Ağırlıklı Hareketli Ortalama (VWMA) |
 | [`wavelet_denoise`](indicators/wavelet_denoise.md) | Dalgacık ile Gürültüsü Giderilmiş Fiyat (Ayrık Dalgacık Dönüşümü) |
 | [`wma`](indicators/wma.md) | Ağırlıklı Hareketli Ortalama (WMA) |
@@ -43,16 +47,21 @@
 | --- | --- |
 | [`awesome_oscillator`](indicators/awesome_oscillator.md) | Awesome Osilatör (AO) |
 | [`cci`](indicators/cci.md) | Emtia Kanal Endeksi (CCI) |
+| [`center_of_gravity`](indicators/center_of_gravity.md) | Ağırlık Merkezi Osilatörü (CG) |
 | [`cmo`](indicators/cmo.md) | Chande Momentum Osilatörü (CMO) |
 | [`coppock_curve`](indicators/coppock_curve.md) | Coppock Eğrisi |
 | [`dpo`](indicators/dpo.md) | Trendi Arındırılmış Fiyat Osilatörü (DPO) |
 | [`elder_ray`](indicators/elder_ray.md) | Elder Ray (Boğa Gücü / Ayı Gücü) |
 | [`fisher_transform`](indicators/fisher_transform.md) | Fisher Dönüşümü (Ehlers) |
+| [`kst`](indicators/kst.md) | Pring'in Know Sure Thing'i (KST) |
+| [`laguerre_rsi`](indicators/laguerre_rsi.md) | Laguerre RSI |
 | [`macd`](indicators/macd.md) | MACD (Hareketli Ortalama Yakınsama Iraksama) |
 | [`momentum`](indicators/momentum.md) | Momentum |
 | [`ppo`](indicators/ppo.md) | Yüzde Fiyat Osilatörü (PPO) |
 | [`roc`](indicators/roc.md) | Değişim Oranı (ROC) |
 | [`rsi`](indicators/rsi.md) | Göreceli Güç Endeksi (RSI) |
+| [`rvgi`](indicators/rvgi.md) | Göreceli Canlılık Endeksi (RVGI) |
+| [`smi`](indicators/smi.md) | Stokastik Momentum Endeksi (SMI) |
 | [`stoch`](indicators/stoch.md) | Stokastik Osilatör |
 | [`stoch_rsi`](indicators/stoch_rsi.md) | Stokastik RSI (StochRSI) |
 | [`trix`](indicators/trix.md) | TRIX (Üçlü Üssel Ortalama) |
@@ -70,11 +79,13 @@
 | [`cmf`](indicators/cmf.md) | Chaikin Para Akışı (CMF) |
 | [`ease_of_movement`](indicators/ease_of_movement.md) | Hareket Kolaylığı (EMV) |
 | [`force_index`](indicators/force_index.md) | Force Index (Güç Endeksi) |
+| [`klinger_volume_oscillator`](indicators/klinger_volume_oscillator.md) | Klinger Hacim Osilatörü (KVO) |
 | [`mfi`](indicators/mfi.md) | Para Akışı Endeksi (MFI) |
 | [`nvi`](indicators/nvi.md) | Negatif Hacim Endeksi (NVI) |
 | [`obv`](indicators/obv.md) | Denge Hacmi (OBV) |
 | [`pvi`](indicators/pvi.md) | Pozitif Hacim Endeksi (PVI) |
 | [`pvt`](indicators/pvt.md) | Fiyat Hacim Trendi (PVT) |
+| [`williams_ad`](indicators/williams_ad.md) | Williams Birikim/Dağıtım (WAD) |
 
 ## Oynaklık
 
@@ -82,9 +93,11 @@
 | --- | --- |
 | [`atr`](indicators/atr.md) | Ortalama Gerçek Aralık (ATR) |
 | [`bbands`](indicators/bbands.md) | Bollinger Bantları |
+| [`chaikin_volatility`](indicators/chaikin_volatility.md) | Chaikin Oynaklığı (CVI) |
 | [`keltner`](indicators/keltner.md) | Keltner Kanalları |
 | [`mass_index`](indicators/mass_index.md) | Kütle Endeksi |
 | [`natr`](indicators/natr.md) | Normalize Edilmiş Ortalama Gerçek Aralık (NATR) |
+| [`relative_volatility_index`](indicators/relative_volatility_index.md) | Göreceli Oynaklık Endeksi (RVI) |
 | [`squeeze`](indicators/squeeze.md) | Sıkışma (TTM Squeeze) |
 | [`true_range`](indicators/true_range.md) | Gerçek Aralık |
 | [`ulcer_index`](indicators/ulcer_index.md) | Ulcer Endeksi |
@@ -124,6 +137,7 @@
 | İndikatör | Özet |
 | --- | --- |
 | [`cumulative_return`](indicators/cumulative_return.md) | Kümülatif Getiri |
+| [`drawdown`](indicators/drawdown.md) | Düşüş (Drawdown) |
 | [`kurtosis`](indicators/kurtosis.md) | Basıklık |
 | [`log_return`](indicators/log_return.md) | Logaritmik Getiri |
 | [`mad`](indicators/mad.md) | Medyan Mutlak Sapma (MAD) |

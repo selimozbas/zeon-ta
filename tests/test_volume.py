@@ -331,3 +331,51 @@ def test_nvi_and_pvi_start_at_one_thousand() -> None:
 def test_nvi_never_moves_when_volume_is_perfectly_flat() -> None:
     result = zeonta.nvi([10.0, 11.0, 9.0, 12.0], [100.0] * 4)
     np.testing.assert_allclose(result.to_numpy(), [1000.0] * 4)
+
+
+def test_williams_ad_matches_the_hand_computed_running_total() -> None:
+    high = [12.0, 13.0, 11.0, 14.0, 15.0]
+    low = [10.0, 11.0, 9.0, 12.0, 13.0]
+    close = [11.0, 12.5, 10.0, 13.5, 14.5]
+    result = zeonta.williams_ad(high, low, close)
+    np.testing.assert_allclose(result.to_numpy(), [0.0, 1.5, -1.0, 2.5, 4.0])
+
+
+def test_williams_ad_starts_at_zero() -> None:
+    result = zeonta.williams_ad([12.0, 13.0], [10.0, 11.0], [11.0, 12.0])
+    assert result.iloc[0] == 0.0
+
+
+def test_williams_ad_holds_flat_when_close_is_unchanged() -> None:
+    result = zeonta.williams_ad([12.0, 12.0], [10.0, 10.0], [11.0, 11.0])
+    assert result.iloc[1] == result.iloc[0]
+
+
+def test_klinger_volume_oscillator_matches_the_hand_computed_value() -> None:
+    high = [12.0, 13.0, 11.0, 14.0, 15.0, 13.5, 16.0]
+    low = [10.0, 11.0, 9.0, 12.0, 13.0, 11.5, 14.0]
+    close = [11.0, 12.5, 10.0, 13.5, 14.5, 12.5, 15.5]
+    volume = [100.0, 150.0, 200.0, 120.0, 180.0, 90.0, 210.0]
+    result = zeonta.klinger_volume_oscillator(high, low, close, volume, fast=3, slow=5)
+    np.testing.assert_allclose(round(float(result.iloc[-1, 0]), 6), -463.888889)
+
+
+def test_klinger_volume_oscillator_is_zero_on_a_perfectly_flat_market() -> None:
+    """A zero-range bar (High == Low) makes dm exactly 0, and therefore the
+    volume force too — unlike a merely constant-but-nonzero-range HLC
+    series, where the trend never flips and cm keeps accumulating dm
+    forever, so the ratio (and VF) does *not* settle at zero."""
+    result = zeonta.klinger_volume_oscillator(
+        [11.0] * 20, [11.0] * 20, [11.0] * 20, [100.0] * 20, fast=3, slow=5, signal_length=3
+    )
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_klinger_volume_oscillator_is_zero_with_zero_volume() -> None:
+    high = [12.0, 13.0, 11.0, 14.0, 15.0]
+    low = [10.0, 11.0, 9.0, 12.0, 13.0]
+    close = [11.0, 12.5, 10.0, 13.5, 14.5]
+    result = zeonta.klinger_volume_oscillator(
+        high, low, close, [0.0] * 5, fast=2, slow=3, signal_length=2
+    )
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)

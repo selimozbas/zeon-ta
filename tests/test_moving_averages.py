@@ -655,3 +655,34 @@ def test_mcgd_holds_flat_rather_than_dividing_by_zero_when_price_hits_zero() -> 
         warnings.simplefilter("error", category=RuntimeWarning)
         result = zeonta.mcgd([10.0, 0.0, 5.0], length=10)
     np.testing.assert_allclose(result.to_numpy(), [10.0, 10.0, 2.0])
+
+
+def test_trima_matches_the_hand_computed_double_sma_even_length() -> None:
+    result = zeonta.trima([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], length=4)
+    np.testing.assert_allclose(result.to_numpy(), [np.nan, np.nan, np.nan, 2.5, 3.5, 4.5, 5.5, 6.5])
+
+
+def test_trima_is_exact_on_a_flat_series() -> None:
+    result = zeonta.trima([7.0] * 10, length=5)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 7.0)
+
+
+def test_efficiency_ratio_is_one_on_a_perfectly_straight_ramp() -> None:
+    result = zeonta.efficiency_ratio(list(range(1, 10)), length=5)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 1.0)
+
+
+def test_efficiency_ratio_is_zero_on_a_flat_series() -> None:
+    result = zeonta.efficiency_ratio([5.0] * 10, length=5)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_vidya_is_exact_on_a_flat_series() -> None:
+    result = zeonta.vidya([5.0] * 20, length=5, cmo_length=4)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 5.0)
+
+
+def test_vidya_recovers_after_an_interior_gap() -> None:
+    values = [10.0, 11.0, 12.0, np.nan, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0]
+    result = zeonta.vidya(values, length=5, cmo_length=4)
+    assert result.iloc[8:].notna().all()

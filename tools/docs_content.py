@@ -4616,4 +4616,620 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.cmo(df["close"]).tail(3),
         ],
     },
+    "drawdown": {
+        "title_en": "Drawdown",
+        "title_tr": "Düşüş (Drawdown)",
+        "formula_en": "DD = (Close - CumMax(Close)) / CumMax(Close) * 100",
+        "formula_tr": "DD = (Kapanış - KümülatifMaks(Kapanış)) / KümülatifMaks(Kapanış) * 100",
+        "about_en": (
+            "The running percentage decline from the series' own all-time high so far — the "
+            "same idea [cumulative_return](cumulative_return.md) applies to total gain, applied "
+            "here to loss from the peak instead."
+        ),
+        "about_tr": (
+            "Serinin şimdiye kadarki kendi tüm-zamanlar zirvesinden süregelen yüzde düşüş — "
+            "[cumulative_return](cumulative_return.md)'un toplam kazanca uyguladığı aynı fikir, "
+            "burada zirveden kayıp için uygulanır."
+        ),
+        "reading_en": (
+            "Always `<= 0`; `0` exactly at every new high. The most negative value reached over "
+            "a history is its maximum drawdown — the standard way to describe how bad the worst "
+            "stretch was, independent of when it happened."
+        ),
+        "reading_tr": (
+            "Her zaman `<= 0`; her yeni zirvede tam olarak `0` olur. Bir geçmiş boyunca ulaşılan "
+            "en negatif değer, onun maksimum düşüşüdür — ne zaman olduğundan bağımsız olarak en "
+            "kötü dönemin ne kadar kötü olduğunu tanımlamanın standart yolu."
+        ),
+        "pitfalls_en": (
+            "Like `cumulative_return`, this looks back to the start of whatever series you pass "
+            "in rather than a fixed length — prepending more history can only move the running "
+            "peak higher, which can change every later value."
+        ),
+        "pitfalls_tr": (
+            "`cumulative_return` gibi, bu da sabit bir uzunluk yerine verdiğiniz serinin başına "
+            "kadar geriye bakar — daha fazla geçmiş eklemek yalnızca süregelen zirveyi "
+            "yükseltebilir, bu da her sonraki değeri değiştirebilir."
+        ),
+        "example": [
+            lambda df: zeonta.drawdown(df["close"]).tail(3),
+        ],
+    },
+    "trima": {
+        "title_en": "Triangular Moving Average (TRIMA)",
+        "title_tr": "Üçgen Hareketli Ortalama (TRIMA)",
+        "formula_en": (
+            "Even length: TRIMA = SMA(SMA(Close, n/2), n/2+1); "
+            "Odd length: TRIMA = SMA(SMA(Close, (n+1)/2), (n+1)/2)"
+        ),
+        "formula_tr": (
+            "Çift uzunluk: TRIMA = SMA(SMA(Kapanış, n/2), n/2+1); "
+            "Tek uzunluk: TRIMA = SMA(SMA(Kapanış, (n+1)/2), (n+1)/2)"
+        ),
+        "about_en": (
+            "An [sma](sma.md) of an [sma](sma.md), with the two window sizes chosen so the "
+            "combined effect weights the middle of the window most heavily rather than every bar "
+            "equally — a triangular weighting shape instead of `sma`'s rectangular one."
+        ),
+        "about_tr": (
+            "Bir [sma](sma.md)'nın [sma](sma.md)'sı, iki pencere boyutu, birleşik etkinin her "
+            "barı eşit ağırlıklandırmak yerine pencerenin ortasını en ağır şekilde "
+            "ağırlıklandıracak şekilde seçilmiştir — `sma`'nın dikdörtgen şekli yerine üçgen bir "
+            "ağırlıklandırma şekli."
+        ),
+        "reading_en": (
+            "Read the same way as any moving average. Smoother than an `sma` of the same "
+            "length (the middle-weighting suppresses noise at both edges of the window), at the "
+            "cost of a longer effective lag."
+        ),
+        "reading_tr": (
+            "Herhangi bir hareketli ortalama gibi okunur. Aynı uzunluktaki bir `sma`'dan daha "
+            "pürüzsüzdür (orta-ağırlıklandırma, pencerenin her iki ucundaki gürültüyü bastırır), "
+            "bedeli ise daha uzun bir etkin gecikmedir."
+        ),
+        "pitfalls_en": "No special edge cases — a plain double SMA pass.",
+        "pitfalls_tr": "Özel bir uç durum yok — düz bir çift SMA geçişi.",
+        "example": [
+            lambda df: zeonta.trima(df["close"]).tail(3),
+        ],
+    },
+    "vidya": {
+        "title_en": "Variable Index Dynamic Average (VIDYA)",
+        "title_tr": "Değişken Endeks Dinamik Ortalaması (VIDYA)",
+        "formula_en": (
+            "VIDYA = Close * F * |CMO/100| + VIDYA[-1] * (1 - F * |CMO/100|), F = 2/(length+1)"
+        ),
+        "formula_tr": (
+            "VIDYA = Kapanış * F * |CMO/100| + VIDYA[-1] * (1 - F * |CMO/100|), F = 2/(length+1)"
+        ),
+        "about_en": (
+            "An [ema](ema.md) whose smoothing constant is scaled by [cmo](cmo.md)'s momentum "
+            "reading instead of staying fixed — freezing toward `0` (no update at all) when "
+            "momentum is weak and choppy, and opening up toward the full EMA constant when "
+            "momentum is strongly one-sided. A different self-adjusting idea from "
+            "[kama](kama.md)'s Efficiency Ratio, but the same underlying motivation: don't use "
+            "one fixed speed for every market condition."
+        ),
+        "about_tr": (
+            "Düzleştirme sabiti sabit kalmak yerine [cmo](cmo.md)'nun momentum okumasıyla "
+            "ölçeklenen bir [ema](ema.md) — momentum zayıf ve çalkantılıyken `0`'a doğru donar "
+            "(hiç güncelleme yapılmaz), momentum güçlü şekilde tek yönlüyken tam EMA sabitine "
+            "doğru açılır. [kama](kama.md)'nın Verimlilik Oranı'ndan farklı bir kendi kendine "
+            "ayarlanma fikri, ama aynı temel motivasyon: her piyasa koşulu için tek bir sabit hız "
+            "kullanma."
+        ),
+        "reading_en": "Read the same way as any moving average — price crossing it, or its own slope.",
+        "reading_tr": "Herhangi bir hareketli ortalama gibi okunur — fiyatın üstünden geçmesi ya da kendi eğimi.",
+        "pitfalls_en": (
+            "Two stacked parameters (`length` for the base EMA speed, `cmo_length` for the "
+            "momentum reading driving it) that both meaningfully change the result — not a "
+            "single-knob indicator the way `ema` is."
+        ),
+        "pitfalls_tr": (
+            "İkisi de sonucu anlamlı şekilde değiştiren, üst üste iki parametre (temel EMA hızı "
+            "için `length`, onu yönlendiren momentum okuması için `cmo_length`) — `ema`'nın "
+            "olduğu gibi tek-düğmeli bir indikatör değil."
+        ),
+        "example": [
+            lambda df: zeonta.vidya(df["close"]).tail(3),
+        ],
+    },
+    "efficiency_ratio": {
+        "title_en": "Kaufman's Efficiency Ratio (ER)",
+        "title_tr": "Kaufman Verimlilik Oranı (ER)",
+        "formula_en": "ER = |Close - Close[n ago]| / Sum(|Close[i] - Close[i-1]|, n)",
+        "formula_tr": "ER = |Kapanış - Kapanış[n önce]| / Toplam(|Kapanış[i] - Kapanış[i-1]|, n)",
+        "about_en": (
+            "The adaptive core [kama](kama.md) blends into its own smoothing constant, exposed "
+            "here on its own: net movement over total movement, a direct measure of how much of "
+            "a window's bar-to-bar churn actually went somewhere."
+        ),
+        "about_tr": (
+            "[kama](kama.md)'nın kendi düzleştirme sabitine harmanladığı uyarlanabilir çekirdek, "
+            "burada tek başına sunulur: net hareket bölü toplam hareket — bir pencerenin bar-başı "
+            "çalkantısının ne kadarının gerçekten bir yere vardığının doğrudan bir ölçüsü."
+        ),
+        "reading_en": (
+            "`1` means the window trended in a straight line; near `0` means it churned in "
+            "place. Often used as a regime filter feeding into another indicator's parameters, "
+            "the way `kama` uses it internally, rather than traded on directly."
+        ),
+        "reading_tr": (
+            "`1`, pencerenin düz bir çizgide trend yaptığı; `0`'a yakın ise yerinde çalkalandığı "
+            "anlamına gelir. `kama`'nın dahili olarak kullandığı gibi, doğrudan işlem yapmak "
+            "yerine genellikle başka bir indikatörün parametrelerine beslenen bir rejim filtresi "
+            "olarak kullanılır."
+        ),
+        "pitfalls_en": "`0` on a perfectly flat window rather than an undefined `0/0`.",
+        "pitfalls_tr": "Tamamen düz bir pencerede tanımsız bir `0/0` yerine `0` olur.",
+        "example": [
+            lambda df: zeonta.efficiency_ratio(df["close"]).tail(3),
+        ],
+    },
+    "center_of_gravity": {
+        "title_en": "Center of Gravity Oscillator (CG)",
+        "title_tr": "Ağırlık Merkezi Osilatörü (CG)",
+        "formula_en": (
+            "Price = (High+Low)/2; "
+            "CG = -sum((1+k)*Price[t-k], k=0..n-1) / sum(Price[t-k], k=0..n-1)"
+        ),
+        "formula_tr": (
+            "Fiyat = (Yüksek+Düşük)/2; "
+            "CG = -toplam((1+k)*Fiyat[t-k], k=0..n-1) / toplam(Fiyat[t-k], k=0..n-1)"
+        ),
+        "about_en": (
+            "John Ehlers' balance-point oscillator: treats the window's prices as weights along "
+            "a beam and finds where it would balance, then inverts the sign since that balance "
+            "point moves in exact opposition to price swings. The result is a smoothed "
+            "oscillator with essentially zero lag, unlike a conventional smoothed indicator that "
+            "trades lag for smoothness."
+        ),
+        "about_tr": (
+            "John Ehlers'ın denge noktası osilatörü: pencerenin fiyatlarını bir kirişin üzerindeki "
+            "ağırlıklar olarak ele alır ve nerede dengeleneceğini bulur, sonra işaretini ters "
+            "çevirir çünkü o denge noktası fiyat salınımlarının tam tersi yönde hareket eder. "
+            "Sonuç, gecikme karşılığında pürüzsüzlük veren geleneksel bir düzleştirilmiş "
+            "indikatörün aksine, esasen sıfır gecikmeli, düzleştirilmiş bir osilatördür."
+        ),
+        "reading_en": (
+            "Ehlers' own suggested signal is the crossover between CG and its own one-bar-"
+            "delayed trigger line — the same pattern [fisher_transform](fisher_transform.md) "
+            "uses. Ideally, `length` should be about half the market's dominant cycle length."
+        ),
+        "reading_tr": (
+            "Ehlers'in kendi önerdiği sinyal, CG ile kendi bir-bar-gecikmeli tetik çizgisi "
+            "arasındaki kesişimdir — [fisher_transform](fisher_transform.md)'ın kullandığı aynı "
+            "desen. İdeal olarak, `length` piyasanın baskın döngü uzunluğunun yaklaşık yarısı "
+            "olmalıdır."
+        ),
+        "pitfalls_en": (
+            "The scale is not comparable across different `length` values or to price itself — "
+            "Ehlers' own paper notes only the *shape* of the curve matters."
+        ),
+        "pitfalls_tr": (
+            "Ölçek, farklı `length` değerleri arasında ya da fiyatın kendisiyle "
+            "karşılaştırılabilir değildir — Ehlers'in kendi makalesi yalnızca eğrinin *şeklinin* "
+            "önemli olduğunu belirtir."
+        ),
+        "example": [
+            lambda df: zeonta.center_of_gravity(df["high"], df["low"]).tail(3),
+        ],
+    },
+    "laguerre_rsi": {
+        "title_en": "Laguerre RSI",
+        "title_tr": "Laguerre RSI",
+        "formula_en": (
+            "4-stage Laguerre filter (L0..L3) replaces Wilder smoothing; "
+            "CU/CD from stage-to-stage differences; LRSI = CU/(CU+CD)"
+        ),
+        "formula_tr": (
+            "4 aşamalı Laguerre filtresi (L0..L3) Wilder yumuşatmasının yerini alır; "
+            "aşamadan-aşamaya farklardan CU/CD; LRSI = CU/(CU+CD)"
+        ),
+        "about_en": (
+            "John Ehlers' fast-acting alternative to [rsi](rsi.md): rather than a full look-back "
+            "window smoothed by Wilder's recursion, this runs price through a 4-stage all-pass "
+            "filter cascade (a 'time warp' that delays low-frequency components more than high-"
+            "frequency ones) and reads momentum from the relationships between the four stages."
+        ),
+        "about_tr": (
+            "John Ehlers'ın [rsi](rsi.md)'ye hızlı-tepki veren alternatifi: Wilder'ın "
+            "özyinelemesiyle yumuşatılmış tam bir geriye-bakış penceresi yerine, bu, fiyatı "
+            "4 aşamalı bir tüm-geçiren filtre kademesinden (düşük-frekans bileşenlerini "
+            "yüksek-frekans olanlardan daha fazla geciktiren bir 'zaman bükmesi') geçirir ve "
+            "momentumu dört aşama arasındaki ilişkilerden okur."
+        ),
+        "reading_en": (
+            "Same 0-1 scale and overbought/oversold intuition as RSI (Ehlers' own example uses "
+            "20%/80% levels), but known for reacting much faster and often pinning near the "
+            "extremes rather than drifting through the middle."
+        ),
+        "reading_tr": (
+            "RSI ile aynı 0-1 ölçeği ve aşırı-alım/aşırı-satım sezgisi (Ehlers'in kendi örneği "
+            "%20/%80 seviyelerini kullanır), ama çok daha hızlı tepki vermesi ve ortada "
+            "sürüklenmek yerine genellikle uçlara yapışmasıyla bilinir."
+        ),
+        "pitfalls_en": (
+            "The filter starts from a zero initial state, so the first several bars are a "
+            "warm-up transient rather than a meaningful reading — there is no fixed warm-up "
+            "length the way a windowed indicator has, since the filter's own memory never fully "
+            "clears, just fades."
+        ),
+        "pitfalls_tr": (
+            "Filtre sıfır bir başlangıç durumundan başlar, bu yüzden ilk birkaç bar anlamlı bir "
+            "okuma değil, bir ısınma geçişidir — pencereli bir indikatörün sahip olduğu sabit bir "
+            "ısınma uzunluğu yoktur, çünkü filtrenin kendi belleği hiçbir zaman tamamen "
+            "temizlenmez, yalnızca söner."
+        ),
+        "example": [
+            lambda df: zeonta.laguerre_rsi(df["close"]).tail(3),
+        ],
+    },
+    "kst": {
+        "title_en": "Pring's Know Sure Thing (KST)",
+        "title_tr": "Pring'in Know Sure Thing'i (KST)",
+        "formula_en": (
+            "KST = 1*SMA(ROC(roc1),sma1) + 2*SMA(ROC(roc2),sma2) "
+            "+ 3*SMA(ROC(roc3),sma3) + 4*SMA(ROC(roc4),sma4)"
+        ),
+        "formula_tr": (
+            "KST = 1*SMA(ROC(roc1),sma1) + 2*SMA(ROC(roc2),sma2) "
+            "+ 3*SMA(ROC(roc3),sma3) + 4*SMA(ROC(roc4),sma4)"
+        ),
+        "about_en": (
+            "Martin Pring combines four separately smoothed [roc](roc.md) cycles into one line, "
+            "weighting the longer cycles more heavily on the theory that they capture "
+            "significant momentum shifts better than short-term noise does."
+        ),
+        "about_tr": (
+            "Martin Pring, ayrı ayrı yumuşatılmış dört [roc](roc.md) döngüsünü tek bir çizgide "
+            "birleştirir, daha uzun döngüleri daha ağır ağırlıklandırır — bunların önemli "
+            "momentum kaymalarını kısa vadeli gürültüden daha iyi yakaladığı fikrine dayanarak."
+        ),
+        "reading_en": (
+            "Read like [macd](macd.md): the crossover between KST and its own signal line, or "
+            "KST crossing its own zero line, are the two standard reads."
+        ),
+        "reading_tr": (
+            "[macd](macd.md) gibi okunur: KST ile kendi sinyal çizgisi arasındaki kesişim, ya da "
+            "KST'nin kendi sıfır çizgisini kesmesi, iki standart okumadır."
+        ),
+        "pitfalls_en": (
+            "Nine parameters in total (four ROC lengths, four matching SMA lengths, one signal "
+            "length) — Pring's own daily-chart defaults are widely used as-is rather than tuned "
+            "per symbol."
+        ),
+        "pitfalls_tr": (
+            "Toplamda dokuz parametre (dört ROC uzunluğu, dört eşleşen SMA uzunluğu, bir sinyal "
+            "uzunluğu) — Pring'in kendi günlük-grafik varsayılanları, sembol başına ayarlanmak "
+            "yerine genellikle olduğu gibi kullanılır."
+        ),
+        "example": [
+            lambda df: zeonta.kst(df["close"]).tail(3),
+        ],
+    },
+    "rvgi": {
+        "title_en": "Relative Vigor Index (RVGI)",
+        "title_tr": "Göreceli Canlılık Endeksi (RVGI)",
+        "formula_en": (
+            "Body/Range each symmetrically weighted over 4 bars (1-2-2-1), "
+            "then RVGI = SMA(Body, n) / SMA(Range, n)"
+        ),
+        "formula_tr": (
+            "Gövde/Aralık her biri 4 bar üzerinden simetrik ağırlıklandırılır (1-2-2-1), "
+            "sonra RVGI = SMA(Gövde, n) / SMA(Aralık, n)"
+        ),
+        "about_en": (
+            "The same idea [bop](bop.md) measures raw — closing strength relative to the bar's "
+            "own range — smoothed two ways at once: a 4-bar symmetric weighting on both the body "
+            "and the range before an SMA of each, plus the same weighting again for its own "
+            "signal line."
+        ),
+        "about_tr": (
+            "[bop](bop.md)'un ham olarak ölçtüğü aynı fikir — barın kendi aralığına göre kapanış "
+            "gücü — aynı anda iki şekilde yumuşatılır: her birinin SMA'sından önce hem gövde hem "
+            "aralık üzerinde 4-barlık simetrik bir ağırlıklandırma, artı kendi sinyal çizgisi "
+            "için tekrar aynı ağırlıklandırma."
+        ),
+        "reading_en": (
+            "The crossover between RVGI and its own signal line is the standard read — a "
+            "smoother, less choppy version of watching raw BOP cross its own zero line."
+        ),
+        "reading_tr": (
+            "RVGI ile kendi sinyal çizgisi arasındaki kesişim standart okumadır — ham BOP'un "
+            "kendi sıfır çizgisini kesmesini izlemenin daha pürüzsüz, daha az çalkantılı bir "
+            "versiyonu."
+        ),
+        "pitfalls_en": (
+            "Zero-range or zero-body bars are not specially guarded beyond the SMA smoothing "
+            "itself — a long stretch of identical open/close or high/low bars can still produce "
+            "an undefined `0/0` ratio, surfacing as `NaN`."
+        ),
+        "pitfalls_tr": (
+            "Sıfır-aralıklı ya da sıfır-gövdeli barlar, SMA yumuşatmasının kendisinin ötesinde "
+            "özel olarak korunmaz — uzun bir özdeş açılış/kapanış ya da yüksek/düşük bar dizisi "
+            "yine de tanımsız bir `0/0` oranı üretebilir, bu da `NaN` olarak ortaya çıkar."
+        ),
+        "example": [
+            lambda df: zeonta.rvgi(df["open"], df["high"], df["low"], df["close"]).tail(3),
+        ],
+    },
+    "smi": {
+        "title_en": "Stochastic Momentum Index (SMI)",
+        "title_tr": "Stokastik Momentum Endeksi (SMI)",
+        "formula_en": (
+            "Mid = (HH+LL)/2; SMI = 200 * EMA(EMA(Close-Mid,fast),slow) / EMA(EMA(HH-LL,fast),slow)"
+        ),
+        "formula_tr": (
+            "Orta = (EY+ED)/2; SMI = 200 * EMA(EMA(Kapanış-Orta,fast),slow) "
+            "/ EMA(EMA(EY-ED,fast),slow)"
+        ),
+        "about_en": (
+            "William Blau's refinement of [stoch](stoch.md): instead of measuring where the "
+            "close sits *within* the high-low range (0 to 100), it measures the close's distance "
+            "from the range's *midpoint*, then double-smooths both that distance and the range "
+            "itself with two EMA passes before dividing."
+        ),
+        "about_tr": (
+            "William Blau'nun [stoch](stoch.md)'a getirdiği iyileştirme: kapanışın "
+            "yüksek-düşük aralığının *içinde* nerede oturduğunu ölçmek yerine (0 ile 100 arası), "
+            "kapanışın aralığın *orta noktasından* uzaklığını ölçer, sonra bölmeden önce hem bu "
+            "uzaklığı hem de aralığın kendisini iki EMA geçişiyle çift-yumuşatır."
+        ),
+        "reading_en": (
+            "Same overbought/oversold intuition as an ordinary stochastic (readings above +40 / "
+            "below -40 are commonly cited), but because both the numerator and denominator are "
+            "double-smoothed, SMI reaches its -100/+100 bounds far less abruptly than %K does."
+        ),
+        "reading_tr": (
+            "Sıradan bir stokastikle aynı aşırı-alım/aşırı-satım sezgisi (+40 üstü / -40 altı "
+            "okumalar yaygın olarak belirtilir), ama hem pay hem payda çift-yumuşatıldığı için, "
+            "SMI -100/+100 sınırlarına %K'nın yaptığından çok daha az ani şekilde ulaşır."
+        ),
+        "pitfalls_en": (
+            "Three separate smoothing periods (`length` for the range, `fast` and `slow` for the "
+            "two EMA passes) stack together, so the effective lag is longer than any one of them "
+            "alone suggests."
+        ),
+        "pitfalls_tr": (
+            "Üç ayrı yumuşatma periyodu (aralık için `length`, iki EMA geçişi için `fast` ve "
+            "`slow`) üst üste yığılır, bu yüzden etkin gecikme bunlardan herhangi birinin tek "
+            "başına ima ettiğinden daha uzundur."
+        ),
+        "example": [
+            lambda df: zeonta.smi(df["high"], df["low"], df["close"]).tail(3),
+        ],
+    },
+    "chaikin_volatility": {
+        "title_en": "Chaikin Volatility (CVI)",
+        "title_tr": "Chaikin Oynaklığı (CVI)",
+        "formula_en": "CVI = ROC(EMA(High - Low, n), n)",
+        "formula_tr": "CVI = ROC(EMA(Yüksek - Düşük, n), n)",
+        "about_en": (
+            "Marc Chaikin's rate-of-change take on volatility: rather than reporting the typical "
+            "range as a level the way [atr](atr.md) does, this smooths the range with an EMA "
+            "and then reports the *percentage change* of that smoothed range over the same "
+            "window — is the range widening or narrowing, not how large it currently is."
+        ),
+        "about_tr": (
+            "Marc Chaikin'in oynaklığa değişim-oranı yaklaşımı: [atr](atr.md)'nin yaptığı gibi "
+            "tipik aralığı bir seviye olarak bildirmek yerine, bu aralığı bir EMA ile yumuşatır "
+            "ve ardından o yumuşatılmış aralığın aynı pencere üzerindeki *yüzde değişimini* "
+            "bildirir — aralığın şu anda ne kadar büyük olduğu değil, genişleyip daralmadığı."
+        ),
+        "reading_en": (
+            "Positive means the range has widened over the window (volatility picking up); "
+            "negative means it has narrowed (volatility settling down) — often used to spot the "
+            "quiet-before-the-storm setup a low, falling CVI can precede."
+        ),
+        "reading_tr": (
+            "Pozitif olması, aralığın pencere boyunca genişlediği (oynaklığın arttığı) anlamına "
+            "gelir; negatif olması ise daraldığı (oynaklığın yatıştığı) anlamına gelir — genellikle "
+            "düşük, düşmekte olan bir CVI'nin öncülük edebileceği fırtına-öncesi-sessizlik "
+            "kurulumunu tespit etmek için kullanılır."
+        ),
+        "pitfalls_en": (
+            "A rate of change of an already-smoothed quantity — expect more lag than `atr` "
+            "itself, since this adds a second transformation on top of the EMA smoothing."
+        ),
+        "pitfalls_tr": (
+            "Zaten yumuşatılmış bir niceliğin değişim oranı — `atr`'nin kendisinden daha fazla "
+            "gecikme bekleyin, çünkü bu, EMA yumuşatmasının üzerine ikinci bir dönüşüm daha "
+            "ekler."
+        ),
+        "example": [
+            lambda df: zeonta.chaikin_volatility(df["high"], df["low"]).tail(3),
+        ],
+    },
+    "relative_volatility_index": {
+        "title_en": "Relative Volatility Index (RVI)",
+        "title_tr": "Göreceli Oynaklık Endeksi (RVI)",
+        "formula_en": (
+            "SD = STDDEV(Close, stdev_length); U/D = SD split by up/down close; "
+            "RVI = 100 * EMA(U) / (EMA(U) + EMA(D))"
+        ),
+        "formula_tr": (
+            "SD = STDDEV(Kapanış, stdev_length); U/D = SD, yukarı/aşağı kapanışa göre "
+            "ayrılır; RVI = 100 * EMA(U) / (EMA(U) + EMA(D))"
+        ),
+        "about_en": (
+            "Donald Dorsey's [rsi](rsi.md)-shaped take on volatility: the same up/down-split-"
+            "then-smooth structure Wilder used for price change, applied to a rolling standard "
+            "deviation instead — a volatility measure with *direction*, unlike [atr](atr.md)."
+        ),
+        "about_tr": (
+            "Donald Dorsey'in oynaklığa [rsi](rsi.md) şeklindeki yaklaşımı: Wilder'ın fiyat "
+            "değişimi için kullandığı aynı yukarı/aşağı-ayır-sonra-yumuşat yapısı, bunun yerine "
+            "yuvarlanan bir standart sapmaya uygulanır — [atr](atr.md)'den farklı olarak, "
+            "*yönü* olan bir oynaklık ölçüsü."
+        ),
+        "reading_en": (
+            "Above 50 means recent volatility has shown up more on up bars than down bars; "
+            "below 50 is the reverse. Often paired with a trend indicator: rising RVI alongside "
+            "a confirmed uptrend supports the move, while rising RVI against the trend warns of "
+            "a possible reversal."
+        ),
+        "reading_tr": (
+            "50'nin üstü, son oynaklığın aşağı barlardan çok yukarı barlarda ortaya çıktığı "
+            "anlamına gelir; 50'nin altı ise tersidir. Genellikle bir trend indikatörüyle "
+            "eşleştirilir: doğrulanmış bir yükseliş trendiyle birlikte yükselen RVI hareketi "
+            "destekler, trende karşı yükselen RVI ise olası bir dönüşe karşı uyarır."
+        ),
+        "pitfalls_en": (
+            "Two stacked periods (`stdev_length`, `smooth_length`) rather than the single period "
+            "`rsi` needs — both change the result meaningfully."
+        ),
+        "pitfalls_tr": (
+            "`rsi`'nin ihtiyaç duyduğu tek periyot yerine, üst üste iki periyot "
+            "(`stdev_length`, `smooth_length`) — ikisi de sonucu anlamlı şekilde değiştirir."
+        ),
+        "example": [
+            lambda df: zeonta.relative_volatility_index(df["close"]).tail(3),
+        ],
+    },
+    "klinger_volume_oscillator": {
+        "title_en": "Klinger Volume Oscillator (KVO)",
+        "title_tr": "Klinger Hacim Osilatörü (KVO)",
+        "formula_en": (
+            "VF = 100 * Volume * Trend * |2*(dm/cm) - 1|, dm = High-Low, "
+            "cm accumulates dm since the trend last flipped; KVO = EMA(VF,fast) - EMA(VF,slow)"
+        ),
+        "formula_tr": (
+            "VF = 100 * Hacim * Trend * |2*(dm/cm) - 1|, dm = Yüksek-Düşük, "
+            "cm, trendin son değiştiğinden beri dm'yi biriktirir; "
+            "KVO = EMA(VF,fast) - EMA(VF,slow)"
+        ),
+        "about_en": (
+            "Stephen Klinger's more graded cousin of [obv](obv.md): rather than adding or "
+            "subtracting a bar's entire volume by direction alone, the 'volume force' is scaled "
+            "by how the bar's own range compares to the accumulated range since the trend last "
+            "flipped — a half-hearted push contributes less than a bar where the range dominates "
+            "the whole move."
+        ),
+        "about_tr": (
+            "Stephen Klinger'ın [obv](obv.md)'nin daha kademeli kuzeni: bir barın tüm hacmini "
+            "yalnızca yöne göre ekleyip çıkarmak yerine, 'hacim gücü', barın kendi aralığının "
+            "trendin son değiştiğinden beri birikmiş aralığa göre nasıl karşılaştırıldığına göre "
+            "ölçeklendirilir — yarım yürekli bir itiş, aralığın tüm harekete hakim olduğu bir "
+            "bardan daha az katkı sağlar."
+        ),
+        "reading_en": (
+            "Read like [macd](macd.md): the crossover between KVO and its own signal line, or "
+            "KVO crossing zero, confirming a price move with real volume conviction behind it."
+        ),
+        "reading_tr": (
+            "[macd](macd.md) gibi okunur: KVO ile kendi sinyal çizgisi arasındaki kesişim, ya da "
+            "KVO'nun sıfırı kesmesi, bir fiyat hareketini arkasında gerçek hacim kararlılığıyla "
+            "doğrular."
+        ),
+        "pitfalls_en": (
+            "The trend/cm bookkeeping means a single missing bar has more reach than a plain "
+            "EMA gap would — a NaN bar breaks the trend comparison for the bar right after it "
+            "too, recovering fully only once two consecutive clean bars are available."
+        ),
+        "pitfalls_tr": (
+            "Trend/cm muhasebesi, tek bir eksik barın düz bir EMA boşluğundan daha fazla etkiye "
+            "sahip olduğu anlamına gelir — bir NaN bar, hemen sonrasındaki barın trend "
+            "karşılaştırmasını da bozar, tam olarak ancak art arda iki temiz bar mevcut "
+            "olduğunda toparlanır."
+        ),
+        "example": [
+            lambda df: zeonta.klinger_volume_oscillator(
+                df["high"], df["low"], df["close"], df["volume"]
+            ).tail(3),
+        ],
+    },
+    "williams_ad": {
+        "title_en": "Williams Accumulation/Distribution (WAD)",
+        "title_tr": "Williams Birikim/Dağıtım (WAD)",
+        "formula_en": (
+            "TRH = max(Close[-1], High); TRL = min(Close[-1], Low); "
+            "WAD += (Close-TRL) if Close rose, (Close-TRH) if Close fell, else unchanged"
+        ),
+        "formula_tr": (
+            "TRH = max(Kapanış[-1], Yüksek); TRL = min(Kapanış[-1], Düşük); "
+            "WAD += (Kapanış-TRL) Kapanış yükseldiyse, (Kapanış-TRH) düştüyse, "
+            "aksi halde değişmez"
+        ),
+        "about_en": (
+            "Larry Williams' predecessor to [adl](adl.md): where ADL weighs a bar by where the "
+            "close sits inside *that bar's own* range, WAD anchors each bar against the *prior* "
+            "close instead — a bar that gapped up only gets credit for the move above "
+            "yesterday's close, not its own full range. No volume term, despite living in this "
+            "category alongside ADL/OBV."
+        ),
+        "about_tr": (
+            "Larry Williams'ın [adl](adl.md)'nin öncülü: ADL bir barı, kapanışın *o barın kendi* "
+            "aralığının neresinde oturduğuna göre ağırlıklandırırken, WAD her barı bunun yerine "
+            "*önceki* kapanışa göre sabitler — yukarı boşluk veren bir bar, yalnızca dünün "
+            "kapanışının üstündeki hareket için kredi alır, kendi tam aralığı için değil. ADL/OBV "
+            "ile aynı kategoride yaşamasına rağmen hacim terimi yoktur."
+        ),
+        "reading_en": (
+            "Read the same way as `adl`/`obv` — a rising line alongside rising price confirms "
+            "the trend; a failure to make a new high alongside price is a divergence warning."
+        ),
+        "reading_tr": (
+            "`adl`/`obv` ile aynı şekilde okunur — yükselen fiyatla birlikte yükselen bir çizgi "
+            "trendi doğrular; fiyatla birlikte yeni bir zirve yapamama bir uyumsuzluk uyarısıdır."
+        ),
+        "pitfalls_en": (
+            "A running total with an arbitrary starting level, like `adl`/`obv`/`pvt` — only "
+            "its slope and its divergence from price carry meaning."
+        ),
+        "pitfalls_tr": (
+            "`adl`/`obv`/`pvt` gibi keyfi bir başlangıç seviyesine sahip süregelen bir toplam — "
+            "yalnızca eğimi ve fiyattan sapması anlam taşır."
+        ),
+        "example": [
+            lambda df: zeonta.williams_ad(df["high"], df["low"], df["close"]).tail(3),
+        ],
+    },
+    "heikin_ashi": {
+        "title_en": "Heikin-Ashi Candles",
+        "title_tr": "Heikin-Ashi Mumları",
+        "formula_en": (
+            "HAclose=(O+H+L+C)/4; HAopen[0]=(O+C)/2 then (HAopen[-1]+HAclose[-1])/2; "
+            "HAhigh=max(H,HAopen,HAclose); HAlow=min(L,HAopen,HAclose)"
+        ),
+        "formula_tr": (
+            "HAclose=(O+H+L+C)/4; HAopen[0]=(O+C)/2 sonra (HAopen[-1]+HAclose[-1])/2; "
+            "HAhigh=max(H,HAopen,HAclose); HAlow=min(L,HAopen,HAclose)"
+        ),
+        "about_en": (
+            "'Average bar' — builds a second, smoothed OHLC series from the real one, where "
+            "each bar's open folds in the *previous* bar's own smoothed open and close. The "
+            "same kind of recursive, self-referencing smoothing [ema](ema.md) applies to a "
+            "single price line, applied here to a whole candle."
+        ),
+        "about_tr": (
+            "'Ortalama bar' — gerçek OHLC serisinden ikinci, düzleştirilmiş bir seri oluşturur; "
+            "burada her barın açılışı, *önceki* barın kendi düzleştirilmiş açılış ve kapanışını "
+            "içine katar. [ema](ema.md)'nın tek bir fiyat çizgisine uyguladığı aynı türden "
+            "özyinelemeli, kendine-referans veren düzleştirme, burada tüm bir muma uygulanır."
+        ),
+        "reading_en": (
+            "A run of same-direction candles with little or no opposite-colored wick is the "
+            "classic read for a trend that has not shown genuine reversal pressure yet — noise "
+            "a plain candle chart would still show bar to bar is filtered out here."
+        ),
+        "reading_tr": (
+            "Az ya da hiç ters-renkli fitili olmayan aynı-yönlü bir mum dizisi, henüz gerçek "
+            "dönüş baskısı göstermemiş bir trend için klasik okumadır — düz bir mum grafiğinin "
+            "hâlâ bar bar göstereceği gürültü burada filtrelenmiştir."
+        ),
+        "pitfalls_en": (
+            "The recursive open means a single missing bar changes every later Heikin-Ashi "
+            "value from that point on — there is no fixed window for the effect to age out of, "
+            "unlike most indicators in this library."
+        ),
+        "pitfalls_tr": (
+            "Özyinelemeli açılış, tek bir eksik barın o noktadan sonraki her Heikin-Ashi "
+            "değerini değiştirdiği anlamına gelir — bu kütüphanedeki çoğu indikatörden farklı "
+            "olarak, etkinin içinden çıkıp gideceği sabit bir pencere yoktur."
+        ),
+        "example": [
+            lambda df: zeonta.heikin_ashi(df["open"], df["high"], df["low"], df["close"]).tail(3),
+        ],
+    },
 }

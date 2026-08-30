@@ -96,6 +96,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | Indicator | What it does | Docs |
 | --- | --- | --- |
 | `candles` | Candlestick Anatomy and Patterns | [docs](docs/en/indicators/candles.md) |
+| `heikin_ashi` | Heikin-Ashi Candles | [docs](docs/en/indicators/heikin_ashi.md) |
 | `relative_volume` | Volume Basics | [docs](docs/en/indicators/relative_volume.md) |
 | `support_resistance` | Support and Resistance | [docs](docs/en/indicators/support_resistance.md) |
 | `trend_channel` | Trend Basics and Trend Channels | [docs](docs/en/indicators/trend_channel.md) |
@@ -106,6 +107,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | --- | --- | --- |
 | `alma` | Arnaud Legoux Moving Average (ALMA) | [docs](docs/en/indicators/alma.md) |
 | `dema` | Double Exponential Moving Average (DEMA) | [docs](docs/en/indicators/dema.md) |
+| `efficiency_ratio` | Kaufman's Efficiency Ratio (ER) | [docs](docs/en/indicators/efficiency_ratio.md) |
 | `ema` | Exponential Moving Average (EMA) | [docs](docs/en/indicators/ema.md) |
 | `ema_ribbon` | EMA Ribbon | [docs](docs/en/indicators/ema_ribbon.md) |
 | `emd_imf1` | Empirical Mode Decomposition — First IMF | [docs](docs/en/indicators/emd_imf1.md) |
@@ -119,6 +121,8 @@ the cloud that projects past the last bar, rather than discarding it.
 | `super_smoother` | Super Smoother Filter (Ehlers) | [docs](docs/en/indicators/super_smoother.md) |
 | `t3` | T3 Moving Average (Tillson) | [docs](docs/en/indicators/t3.md) |
 | `tema` | Triple Exponential Moving Average (TEMA) | [docs](docs/en/indicators/tema.md) |
+| `trima` | Triangular Moving Average (TRIMA) | [docs](docs/en/indicators/trima.md) |
+| `vidya` | Variable Index Dynamic Average (VIDYA) | [docs](docs/en/indicators/vidya.md) |
 | `vwma` | Volume-Weighted Moving Average (VWMA) | [docs](docs/en/indicators/vwma.md) |
 | `wavelet_denoise` | Wavelet-Denoised Price (Discrete Wavelet Transform) | [docs](docs/en/indicators/wavelet_denoise.md) |
 | `wma` | Weighted Moving Average (WMA) | [docs](docs/en/indicators/wma.md) |
@@ -130,16 +134,21 @@ the cloud that projects past the last bar, rather than discarding it.
 | --- | --- | --- |
 | `awesome_oscillator` | Awesome Oscillator (AO) | [docs](docs/en/indicators/awesome_oscillator.md) |
 | `cci` | Commodity Channel Index (CCI) | [docs](docs/en/indicators/cci.md) |
+| `center_of_gravity` | Center of Gravity Oscillator (CG) | [docs](docs/en/indicators/center_of_gravity.md) |
 | `cmo` | Chande Momentum Oscillator (CMO) | [docs](docs/en/indicators/cmo.md) |
 | `coppock_curve` | Coppock Curve | [docs](docs/en/indicators/coppock_curve.md) |
 | `dpo` | Detrended Price Oscillator (DPO) | [docs](docs/en/indicators/dpo.md) |
 | `elder_ray` | Elder Ray (Bull Power / Bear Power) | [docs](docs/en/indicators/elder_ray.md) |
 | `fisher_transform` | Fisher Transform (Ehlers) | [docs](docs/en/indicators/fisher_transform.md) |
+| `kst` | Pring's Know Sure Thing (KST) | [docs](docs/en/indicators/kst.md) |
+| `laguerre_rsi` | Laguerre RSI | [docs](docs/en/indicators/laguerre_rsi.md) |
 | `macd` | MACD (Moving Average Convergence Divergence) | [docs](docs/en/indicators/macd.md) |
 | `momentum` | Momentum | [docs](docs/en/indicators/momentum.md) |
 | `ppo` | Percentage Price Oscillator (PPO) | [docs](docs/en/indicators/ppo.md) |
 | `roc` | Rate of Change (ROC) | [docs](docs/en/indicators/roc.md) |
 | `rsi` | Relative Strength Index (RSI) | [docs](docs/en/indicators/rsi.md) |
+| `rvgi` | Relative Vigor Index (RVGI) | [docs](docs/en/indicators/rvgi.md) |
+| `smi` | Stochastic Momentum Index (SMI) | [docs](docs/en/indicators/smi.md) |
 | `stoch` | Stochastic Oscillator | [docs](docs/en/indicators/stoch.md) |
 | `stoch_rsi` | Stochastic RSI (StochRSI) | [docs](docs/en/indicators/stoch_rsi.md) |
 | `trix` | TRIX (Triple Exponential Average) | [docs](docs/en/indicators/trix.md) |
@@ -157,11 +166,13 @@ the cloud that projects past the last bar, rather than discarding it.
 | `cmf` | Chaikin Money Flow (CMF) | [docs](docs/en/indicators/cmf.md) |
 | `ease_of_movement` | Ease of Movement (EMV) | [docs](docs/en/indicators/ease_of_movement.md) |
 | `force_index` | Force Index | [docs](docs/en/indicators/force_index.md) |
+| `klinger_volume_oscillator` | Klinger Volume Oscillator (KVO) | [docs](docs/en/indicators/klinger_volume_oscillator.md) |
 | `mfi` | Money Flow Index (MFI) | [docs](docs/en/indicators/mfi.md) |
 | `nvi` | Negative Volume Index (NVI) | [docs](docs/en/indicators/nvi.md) |
 | `obv` | On-Balance Volume (OBV) | [docs](docs/en/indicators/obv.md) |
 | `pvi` | Positive Volume Index (PVI) | [docs](docs/en/indicators/pvi.md) |
 | `pvt` | Price Volume Trend (PVT) | [docs](docs/en/indicators/pvt.md) |
+| `williams_ad` | Williams Accumulation/Distribution (WAD) | [docs](docs/en/indicators/williams_ad.md) |
 
 ### Volatility
 
@@ -169,9 +180,11 @@ the cloud that projects past the last bar, rather than discarding it.
 | --- | --- | --- |
 | `atr` | Average True Range (ATR) | [docs](docs/en/indicators/atr.md) |
 | `bbands` | Bollinger Bands | [docs](docs/en/indicators/bbands.md) |
+| `chaikin_volatility` | Chaikin Volatility (CVI) | [docs](docs/en/indicators/chaikin_volatility.md) |
 | `keltner` | Keltner Channels | [docs](docs/en/indicators/keltner.md) |
 | `mass_index` | Mass Index | [docs](docs/en/indicators/mass_index.md) |
 | `natr` | Normalized Average True Range (NATR) | [docs](docs/en/indicators/natr.md) |
+| `relative_volatility_index` | Relative Volatility Index (RVI) | [docs](docs/en/indicators/relative_volatility_index.md) |
 | `squeeze` | The Squeeze (TTM Squeeze) | [docs](docs/en/indicators/squeeze.md) |
 | `true_range` | True Range | [docs](docs/en/indicators/true_range.md) |
 | `ulcer_index` | Ulcer Index | [docs](docs/en/indicators/ulcer_index.md) |
@@ -211,6 +224,7 @@ the cloud that projects past the last bar, rather than discarding it.
 | Indicator | What it does | Docs |
 | --- | --- | --- |
 | `cumulative_return` | Cumulative Return | [docs](docs/en/indicators/cumulative_return.md) |
+| `drawdown` | Drawdown | [docs](docs/en/indicators/drawdown.md) |
 | `kurtosis` | Kurtosis | [docs](docs/en/indicators/kurtosis.md) |
 | `log_return` | Logarithmic Return | [docs](docs/en/indicators/log_return.md) |
 | `mad` | Median Absolute Deviation (MAD) | [docs](docs/en/indicators/mad.md) |

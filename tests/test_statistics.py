@@ -106,3 +106,24 @@ def test_skewness_rejects_a_window_below_three() -> None:
 def test_kurtosis_rejects_a_window_below_four() -> None:
     with pytest.raises(ValueError, match="must be >="):
         zeonta.kurtosis([1.0, 2.0, 3.0, 4.0], length=3)
+
+
+def test_drawdown_is_zero_at_every_new_high() -> None:
+    result = zeonta.drawdown([10.0, 12.0, 15.0, 20.0])
+    np.testing.assert_allclose(result.to_numpy(), [0.0, 0.0, 0.0, 0.0])
+
+
+def test_drawdown_matches_the_hand_computed_percentage_from_the_running_peak() -> None:
+    result = zeonta.drawdown([10.0, 12.0, 11.0, 15.0, 9.0])
+    np.testing.assert_allclose(result.to_numpy(), [0.0, 0.0, -8.333333333333334, 0.0, -40.0])
+
+
+def test_drawdown_survives_a_gap_by_holding_the_last_real_peak() -> None:
+    """Regression guard for the ``np.maximum.accumulate`` bug class already
+    fixed in ``adl()``: one missing bar must not poison every later running
+    peak with ``NaN`` forever."""
+    values = [10.0, 12.0, np.nan, 8.0, 15.0]
+    result = zeonta.drawdown(values)
+    assert np.isnan(result.iloc[2])
+    np.testing.assert_allclose(result.iloc[3], (8.0 - 12.0) / 12.0 * 100.0)
+    np.testing.assert_allclose(result.iloc[4], 0.0)

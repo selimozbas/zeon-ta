@@ -125,6 +125,20 @@ def test_indicators_with_a_reference() -> None:
         "choppiness_index",
         "vertical_horizontal_filter",
         "cmo",
+        "drawdown",
+        "trima",
+        "vidya",
+        "efficiency_ratio",
+        "center_of_gravity",
+        "laguerre_rsi",
+        "kst",
+        "rvgi",
+        "smi",
+        "chaikin_volatility",
+        "relative_volatility_index",
+        "klinger_volume_oscillator",
+        "williams_ad",
+        "heikin_ashi",
     }
     with_reference = {spec.name for spec in iter_specs() if spec.reference is not None}
     assert with_reference == expected

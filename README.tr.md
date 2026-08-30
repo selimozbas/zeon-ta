@@ -102,6 +102,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | İndikatör | Ne yapar | Doküman |
 | --- | --- | --- |
 | `candles` | Mum Anatomisi ve Formasyonlar | [doküman](docs/tr/indicators/candles.md) |
+| `heikin_ashi` | Heikin-Ashi Mumları | [doküman](docs/tr/indicators/heikin_ashi.md) |
 | `relative_volume` | Hacim Temelleri | [doküman](docs/tr/indicators/relative_volume.md) |
 | `support_resistance` | Destek ve Direnç | [doküman](docs/tr/indicators/support_resistance.md) |
 | `trend_channel` | Trend Temelleri ve Trend Kanalları | [doküman](docs/tr/indicators/trend_channel.md) |
@@ -112,6 +113,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | --- | --- | --- |
 | `alma` | Arnaud Legoux Hareketli Ortalaması (ALMA) | [doküman](docs/tr/indicators/alma.md) |
 | `dema` | Çift Üssel Hareketli Ortalama (DEMA) | [doküman](docs/tr/indicators/dema.md) |
+| `efficiency_ratio` | Kaufman Verimlilik Oranı (ER) | [doküman](docs/tr/indicators/efficiency_ratio.md) |
 | `ema` | Üssel Hareketli Ortalama (EMA) | [doküman](docs/tr/indicators/ema.md) |
 | `ema_ribbon` | EMA Şeridi | [doküman](docs/tr/indicators/ema_ribbon.md) |
 | `emd_imf1` | Ampirik Mod Ayrıştırması — Birinci IMF | [doküman](docs/tr/indicators/emd_imf1.md) |
@@ -125,6 +127,8 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `super_smoother` | Super Smoother Filtresi (Ehlers) | [doküman](docs/tr/indicators/super_smoother.md) |
 | `t3` | T3 Hareketli Ortalaması (Tillson) | [doküman](docs/tr/indicators/t3.md) |
 | `tema` | Üçlü Üssel Hareketli Ortalama (TEMA) | [doküman](docs/tr/indicators/tema.md) |
+| `trima` | Üçgen Hareketli Ortalama (TRIMA) | [doküman](docs/tr/indicators/trima.md) |
+| `vidya` | Değişken Endeks Dinamik Ortalaması (VIDYA) | [doküman](docs/tr/indicators/vidya.md) |
 | `vwma` | Hacim Ağırlıklı Hareketli Ortalama (VWMA) | [doküman](docs/tr/indicators/vwma.md) |
 | `wavelet_denoise` | Dalgacık ile Gürültüsü Giderilmiş Fiyat (Ayrık Dalgacık Dönüşümü) | [doküman](docs/tr/indicators/wavelet_denoise.md) |
 | `wma` | Ağırlıklı Hareketli Ortalama (WMA) | [doküman](docs/tr/indicators/wma.md) |
@@ -136,16 +140,21 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | --- | --- | --- |
 | `awesome_oscillator` | Awesome Osilatör (AO) | [doküman](docs/tr/indicators/awesome_oscillator.md) |
 | `cci` | Emtia Kanal Endeksi (CCI) | [doküman](docs/tr/indicators/cci.md) |
+| `center_of_gravity` | Ağırlık Merkezi Osilatörü (CG) | [doküman](docs/tr/indicators/center_of_gravity.md) |
 | `cmo` | Chande Momentum Osilatörü (CMO) | [doküman](docs/tr/indicators/cmo.md) |
 | `coppock_curve` | Coppock Eğrisi | [doküman](docs/tr/indicators/coppock_curve.md) |
 | `dpo` | Trendi Arındırılmış Fiyat Osilatörü (DPO) | [doküman](docs/tr/indicators/dpo.md) |
 | `elder_ray` | Elder Ray (Boğa Gücü / Ayı Gücü) | [doküman](docs/tr/indicators/elder_ray.md) |
 | `fisher_transform` | Fisher Dönüşümü (Ehlers) | [doküman](docs/tr/indicators/fisher_transform.md) |
+| `kst` | Pring'in Know Sure Thing'i (KST) | [doküman](docs/tr/indicators/kst.md) |
+| `laguerre_rsi` | Laguerre RSI | [doküman](docs/tr/indicators/laguerre_rsi.md) |
 | `macd` | MACD (Hareketli Ortalama Yakınsama Iraksama) | [doküman](docs/tr/indicators/macd.md) |
 | `momentum` | Momentum | [doküman](docs/tr/indicators/momentum.md) |
 | `ppo` | Yüzde Fiyat Osilatörü (PPO) | [doküman](docs/tr/indicators/ppo.md) |
 | `roc` | Değişim Oranı (ROC) | [doküman](docs/tr/indicators/roc.md) |
 | `rsi` | Göreceli Güç Endeksi (RSI) | [doküman](docs/tr/indicators/rsi.md) |
+| `rvgi` | Göreceli Canlılık Endeksi (RVGI) | [doküman](docs/tr/indicators/rvgi.md) |
+| `smi` | Stokastik Momentum Endeksi (SMI) | [doküman](docs/tr/indicators/smi.md) |
 | `stoch` | Stokastik Osilatör | [doküman](docs/tr/indicators/stoch.md) |
 | `stoch_rsi` | Stokastik RSI (StochRSI) | [doküman](docs/tr/indicators/stoch_rsi.md) |
 | `trix` | TRIX (Üçlü Üssel Ortalama) | [doküman](docs/tr/indicators/trix.md) |
@@ -163,11 +172,13 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | `cmf` | Chaikin Para Akışı (CMF) | [doküman](docs/tr/indicators/cmf.md) |
 | `ease_of_movement` | Hareket Kolaylığı (EMV) | [doküman](docs/tr/indicators/ease_of_movement.md) |
 | `force_index` | Force Index (Güç Endeksi) | [doküman](docs/tr/indicators/force_index.md) |
+| `klinger_volume_oscillator` | Klinger Hacim Osilatörü (KVO) | [doküman](docs/tr/indicators/klinger_volume_oscillator.md) |
 | `mfi` | Para Akışı Endeksi (MFI) | [doküman](docs/tr/indicators/mfi.md) |
 | `nvi` | Negatif Hacim Endeksi (NVI) | [doküman](docs/tr/indicators/nvi.md) |
 | `obv` | Denge Hacmi (OBV) | [doküman](docs/tr/indicators/obv.md) |
 | `pvi` | Pozitif Hacim Endeksi (PVI) | [doküman](docs/tr/indicators/pvi.md) |
 | `pvt` | Fiyat Hacim Trendi (PVT) | [doküman](docs/tr/indicators/pvt.md) |
+| `williams_ad` | Williams Birikim/Dağıtım (WAD) | [doküman](docs/tr/indicators/williams_ad.md) |
 
 ### Oynaklık
 
@@ -175,9 +186,11 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | --- | --- | --- |
 | `atr` | Ortalama Gerçek Aralık (ATR) | [doküman](docs/tr/indicators/atr.md) |
 | `bbands` | Bollinger Bantları | [doküman](docs/tr/indicators/bbands.md) |
+| `chaikin_volatility` | Chaikin Oynaklığı (CVI) | [doküman](docs/tr/indicators/chaikin_volatility.md) |
 | `keltner` | Keltner Kanalları | [doküman](docs/tr/indicators/keltner.md) |
 | `mass_index` | Kütle Endeksi | [doküman](docs/tr/indicators/mass_index.md) |
 | `natr` | Normalize Edilmiş Ortalama Gerçek Aralık (NATR) | [doküman](docs/tr/indicators/natr.md) |
+| `relative_volatility_index` | Göreceli Oynaklık Endeksi (RVI) | [doküman](docs/tr/indicators/relative_volatility_index.md) |
 | `squeeze` | Sıkışma (TTM Squeeze) | [doküman](docs/tr/indicators/squeeze.md) |
 | `true_range` | Gerçek Aralık | [doküman](docs/tr/indicators/true_range.md) |
 | `ulcer_index` | Ulcer Endeksi | [doküman](docs/tr/indicators/ulcer_index.md) |
@@ -217,6 +230,7 @@ düşen kısmını atmak yerine ek olarak döndürür.
 | İndikatör | Ne yapar | Doküman |
 | --- | --- | --- |
 | `cumulative_return` | Kümülatif Getiri | [doküman](docs/tr/indicators/cumulative_return.md) |
+| `drawdown` | Düşüş (Drawdown) | [doküman](docs/tr/indicators/drawdown.md) |
 | `kurtosis` | Basıklık | [doküman](docs/tr/indicators/kurtosis.md) |
 | `log_return` | Logaritmik Getiri | [doküman](docs/tr/indicators/log_return.md) |
 | `mad` | Medyan Mutlak Sapma (MAD) | [doküman](docs/tr/indicators/mad.md) |

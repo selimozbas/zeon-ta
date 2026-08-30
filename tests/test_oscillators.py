@@ -480,3 +480,91 @@ def test_fisher_transform_is_zero_on_a_flat_series() -> None:
 def test_fisher_transform_rejects_non_positive_length() -> None:
     with pytest.raises(ValueError, match="must be >="):
         zeonta.fisher_transform([1.0, 2.0], [0.5, 1.5], length=0)
+
+
+def test_center_of_gravity_matches_the_hand_computed_balance_point() -> None:
+    high = [12.0, 13.0, 11.0, 14.0, 15.0]
+    low = [10.0, 11.0, 9.0, 12.0, 13.0]
+    out = zeonta.center_of_gravity(high, low, length=5)
+    np.testing.assert_allclose(out["CG_5"].iloc[-1], -2.8833333333333333)
+
+
+def test_center_of_gravity_trigger_is_cg_shifted_by_one_bar() -> None:
+    high = list(np.linspace(10, 20, 30))
+    low = list(np.linspace(9, 19, 30))
+    out = zeonta.center_of_gravity(high, low, length=5)
+    np.testing.assert_allclose(
+        out["CGs_5"].to_numpy(), out["CG_5"].shift(1).to_numpy(), equal_nan=True
+    )
+
+
+def test_center_of_gravity_is_constant_on_a_flat_series() -> None:
+    out = zeonta.center_of_gravity([100.0] * 10, [100.0] * 10, length=5)
+    np.testing.assert_allclose(out["CG_5"].dropna().to_numpy(), -3.0)
+
+
+def test_center_of_gravity_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.center_of_gravity([1.0, 2.0], [0.5, 1.5], length=0)
+
+
+def test_laguerre_rsi_settles_at_one_after_a_clean_uptrend() -> None:
+    result = zeonta.laguerre_rsi(list(range(1, 51)))
+    np.testing.assert_allclose(result.iloc[-1], 1.0)
+
+
+def test_laguerre_rsi_settles_at_zero_after_a_clean_downtrend() -> None:
+    result = zeonta.laguerre_rsi(list(range(50, 0, -1)))
+    np.testing.assert_allclose(result.iloc[-1], 0.0)
+
+
+def test_laguerre_rsi_rejects_gamma_at_or_above_one() -> None:
+    with pytest.raises(ValueError, match="must be < 1"):
+        zeonta.laguerre_rsi([1.0, 2.0], gamma=1.0)
+
+
+def test_kst_matches_the_hand_computed_weighted_roc_sum() -> None:
+    close = [float(v) for v in range(10, 25)]
+    result = zeonta.kst(
+        close, roc1=2, roc2=3, roc3=4, roc4=5, sma1=2, sma2=2, sma3=2, sma4=2, signal=2
+    )
+    np.testing.assert_allclose(result["KST_2_3_4_5"].iloc[-1], 208.35915492957747)
+    np.testing.assert_allclose(result["KSTs_2_3_4_5"].iloc[-1], 214.10094965379668)
+
+
+def test_kst_is_zero_on_a_flat_series() -> None:
+    result = zeonta.kst(
+        [50.0] * 60, roc1=2, roc2=3, roc3=4, roc4=5, sma1=2, sma2=2, sma3=2, sma4=2, signal=2
+    )
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_rvgi_is_all_nan_on_a_perfectly_flat_series() -> None:
+    """Zero body and zero range together is an undefined 0/0 ratio."""
+    flat = [10.0] * 30
+    result = zeonta.rvgi(flat, flat, flat, flat, length=5)
+    assert result.isna().all().all()
+
+
+def test_rvgi_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.rvgi([1.0, 2.0], [1.5, 2.5], [0.5, 1.5], [1.0, 2.0], length=0)
+
+
+def test_smi_is_zero_when_close_sits_exactly_on_the_midpoint() -> None:
+    high = [12.0] * 30
+    low = [10.0] * 30
+    close = [11.0] * 30
+    result = zeonta.smi(high, low, close, length=5, fast=3, slow=3, signal_length=3)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_smi_stays_within_bounds(ohlcv: pd.DataFrame) -> None:
+    result = zeonta.smi(ohlcv["high"], ohlcv["low"], ohlcv["close"])
+    values = result.dropna().to_numpy()
+    assert (values >= -100.0).all() and (values <= 100.0).all()
+
+
+def test_smi_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.smi([1.0, 2.0], [0.5, 1.5], [0.8, 1.8], length=0)

@@ -9,6 +9,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | Indicator | Summary |
 | --- | --- |
 | [`candles`](indicators/candles.md) | Candlestick Anatomy and Patterns |
+| [`heikin_ashi`](indicators/heikin_ashi.md) | Heikin-Ashi Candles |
 | [`relative_volume`](indicators/relative_volume.md) | Volume Basics |
 | [`support_resistance`](indicators/support_resistance.md) | Support and Resistance |
 | [`trend_channel`](indicators/trend_channel.md) | Trend Basics and Trend Channels |
@@ -19,6 +20,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | --- | --- |
 | [`alma`](indicators/alma.md) | Arnaud Legoux Moving Average (ALMA) |
 | [`dema`](indicators/dema.md) | Double Exponential Moving Average (DEMA) |
+| [`efficiency_ratio`](indicators/efficiency_ratio.md) | Kaufman's Efficiency Ratio (ER) |
 | [`ema`](indicators/ema.md) | Exponential Moving Average (EMA) |
 | [`ema_ribbon`](indicators/ema_ribbon.md) | EMA Ribbon |
 | [`emd_imf1`](indicators/emd_imf1.md) | Empirical Mode Decomposition — First IMF |
@@ -32,6 +34,8 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`super_smoother`](indicators/super_smoother.md) | Super Smoother Filter (Ehlers) |
 | [`t3`](indicators/t3.md) | T3 Moving Average (Tillson) |
 | [`tema`](indicators/tema.md) | Triple Exponential Moving Average (TEMA) |
+| [`trima`](indicators/trima.md) | Triangular Moving Average (TRIMA) |
+| [`vidya`](indicators/vidya.md) | Variable Index Dynamic Average (VIDYA) |
 | [`vwma`](indicators/vwma.md) | Volume-Weighted Moving Average (VWMA) |
 | [`wavelet_denoise`](indicators/wavelet_denoise.md) | Wavelet-Denoised Price (Discrete Wavelet Transform) |
 | [`wma`](indicators/wma.md) | Weighted Moving Average (WMA) |
@@ -43,16 +47,21 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | --- | --- |
 | [`awesome_oscillator`](indicators/awesome_oscillator.md) | Awesome Oscillator (AO) |
 | [`cci`](indicators/cci.md) | Commodity Channel Index (CCI) |
+| [`center_of_gravity`](indicators/center_of_gravity.md) | Center of Gravity Oscillator (CG) |
 | [`cmo`](indicators/cmo.md) | Chande Momentum Oscillator (CMO) |
 | [`coppock_curve`](indicators/coppock_curve.md) | Coppock Curve |
 | [`dpo`](indicators/dpo.md) | Detrended Price Oscillator (DPO) |
 | [`elder_ray`](indicators/elder_ray.md) | Elder Ray (Bull Power / Bear Power) |
 | [`fisher_transform`](indicators/fisher_transform.md) | Fisher Transform (Ehlers) |
+| [`kst`](indicators/kst.md) | Pring's Know Sure Thing (KST) |
+| [`laguerre_rsi`](indicators/laguerre_rsi.md) | Laguerre RSI |
 | [`macd`](indicators/macd.md) | MACD (Moving Average Convergence Divergence) |
 | [`momentum`](indicators/momentum.md) | Momentum |
 | [`ppo`](indicators/ppo.md) | Percentage Price Oscillator (PPO) |
 | [`roc`](indicators/roc.md) | Rate of Change (ROC) |
 | [`rsi`](indicators/rsi.md) | Relative Strength Index (RSI) |
+| [`rvgi`](indicators/rvgi.md) | Relative Vigor Index (RVGI) |
+| [`smi`](indicators/smi.md) | Stochastic Momentum Index (SMI) |
 | [`stoch`](indicators/stoch.md) | Stochastic Oscillator |
 | [`stoch_rsi`](indicators/stoch_rsi.md) | Stochastic RSI (StochRSI) |
 | [`trix`](indicators/trix.md) | TRIX (Triple Exponential Average) |
@@ -70,11 +79,13 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`cmf`](indicators/cmf.md) | Chaikin Money Flow (CMF) |
 | [`ease_of_movement`](indicators/ease_of_movement.md) | Ease of Movement (EMV) |
 | [`force_index`](indicators/force_index.md) | Force Index |
+| [`klinger_volume_oscillator`](indicators/klinger_volume_oscillator.md) | Klinger Volume Oscillator (KVO) |
 | [`mfi`](indicators/mfi.md) | Money Flow Index (MFI) |
 | [`nvi`](indicators/nvi.md) | Negative Volume Index (NVI) |
 | [`obv`](indicators/obv.md) | On-Balance Volume (OBV) |
 | [`pvi`](indicators/pvi.md) | Positive Volume Index (PVI) |
 | [`pvt`](indicators/pvt.md) | Price Volume Trend (PVT) |
+| [`williams_ad`](indicators/williams_ad.md) | Williams Accumulation/Distribution (WAD) |
 
 ## Volatility
 
@@ -82,9 +93,11 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | --- | --- |
 | [`atr`](indicators/atr.md) | Average True Range (ATR) |
 | [`bbands`](indicators/bbands.md) | Bollinger Bands |
+| [`chaikin_volatility`](indicators/chaikin_volatility.md) | Chaikin Volatility (CVI) |
 | [`keltner`](indicators/keltner.md) | Keltner Channels |
 | [`mass_index`](indicators/mass_index.md) | Mass Index |
 | [`natr`](indicators/natr.md) | Normalized Average True Range (NATR) |
+| [`relative_volatility_index`](indicators/relative_volatility_index.md) | Relative Volatility Index (RVI) |
 | [`squeeze`](indicators/squeeze.md) | The Squeeze (TTM Squeeze) |
 | [`true_range`](indicators/true_range.md) | True Range |
 | [`ulcer_index`](indicators/ulcer_index.md) | Ulcer Index |
@@ -124,6 +137,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | Indicator | Summary |
 | --- | --- |
 | [`cumulative_return`](indicators/cumulative_return.md) | Cumulative Return |
+| [`drawdown`](indicators/drawdown.md) | Drawdown |
 | [`kurtosis`](indicators/kurtosis.md) | Kurtosis |
 | [`log_return`](indicators/log_return.md) | Logarithmic Return |
 | [`mad`](indicators/mad.md) | Median Absolute Deviation (MAD) |

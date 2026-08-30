@@ -19,6 +19,7 @@ from ._core import (
 
 __all__ = [
     "cumulative_return",
+    "drawdown",
     "kurtosis",
     "log_return",
     "mad",
@@ -384,3 +385,54 @@ def cumulative_return(close: ArrayLike) -> pd.Series:
     with np.errstate(divide="ignore", invalid="ignore"):
         result = (values / values[0] - 1.0) * 100.0
     return wrap_series(result, common_index(close), "CUMRET")
+
+
+@indicator(
+    category="statistics",
+    summary="Percentage decline from the running peak, since the start of the series.",
+    reference="https://en.wikipedia.org/wiki/Drawdown_(economics)",
+    outputs=("DD",),
+)
+def drawdown(close: ArrayLike) -> pd.Series:
+    """Drawdown.
+
+    ``DD = (Close - CumMax(Close)) / CumMax(Close) * 100``, where
+    ``CumMax`` is the running (expanding) all-time-high of ``Close`` up
+    to and including the current bar. Always ``<= 0``; ``0`` exactly at
+    every new high.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``DD``. Like :func:`cumulative_return`, this looks back to
+        the start of whatever series you pass in rather than a fixed
+        *length* — prepending more history can only ever move the running
+        peak higher (or leave it unchanged), so it can change every later
+        value the same way :func:`cumulative_return` does.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> [round(v, 6) for v in zeonta.drawdown([10.0, 12.0, 11.0, 15.0, 9.0])]
+    [0.0, 0.0, -8.333333, 0.0, -40.0]
+
+    References
+    ----------
+    https://en.wikipedia.org/wiki/Drawdown_(economics)
+    """
+    values = as_array(close, "close")
+    # A plain np.maximum.accumulate would let one missing bar poison every
+    # later running-peak value with NaN forever; pandas' own cummax skips
+    # a NaN instead, holding the last real peak — the same
+    # gap-does-not-poison-the-rest convention this library's running
+    # totals (obv, adl) already follow, applied to a running maximum.
+    running_peak = pd.Series(values).cummax().to_numpy()
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = np.where(running_peak != 0.0, (values - running_peak) / running_peak * 100.0, 0.0)
+    result = np.where(np.isfinite(running_peak), result, np.nan)
+    return wrap_series(result, common_index(close), "DD")

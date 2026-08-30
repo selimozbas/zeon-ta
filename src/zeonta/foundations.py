@@ -26,7 +26,14 @@ from ._core import (
     wrap_frame,
 )
 
-__all__ = ["candles", "relative_volume", "sr_levels", "support_resistance", "trend_channel"]
+__all__ = [
+    "candles",
+    "heikin_ashi",
+    "relative_volume",
+    "sr_levels",
+    "support_resistance",
+    "trend_channel",
+]
 
 
 def _pivot_flags(values: np.ndarray, left: int, right: int, high: bool) -> np.ndarray:
@@ -445,4 +452,91 @@ def relative_volume(volume: ArrayLike, length: int = 20) -> pd.DataFrame:
     order = [f"VOLMA_{length}", f"RVOL_{length}"]
     return wrap_frame(
         dict(zip(order, (average, ratio), strict=True)), common_index(volume), order=order
+    )
+
+
+@indicator(
+    category="foundations",
+    summary="Recursively smoothed candles that filter noise from the price bars themselves.",
+    reference="https://www.babypips.com/learn/forex/how-to-calculate-heikin-ashi",
+    outputs=("HAopen", "HAhigh", "HAlow", "HAclose"),
+)
+def heikin_ashi(open: ArrayLike, high: ArrayLike, low: ArrayLike, close: ArrayLike) -> pd.DataFrame:
+    """Heikin-Ashi Candles ("average bar" in Japanese).
+
+    Builds a second, smoothed OHLC series from the real one::
+
+        HAclose[i] = (Open[i] + High[i] + Low[i] + Close[i]) / 4
+        HAopen[0]  = (Open[0] + Close[0]) / 2
+        HAopen[i]  = (HAopen[i-1] + HAclose[i-1]) / 2
+        HAhigh[i]  = max(High[i], HAopen[i], HAclose[i])
+        HAlow[i]   = min(Low[i], HAopen[i], HAclose[i])
+
+    Because ``HAopen`` folds in the *previous* bar's own smoothed values,
+    every bar carries a trace of the whole history before it — the same
+    kind of recursive smoothing :func:`~zeonta.ema` uses, applied to a
+    full candle instead of a single price line. A run of same-direction
+    Heikin-Ashi candles with little or no opposite-colored wick is the
+    classic read for "this trend has not shown genuine reversal pressure
+    yet", filtered from noise a plain candle would still show bar to bar.
+
+    Parameters
+    ----------
+    open, high, low, close:
+        Series of equal length.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``HAopen``, ``HAhigh``, ``HAlow``, ``HAclose``. Never
+        ``NaN`` for finite input — ``HAopen`` is always seeded from bar 0
+        itself, unlike a fixed-window indicator's warm-up.
+
+    Notes
+    -----
+    ``HAopen``'s recursion means a single missing bar changes every later
+    Heikin-Ashi value from that point on (there is no fixed window for
+    the effect to age out of) — clean the input first if your feed has
+    gaps, rather than relying on this to recover the way a windowed
+    indicator would.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> open_ = [10.0, 11.0, 10.5, 12.0]
+    >>> high = [12.0, 13.0, 11.5, 14.0]
+    >>> low = [9.0, 10.0, 9.5, 11.0]
+    >>> close = [11.0, 10.5, 11.2, 13.5]
+    >>> out = zeonta.heikin_ashi(open_, high, low, close)
+    >>> [round(v, 5) for v in out["HAclose"]]
+    [10.5, 11.125, 10.675, 12.625]
+
+    References
+    ----------
+    https://www.babypips.com/learn/forex/how-to-calculate-heikin-ashi
+    """
+    require_aligned_index(open=open, high=high, low=low, close=close)
+    open_values = as_array(open, "open")
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    size = require_same_length(
+        open=open_values, high=high_values, low=low_values, close=close_values
+    )
+
+    ha_close = (open_values + high_values + low_values + close_values) / 4.0
+    ha_open = np.full(size, np.nan, dtype="float64")
+    ha_open[0] = (open_values[0] + close_values[0]) / 2.0
+    for i in range(1, size):
+        previous = ha_open[i - 1] + ha_close[i - 1]
+        ha_open[i] = previous / 2.0 if np.isfinite(previous) else ha_open[i - 1]
+
+    ha_high = np.maximum(high_values, np.maximum(ha_open, ha_close))
+    ha_low = np.minimum(low_values, np.minimum(ha_open, ha_close))
+
+    order = ["HAopen", "HAhigh", "HAlow", "HAclose"]
+    return wrap_frame(
+        dict(zip(order, (ha_open, ha_high, ha_low, ha_close), strict=True)),
+        common_index(open, high, low, close),
+        order=order,
     )

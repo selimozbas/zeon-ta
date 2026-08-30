@@ -20,12 +20,15 @@ from ._core import (
     common_index,
     require_aligned_index,
     require_same_length,
+    rolling_mean,
+    rolling_std,
     validate_length,
     validate_multiplier,
     wrap_frame,
+    wrap_series,
 )
 
-__all__ = ["wavelet_lead_lag"]
+__all__ = ["beta", "correlation", "wavelet_lead_lag"]
 
 
 def _morlet_kernel(scale: float, omega0: float, cutoff: int) -> np.ndarray:
@@ -50,6 +53,138 @@ def _morlet_kernel(scale: float, omega0: float, cutoff: int) -> np.ndarray:
 def _scale_from_period(period: float, omega0: float) -> float:
     """Morlet scale <-> Fourier period, Torrence & Compo (1998) Table 1."""
     return float(period * (omega0 + np.sqrt(2.0 + omega0**2)) / (4.0 * np.pi))
+
+
+def correlation(close_a: ArrayLike, close_b: ArrayLike, length: int = 20) -> pd.Series:
+    """Rolling Pearson Correlation between two price series.
+
+    ``r = Cov(A, B) / (STDDEV(A) * STDDEV(B))`` over a rolling *length*-bar
+    window, ranging -1 (moving in perfect opposition) to +1 (moving in
+    perfect lockstep). Computed directly on price levels, not returns —
+    for two series that are each trending, this mostly measures whether
+    they are trending the *same direction*, which is usually what "is
+    this pair correlated" means in practice; see :func:`beta` for the
+    return-based version used to size a hedge.
+
+    Not part of the indicator registry — see this module's own
+    docstring for why a second, independent price series does not fit
+    that contract. Call it directly rather than through ``.zta``.
+
+    Parameters
+    ----------
+    close_a, close_b:
+        Two closing-price series, one per asset, on the same timeline
+        (an aligned index if both are ``pd.Series``; ``ValueError``
+        otherwise).
+    length:
+        Rolling window. Must be >= 2.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Named ``CORR_{length}``. ``NaN`` wherever either window has zero
+        variance (a perfectly flat window can't correlate with anything).
+
+    Examples
+    --------
+    >>> from zeonta.cross_asset import correlation
+    >>> a = [10.0, 11.0, 9.0, 12.0, 13.0, 11.5]
+    >>> b = [20.0, 21.5, 19.0, 23.0, 24.0, 22.0]
+    >>> round(float(correlation(a, b, length=4).iloc[-1]), 6)
+    0.997427
+
+    References
+    ----------
+    https://en.wikipedia.org/wiki/Pearson_correlation_coefficient
+    """
+    length = validate_length(length, "length", minimum=2)
+    require_aligned_index(close_a=close_a, close_b=close_b)
+    a = as_array(close_a, "close_a")
+    b = as_array(close_b, "close_b")
+    require_same_length(close_a=a, close_b=b)
+
+    mean_a = rolling_mean(a, length)
+    mean_b = rolling_mean(b, length)
+    std_a = rolling_std(a, length)
+    std_b = rolling_std(b, length)
+    mean_ab = rolling_mean(a * b, length)
+    covariance = mean_ab - mean_a * mean_b
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = covariance / (std_a * std_b)
+    result = np.where((std_a > 0.0) & (std_b > 0.0), result, np.nan)
+
+    index = common_index(close_a, close_b)
+    return wrap_series(result, index, f"CORR_{length}")
+
+
+def beta(close_a: ArrayLike, close_b: ArrayLike, length: int = 20) -> pd.Series:
+    """Rolling Beta of one asset's returns against another's.
+
+    ``beta = Cov(R_a, R_b) / Var(R_b)`` over a rolling *length*-bar
+    window of simple returns, where ``R_b`` is the benchmark
+    (``close_b``) and ``R_a`` (``close_a``) is the asset being measured
+    against it — the standard regression-slope definition finance uses
+    to size a hedge: how much ``a`` tends to move for a given move in
+    ``b``. Unlike :func:`correlation`, this is computed on returns, not
+    raw price levels, and is not symmetric in its two arguments.
+
+    Not part of the indicator registry — see this module's own
+    docstring for why a second, independent price series does not fit
+    that contract. Call it directly rather than through ``.zta``.
+
+    Parameters
+    ----------
+    close_a:
+        Closing prices of the asset being measured.
+    close_b:
+        Closing prices of the benchmark being measured against.
+    length:
+        Rolling window, in bar-to-bar returns. Must be >= 2.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``BETA_{length}``. ``NaN`` for the first ``length`` bars
+        (one bar is lost to differencing before the window can fill),
+        and wherever the benchmark's own variance is exactly ``0``.
+
+    Examples
+    --------
+    >>> from zeonta.cross_asset import beta
+    >>> a = [10.0, 11.0, 9.0, 12.0, 13.0, 11.5]
+    >>> b = [20.0, 21.5, 19.0, 23.0, 24.0, 22.0]
+    >>> round(float(beta(a, b, length=3).iloc[-1]), 6)
+    1.525413
+
+    References
+    ----------
+    https://en.wikipedia.org/wiki/Beta_(finance)
+    """
+    length = validate_length(length, "length", minimum=2)
+    require_aligned_index(close_a=close_a, close_b=close_b)
+    a = as_array(close_a, "close_a")
+    b = as_array(close_b, "close_b")
+    size = require_same_length(close_a=a, close_b=b)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return_a = a[1:] / a[:-1] - 1.0
+        return_b = b[1:] / b[:-1] - 1.0
+
+    mean_a = rolling_mean(return_a, length)
+    mean_b = rolling_mean(return_b, length)
+    mean_ab = rolling_mean(return_a * return_b, length)
+    var_b = rolling_std(return_b, length) ** 2
+    covariance = mean_ab - mean_a * mean_b
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        raw = np.where(var_b > 0.0, covariance / var_b, np.nan)
+
+    result = np.full(size, np.nan, dtype="float64")
+    result[1:] = raw
+
+    index = common_index(close_a, close_b)
+    return wrap_series(result, index, f"BETA_{length}")
 
 
 def wavelet_lead_lag(

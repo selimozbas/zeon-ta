@@ -33,9 +33,11 @@ from ._core import (
 __all__ = [
     "atr",
     "bbands",
+    "chaikin_volatility",
     "keltner",
     "mass_index",
     "natr",
+    "relative_volatility_index",
     "squeeze",
     "true_range",
     "ulcer_index",
@@ -676,3 +678,134 @@ def mass_index(
     result = rolling_sum(ratio, sum_length)
 
     return wrap_series(result, common_index(high, low), f"MASS_{ema_length}_{sum_length}")
+
+
+@indicator(
+    category="volatility",
+    summary="Rate of change of a smoothed high-low range: is the range widening or narrowing.",
+    reference="https://www.luxalgo.com/library/concept/chaikin-volatility/",
+    outputs=("CVI",),
+)
+def chaikin_volatility(high: ArrayLike, low: ArrayLike, length: int = 10) -> pd.Series:
+    """Chaikin Volatility (Marc Chaikin).
+
+    ``CVI = ROC(EMA(High - Low, n), n)`` — an EMA of the bar-to-bar range,
+    then the percentage change of *that* EMA over the same window. Unlike
+    :func:`atr` (a level: how large is the typical range right now),
+    this is a rate of change: is the range wider than it was ``n`` bars
+    ago, or narrower.
+
+    Parameters
+    ----------
+    high, low:
+        Price series of equal length.
+    length:
+        Period for both the EMA and the rate-of-change look-back.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``CVI_{length}``. Positive means the range has widened
+        over the window, negative means it has narrowed.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> high = [12.0, 13.5, 11.0, 15.0, 17.0, 14.5, 18.0]
+    >>> low = [10.0, 11.0, 9.5, 11.0, 12.0, 11.0, 12.5]
+    >>> zeonta.chaikin_volatility(high, low, length=3).dropna().tolist()
+    [87.5, 54.166666666666664]
+
+    References
+    ----------
+    https://www.luxalgo.com/library/concept/chaikin-volatility/
+    """
+    length = validate_length(length)
+    require_aligned_index(high=high, low=low)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    size = require_same_length(high=high_values, low=low_values)
+
+    smoothed_range = ema_values(high_values - low_values, length)
+    result = np.full(size, np.nan, dtype="float64")
+    if size > length:
+        with np.errstate(divide="ignore", invalid="ignore"):
+            result[length:] = (
+                (smoothed_range[length:] - smoothed_range[:-length])
+                / smoothed_range[:-length]
+                * 100.0
+            )
+
+    return wrap_series(result, common_index(high, low), f"CVI_{length}")
+
+
+@indicator(
+    category="volatility",
+    summary="RSI's up/down split applied to standard deviation instead of price change.",
+    reference="https://user42.tuxfamily.org/chart/manual/Relative-Volatility-Index.html",
+    outputs=("RVI",),
+)
+def relative_volatility_index(
+    close: ArrayLike, stdev_length: int = 10, smooth_length: int = 14
+) -> pd.Series:
+    """Relative Volatility Index (Donald Dorsey).
+
+    The same up/down-split-then-smooth structure :func:`rsi` uses,
+    substituting a rolling standard deviation for the plain price change
+    Wilder used::
+
+        SD = STDDEV(Close, stdev_length)
+        U = SD where Close > Close[-1], else 0
+        D = SD where Close < Close[-1], else 0
+        RVI = 100 * EMA(U, smooth_length) / (EMA(U, smooth_length) + EMA(D, smooth_length))
+
+    Where :func:`rsi` asks "how much of recent price movement was
+    gains versus losses", RVI asks "how much of recent *volatility*
+    showed up on up bars versus down bars" — a volatility measure with
+    direction, unlike :func:`atr`.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    stdev_length:
+        Window for the rolling standard deviation.
+    smooth_length:
+        EMA period applied to the up/down volatility split.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``RVI_{stdev_length}_{smooth_length}``, ranging 0 to 100.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> close = [10.0, 11.0, 10.5, 12.0, 13.0, 12.5, 14.0, 13.5, 15.0, 14.5]
+    >>> result = zeonta.relative_volatility_index(close, stdev_length=3, smooth_length=4)
+    >>> round(float(result.iloc[-1]), 6)
+    41.27568
+
+    References
+    ----------
+    https://user42.tuxfamily.org/chart/manual/Relative-Volatility-Index.html
+    """
+    stdev_length = validate_length(stdev_length, "stdev_length")
+    smooth_length = validate_length(smooth_length, "smooth_length")
+    values = as_array(close, "close")
+
+    deviation = rolling_std(values, stdev_length)
+    change = np.diff(values, prepend=np.nan)
+    up = np.where(change > 0.0, deviation, 0.0)
+    down = np.where(change < 0.0, deviation, 0.0)
+    up = np.where(np.isfinite(change) & np.isfinite(deviation), up, np.nan)
+    down = np.where(np.isfinite(change) & np.isfinite(deviation), down, np.nan)
+
+    smoothed_up = ema_values(up, smooth_length)
+    smoothed_down = ema_values(down, smooth_length)
+    total = smoothed_up + smoothed_down
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = np.where(total > 0.0, 100.0 * smoothed_up / total, 0.0)
+    result = np.where(np.isfinite(total), result, np.nan)
+
+    return wrap_series(result, common_index(close), f"RVI_{stdev_length}_{smooth_length}")

@@ -5,31 +5,43 @@ build-backend = "hatchling.build"
 [project]
 name = "zeon-ta"
 version = "0.3.0"
-description = "Modern, dependency-light technical analysis indicators for Python."
+description = "Technical analysis for Python — the classic indicator set alongside modern, academically-sourced tools like Ehlers' cycle filters and OHLC volatility estimators."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.12"
 authors = [{ name = "Selim Ozbas", email = "selimozbas@gmail.com" }]
 keywords = [
     "technical-analysis",
+    "technical-indicators",
+    "trading-indicators",
     "indicators",
     "trading",
+    "algorithmic-trading",
+    "quantitative-finance",
     "finance",
     "quant",
     "pandas",
+    "numpy",
+    "rsi",
+    "macd",
+    "bollinger-bands",
     "ta",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Financial and Insurance Industry",
     "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Topic :: Office/Business :: Financial",
     "Topic :: Office/Business :: Financial :: Investment",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
 dependencies = ["numpy>=2.5", "pandas>=3.0", "pywavelets>=1.9"]

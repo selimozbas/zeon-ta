@@ -15,6 +15,20 @@ that covers and what counts as a patch, minor, or major change.
   badge was added alongside the existing CI/Python/License ones. The
   GitHub-install and clone-and-install instructions stay as fallbacks
   for anyone wanting the latest unreleased commit.
+- **`pyproject.toml`'s PyPI-facing metadata reworked for search
+  relevance**: `description` (PyPI's summary field) now matches README's
+  own pitch instead of the older, thinner one-liner; `keywords` expanded
+  from 7 to 15 terms covering real search intent (`rsi`, `macd`,
+  `bollinger-bands`, `algorithmic-trading`, `quantitative-finance`,
+  `technical-indicators`, `trading-indicators`) without naming a
+  competing library by name or claiming backtesting support the project
+  doesn't have; four more real Trove classifiers added
+  (`Intended Audience :: Science/Research`,
+  `Topic :: Office/Business :: Financial`,
+  `Topic :: Scientific/Engineering :: Mathematics`,
+  `Topic :: Software Development :: Libraries :: Python Modules`).
+  Takes effect on the next published release — PyPI metadata is
+  immutable per-version, so 0.3.0 itself is unaffected.
 
 ## [0.3.0] - 2026-08-31
 

@@ -191,6 +191,16 @@ column-naming convention (`RSI_14`, `MACD_12_26_9`, and so on).
   changing a default value for a reason other than a correctness fix, is
   a **major** release.
 
+**This applies now, while the project is still pre-1.0, not only after.**
+SemVer's own spec treats every 0.x release as potentially breaking
+without warning; this project doesn't use that latitude — 0.3.0 → 0.4.0
+→ 0.5.0 follows the same minor-vs-patch discipline above as any 1.x
+release would. Each step on [ROADMAP.md](ROADMAP.md) lands as its own
+minor release as it ships, rather than being held back for a 1.0
+milestone. Reaching `1.0.0` is a separate, deliberate decision about
+declaring the API stable — not something the version number arrives at
+automatically once it climbs high enough.
+
 ## Before opening a pull request
 
 ```bash

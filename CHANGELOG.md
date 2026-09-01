@@ -8,6 +8,18 @@ that covers and what counts as a patch, minor, or major change.
 
 ## [Unreleased]
 
+### Changed
+
+- **Clarified that the minor-vs-patch versioning discipline applies now,
+  pre-1.0, not only after it.** SemVer's own spec allows any `0.x`
+  release to break without warning; this project doesn't use that
+  latitude — `0.3.0` → `0.4.0` → `0.5.0` will follow the same rules
+  `CONTRIBUTING.md#versioning` already lays out for 1.x, and each
+  `ROADMAP.md` step ships as its own minor release as it's ready rather
+  than waiting for a 1.0 milestone. Reaching `1.0.0` stays a separate,
+  deliberate decision about declaring the API stable. Updated in both
+  `CONTRIBUTING.md#versioning` and `ROADMAP.md`.
+
 ### Added
 
 - **`ROADMAP.md`**: a public, living statement of direction, addressing

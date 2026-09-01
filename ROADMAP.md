@@ -49,10 +49,13 @@ by `tests/test_examples.py`" rule the existing ones do.
 
 ## Also on the list, not yet scheduled
 
-- **1.0** — follows once the API surface and the integration story above
-  feel settled, not on a fixed date. The versioning policy in
-  [CONTRIBUTING.md#versioning](CONTRIBUTING.md#versioning) already applies
-  today regardless of the version number.
+- **1.0** — a deliberate, separate decision to declare the API stable,
+  not something the version number arrives at by climbing high enough.
+  Until then, each item above ships as its own `0.x.0` minor release as
+  it's ready (`0.3.0` → `0.4.0` → `0.5.0` → ...), with `0.x.y` patches
+  for fixes in between — the same minor-vs-patch discipline
+  [CONTRIBUTING.md#versioning](CONTRIBUTING.md#versioning) describes
+  already applies now, not only after 1.0.
 - Multi-timeframe helpers (resampling OHLCV to a higher timeframe before
   indicator calculation, correctly and without look-ahead).
 

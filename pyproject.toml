@@ -50,7 +50,7 @@ dependencies = ["numpy>=2.5.2", "pandas>=3.0.5", "pywavelets>=1.9"]
 dev = [
     "pytest>=7.4",
     "pytest-cov>=7.1.0",
-    "ruff>=0.6",
+    "ruff>=0.16.5",
     "mypy>=2.3.1",
     "pandas-stubs",
     "build",

@@ -15,3 +15,6 @@ htmlcov/
 .DS_Store
 .idea/
 .vscode/
+
+# Personal tracking notes - never committed, never pushed.
+INTERNAL_ROADMAP.md

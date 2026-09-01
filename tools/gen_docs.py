@@ -344,6 +344,12 @@ and a second, independent series doesn't fit that contract. Import and call
 it directly; see its own docstring for the full method and a documented
 lag-estimate caveat.
 
+## Roadmap
+
+No fixed release calendar — see [ROADMAP.md](ROADMAP.md) for the current
+direction (more indicator sources, an optional acceleration path,
+backtest-engine integration examples) and what's deliberately out of scope.
+
 ## Development
 
 ```bash

@@ -8,6 +8,21 @@ that covers and what counts as a patch, minor, or major change.
 
 ## [Unreleased]
 
+### Added
+
+- **`ROADMAP.md`**: a public, living statement of direction, addressing
+  the "most TA libraries end up abandoned" problem head-on with an
+  ongoing-work model instead of a fixed release calendar. Covers the
+  near-term focus (more indicator sources scanned with the same
+  formula-verification rigor as always, an optional Numba/Cython
+  acceleration path for the genuinely sequential indicators, and
+  backtest-engine integration examples), what's on the list without a
+  scheduled date (1.0, multi-timeframe helpers), and what stays
+  deliberately out of scope (the TA-Lib candlestick battery,
+  order-flow/microstructure indicators needing data this library's
+  OHLCV contract doesn't carry, and the standing "no single agreed-on
+  formula" decline rule). Linked from a new README "Roadmap" section.
+
 ### Changed
 
 - README's Install section now leads with `pip install zeon-ta` — the

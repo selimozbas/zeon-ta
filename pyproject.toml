@@ -78,6 +78,7 @@ include = [
     "/CHANGELOG.md",
     "/CONTRIBUTING.md",
     "/BENCHMARKS.md",
+    "/ROADMAP.md",
     "/LICENSE",
 ]
 

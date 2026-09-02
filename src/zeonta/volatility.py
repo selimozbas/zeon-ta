@@ -226,6 +226,13 @@ def bbands(
         dict(zip(order, (lower, middle, upper, bandwidth, percent), strict=True)),
         common_index(close),
         order=order,
+        roles={
+            "lower": order[0],
+            "middle": order[1],
+            "upper": order[2],
+            "bandwidth": order[3],
+            "percent_b": order[4],
+        },
     )
 
 
@@ -295,6 +302,7 @@ def keltner(
         dict(zip(order, (lower, middle, upper), strict=True)),
         common_index(high, low, close),
         order=order,
+        roles={"lower": order[0], "middle": order[1], "upper": order[2]},
     )
 
 
@@ -391,6 +399,7 @@ def squeeze(
         dict(zip(order, (on, off, momentum), strict=True)),
         common_index(high, low, close),
         order=order,
+        roles={"on": order[0], "off": order[1], "momentum": order[2]},
     )
 
 
@@ -895,6 +904,7 @@ def accbands(
         dict(zip(order, (lower, middle, upper), strict=True)),
         common_index(high, low, close),
         order=order,
+        roles={"lower": order[0], "middle": order[1], "upper": order[2]},
     )
 
 

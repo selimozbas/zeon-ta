@@ -305,5 +305,8 @@ def wavelet_lead_lag(
 
     index = common_index(close_a, close_b)
     return wrap_frame(
-        {"XWT_POWER": power, "XWT_PHASE": phase}, index, order=["XWT_POWER", "XWT_PHASE"]
+        {"XWT_POWER": power, "XWT_PHASE": phase},
+        index,
+        order=["XWT_POWER", "XWT_PHASE"],
+        roles={"power": "XWT_POWER", "phase": "XWT_PHASE"},
     )

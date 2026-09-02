@@ -394,6 +394,7 @@ def ma_cross(
     cross[comparable & (previous <= 0) & (difference > 0)] = 1.0
     cross[comparable & (previous >= 0) & (difference < 0)] = -1.0
 
+    order = [f"MAfast_{fast}", f"MAslow_{slow}", f"cross_{fast}_{slow}"]
     return wrap_frame(
         {
             f"MAfast_{fast}": fast_line,
@@ -401,7 +402,8 @@ def ma_cross(
             f"cross_{fast}_{slow}": cross,
         },
         common_index(close),
-        order=[f"MAfast_{fast}", f"MAslow_{slow}", f"cross_{fast}_{slow}"],
+        order=order,
+        roles={"fast": order[0], "slow": order[1], "cross": order[2]},
     )
 
 

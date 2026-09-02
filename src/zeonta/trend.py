@@ -170,7 +170,15 @@ def supertrend(
     suffix = f"{length}_{factor}"
     order = [f"SUPERT_{suffix}", f"SUPERTd_{suffix}", f"SUPERTl_{suffix}", f"SUPERTs_{suffix}"]
     return wrap_frame(
-        dict(zip(order, columns, strict=True)), common_index(high, low, close), order=order
+        dict(zip(order, columns, strict=True)),
+        common_index(high, low, close),
+        order=order,
+        roles={
+            "trend": order[0],
+            "direction": order[1],
+            "long": order[2],
+            "short": order[3],
+        },
     )
 
 
@@ -258,6 +266,7 @@ def adx(
         dict(zip(order, (adx_values, plus_di, minus_di), strict=True)),
         common_index(high, low, close),
         order=order,
+        roles={"adx": order[0], "plus_di": order[1], "minus_di": order[2]},
     )
 
 
@@ -364,6 +373,13 @@ def ichimoku(
         dict(zip(names, (conversion, base, span_a_visible, span_b_visible, lagging), strict=True)),
         index,
         order=list(names),
+        roles={
+            "conversion": names[0],
+            "base": names[1],
+            "span_a": names[2],
+            "span_b": names[3],
+            "lagging": names[4],
+        },
     )
 
     forward_frame = pd.DataFrame(
@@ -441,7 +457,10 @@ def donchian(high: ArrayLike, low: ArrayLike, length: int = 20) -> pd.DataFrame:
 
     order = [f"DCL_{length}", f"DCM_{length}", f"DCU_{length}"]
     return wrap_frame(
-        dict(zip(order, (lower, middle, upper), strict=True)), common_index(high, low), order=order
+        dict(zip(order, (lower, middle, upper), strict=True)),
+        common_index(high, low),
+        order=order,
+        roles={"lower": order[0], "middle": order[1], "upper": order[2]},
     )
 
 
@@ -621,6 +640,12 @@ def parabolic_sar(
         dict(zip(order, (sar, direction, long_line, short_line), strict=True)),
         common_index(high, low),
         order=order,
+        roles={
+            "value": order[0],
+            "direction": order[1],
+            "long": order[2],
+            "short": order[3],
+        },
     )
 
 
@@ -705,6 +730,7 @@ def aroon(high: ArrayLike, low: ArrayLike, length: int = 25) -> pd.DataFrame:
         dict(zip(order, (up, down, up - down), strict=True)),
         common_index(high, low),
         order=order,
+        roles={"up": order[0], "down": order[1], "oscillator": order[2]},
     )
 
 
@@ -793,6 +819,7 @@ def chandelier_exit(
         dict(zip(order, (long_exit, short_exit), strict=True)),
         common_index(high, low, close),
         order=order,
+        roles={"long": order[0], "short": order[1]},
     )
 
 
@@ -876,6 +903,7 @@ def vortex(high: ArrayLike, low: ArrayLike, close: ArrayLike, length: int = 14) 
         dict(zip(order, (plus_vi, minus_vi), strict=True)),
         common_index(high, low, close),
         order=order,
+        roles={"plus": order[0], "minus": order[1]},
     )
 
 
@@ -944,6 +972,7 @@ def linreg(close: ArrayLike, length: int = 14) -> pd.DataFrame:
         dict(zip(order, (fit.slope, fit.endpoint), strict=True)),
         common_index(close),
         order=order,
+        roles={"slope": order[0], "forecast": order[1]},
     )
 
 

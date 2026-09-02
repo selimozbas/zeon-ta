@@ -22,6 +22,23 @@ that covers and what counts as a patch, minor, or major change.
 
 ### Added
 
+- **`zeonta.role(frame, role_name)`**: a stable, parameter-free way to pull a
+  column out of a multi-output indicator's `DataFrame` without hardcoding its
+  parameterized name. Every multi-output indicator's column names bake in the
+  call's own parameters (e.g. `macd()` with the defaults produces
+  `MACD_12_26_9`, `MACDs_12_26_9`, `MACDh_12_26_9`) — deliberately, since it's
+  what avoids a collision when the same indicator is added twice with
+  different settings to one combined frame. That means code hardcoding
+  `df["MACDh_12_26_9"]` breaks the moment `fast`/`slow`/`signal` change. Each
+  such frame now also carries a `frame.attrs["roles"]` map from a constant
+  semantic name (`"line"`, `"signal"`, `"histogram"`) to whichever column
+  actually holds it for that call, so `zeonta.role(macd_df, "histogram")`
+  keeps working no matter what parameters produced the frame. Purely
+  additive — no existing column name, signature, or output changed. Added to
+  the ~43 multi-output indicators with a fixed, well-defined set of columns;
+  skipped on the handful whose column *count* varies with a parameter (e.g.
+  `ema_ribbon`, `gmma`, `wavelet_variance`, `fib_retracement`'s ratio list),
+  where a fixed role name would not make sense.
 - **`ROADMAP.md`**: a public, living statement of direction, addressing
   the "most TA libraries end up abandoned" problem head-on with an
   ongoing-work model instead of a fixed release calendar. Covers the

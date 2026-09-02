@@ -176,7 +176,19 @@ def candles(
     ]
     columns = (body, upper_wick, lower_wick, total_range, direction, doji, engulfing, hammer)
     return wrap_frame(
-        dict(zip(order, columns, strict=True)), common_index(open, high, low, close), order=order
+        dict(zip(order, columns, strict=True)),
+        common_index(open, high, low, close),
+        order=order,
+        roles={
+            "body": order[0],
+            "upper_wick": order[1],
+            "lower_wick": order[2],
+            "range": order[3],
+            "direction": order[4],
+            "doji": order[5],
+            "engulfing": order[6],
+            "hammer": order[7],
+        },
     )
 
 
@@ -263,6 +275,12 @@ def support_resistance(
         dict(zip(order, (pivot_high, pivot_low, resistance, support), strict=True)),
         common_index(high, low),
         order=order,
+        roles={
+            "pivot_high": order[0],
+            "pivot_low": order[1],
+            "resistance": order[2],
+            "support": order[3],
+        },
     )
 
 
@@ -399,7 +417,12 @@ def trend_channel(
 
     order = [f"LRCM_{length}", f"LRCU_{length}", f"LRCL_{length}", f"LRCSLOPE_{length}"]
     columns = (endpoint, endpoint + factor * deviation, endpoint - factor * deviation, slope)
-    return wrap_frame(dict(zip(order, columns, strict=True)), common_index(close), order=order)
+    return wrap_frame(
+        dict(zip(order, columns, strict=True)),
+        common_index(close),
+        order=order,
+        roles={"middle": order[0], "upper": order[1], "lower": order[2], "slope": order[3]},
+    )
 
 
 @indicator(
@@ -452,7 +475,10 @@ def relative_volume(volume: ArrayLike, length: int = 20) -> pd.DataFrame:
 
     order = [f"VOLMA_{length}", f"RVOL_{length}"]
     return wrap_frame(
-        dict(zip(order, (average, ratio), strict=True)), common_index(volume), order=order
+        dict(zip(order, (average, ratio), strict=True)),
+        common_index(volume),
+        order=order,
+        roles={"average": order[0], "relative": order[1]},
     )
 
 
@@ -540,6 +566,7 @@ def heikin_ashi(open: ArrayLike, high: ArrayLike, low: ArrayLike, close: ArrayLi
         dict(zip(order, (ha_open, ha_high, ha_low, ha_close), strict=True)),
         common_index(open, high, low, close),
         order=order,
+        roles={"open": order[0], "high": order[1], "low": order[2], "close": order[3]},
     )
 
 
@@ -608,4 +635,5 @@ def williams_fractals(high: ArrayLike, low: ArrayLike) -> pd.DataFrame:
         dict(zip(order, (bearish, bullish), strict=True)),
         common_index(high, low),
         order=order,
+        roles={"bearish": order[0], "bullish": order[1]},
     )

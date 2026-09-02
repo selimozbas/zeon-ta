@@ -209,10 +209,12 @@ def stoch(
     percent_d = rolling_mean(percent_k, smooth_d) if smooth_d > 1 else percent_k
 
     suffix = f"{length}_{smooth_k}_{smooth_d}"
+    order = [f"STOCHk_{suffix}", f"STOCHd_{suffix}"]
     return wrap_frame(
         {f"STOCHk_{suffix}": percent_k, f"STOCHd_{suffix}": percent_d},
         common_index(high, low, close),
-        order=[f"STOCHk_{suffix}", f"STOCHd_{suffix}"],
+        order=order,
+        roles={"k": order[0], "d": order[1]},
     )
 
 
@@ -365,6 +367,7 @@ def stoch_rsi(
         dict(zip(order, (percent_k, percent_d), strict=True)),
         common_index(close),
         order=order,
+        roles={"k": order[0], "d": order[1]},
     )
 
 
@@ -475,6 +478,7 @@ def macd(
         dict(zip(order, (macd_line, signal_line, histogram), strict=True)),
         common_index(close),
         order=order,
+        roles={"line": order[0], "signal": order[1], "histogram": order[2]},
     )
 
 
@@ -854,6 +858,7 @@ def elder_ray(high: ArrayLike, low: ArrayLike, close: ArrayLike, length: int = 1
         dict(zip(order, (bull_power, bear_power), strict=True)),
         common_index(high, low, close),
         order=order,
+        roles={"bull_power": order[0], "bear_power": order[1]},
     )
 
 
@@ -922,6 +927,7 @@ def trix(close: ArrayLike, length: int = 15, signal: int = 9) -> pd.DataFrame:
         dict(zip(order, (trix_line, signal_line), strict=True)),
         common_index(close),
         order=order,
+        roles={"line": order[0], "signal": order[1]},
     )
 
 
@@ -988,6 +994,7 @@ def ppo(close: ArrayLike, fast: int = 12, slow: int = 26, signal: int = 9) -> pd
         dict(zip(order, (ppo_line, signal_line, histogram), strict=True)),
         common_index(close),
         order=order,
+        roles={"line": order[0], "signal": order[1], "histogram": order[2]},
     )
 
 
@@ -1069,6 +1076,7 @@ def tsi(close: ArrayLike, long: int = 25, short: int = 13, signal: int = 7) -> p
         dict(zip(order, (tsi_line, signal_line), strict=True)),
         common_index(close),
         order=order,
+        roles={"line": order[0], "signal": order[1]},
     )
 
 
@@ -1274,6 +1282,7 @@ def fisher_transform(high: ArrayLike, low: ArrayLike, length: int = 10) -> pd.Da
         dict(zip(order, (fish, trigger), strict=True)),
         common_index(high, low),
         order=order,
+        roles={"line": order[0], "trigger": order[1]},
     )
 
 
@@ -1348,7 +1357,10 @@ def center_of_gravity(high: ArrayLike, low: ArrayLike, length: int = 10) -> pd.D
     trigger = _shift(result, 1)
     order = [f"CG_{length}", f"CGs_{length}"]
     return wrap_frame(
-        dict(zip(order, (result, trigger), strict=True)), common_index(high, low), order=order
+        dict(zip(order, (result, trigger), strict=True)),
+        common_index(high, low),
+        order=order,
+        roles={"line": order[0], "trigger": order[1]},
     )
 
 
@@ -1556,7 +1568,10 @@ def kst(
     suffix = f"{roc1}_{roc2}_{roc3}_{roc4}"
     order = [f"KST_{suffix}", f"KSTs_{suffix}"]
     return wrap_frame(
-        dict(zip(order, (result, signal_line), strict=True)), common_index(close), order=order
+        dict(zip(order, (result, signal_line), strict=True)),
+        common_index(close),
+        order=order,
+        roles={"line": order[0], "signal": order[1]},
     )
 
 
@@ -1640,6 +1655,7 @@ def rvgi(
         dict(zip(order, (result, signal_line), strict=True)),
         common_index(open, high, low, close),
         order=order,
+        roles={"line": order[0], "signal": order[1]},
     )
 
 
@@ -1735,6 +1751,7 @@ def smi(
         dict(zip(order, (result, signal_line), strict=True)),
         common_index(high, low, close),
         order=order,
+        roles={"line": order[0], "signal": order[1]},
     )
 
 
@@ -1928,6 +1945,7 @@ def kdj(
         dict(zip(order, (k_line, d_line, j_line), strict=True)),
         common_index(high, low, close),
         order=order,
+        roles={"k": order[0], "d": order[1], "j": order[2]},
     )
 
 
@@ -2076,6 +2094,7 @@ def qqe(
         dict(zip(order, (rsi_ma, line), strict=True)),
         common_index(close),
         order=order,
+        roles={"rsi": order[0], "trend_line": order[1]},
     )
 
 
@@ -2515,6 +2534,7 @@ def cyber_cycle(high: ArrayLike, low: ArrayLike, alpha: Number = 0.07) -> pd.Dat
         dict(zip(order, (cycle, trigger), strict=True)),
         common_index(high, low),
         order=order,
+        roles={"line": order[0], "trigger": order[1]},
     )
 
 
@@ -2626,6 +2646,7 @@ def voss_predictive_filter(
         dict(zip(order_cols, (filt, voss), strict=True)),
         common_index(close),
         order=order_cols,
+        roles={"filter": order_cols[0], "predictor": order_cols[1]},
     )
 
 
@@ -2723,4 +2744,5 @@ def reflex_trendflex(close: ArrayLike, length: int = 20) -> pd.DataFrame:
         dict(zip(order, (reflex, trendflex), strict=True)),
         common_index(close),
         order=order,
+        roles={"reflex": order[0], "trendflex": order[1]},
     )

@@ -977,6 +977,7 @@ def klinger_volume_oscillator(
         dict(zip(order, (result, signal), strict=True)),
         common_index(high, low, close, volume),
         order=order,
+        roles={"line": order[0], "signal": order[1]},
     )
 
 
@@ -1127,4 +1128,5 @@ def vwmacd(
         dict(zip(order, (macd_line, signal_line, histogram), strict=True)),
         common_index(close, volume),
         order=order,
+        roles={"line": order[0], "signal": order[1], "histogram": order[2]},
     )

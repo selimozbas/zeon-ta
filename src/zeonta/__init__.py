@@ -30,6 +30,7 @@ import pandas as pd
 
 from . import accessor as _accessor  # noqa: F401  (registers the .zta accessor)
 from ._core import IndicatorSpec, get_spec, iter_specs
+from ._core import resolve_role as role
 from .advanced import (
     FIB_EXTENSIONS,
     FIB_RATIOS,
@@ -282,6 +283,7 @@ __all__ = [
     "relative_volume",
     "roc",
     "rogers_satchell_volatility",
+    "role",
     "roofing_filter",
     "rsi",
     "rvgi",

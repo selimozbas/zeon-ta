@@ -153,7 +153,12 @@ def vwap(
     suffix = anchor if anchor == "session" else f"rolling_{length}"
     order = [f"VWAP_{suffix}", f"VWAPU_{suffix}", f"VWAPL_{suffix}"]
     columns = (average, average + factor * deviation, average - factor * deviation)
-    return wrap_frame(dict(zip(order, columns, strict=True)), index, order=order)
+    return wrap_frame(
+        dict(zip(order, columns, strict=True)),
+        index,
+        order=order,
+        roles={"line": order[0], "upper": order[1], "lower": order[2]},
+    )
 
 
 @indicator(
@@ -342,6 +347,15 @@ def pivot_points(
         dict(zip(order, (pivot, r1, r2, r3, s1, s2, s3), strict=True)),
         common_index(high, low, close),
         order=order,
+        roles={
+            "pivot": order[0],
+            "resistance_1": order[1],
+            "resistance_2": order[2],
+            "resistance_3": order[3],
+            "support_1": order[4],
+            "support_2": order[5],
+            "support_3": order[6],
+        },
     )
 
 
@@ -413,6 +427,7 @@ def cpr(high: ArrayLike, low: ArrayLike, close: ArrayLike) -> pd.DataFrame:
         dict(zip(order, (pivot, bottom_central, top_central), strict=True)),
         common_index(high, low, close),
         order=order,
+        roles={"pivot": order[0], "bottom": order[1], "top": order[2]},
     )
 
 
@@ -539,6 +554,12 @@ def divergence(
         dict(zip(order, (regular_bull, regular_bear, hidden_bull, hidden_bear), strict=True)),
         common_index(high, low, close),
         order=order,
+        roles={
+            "regular_bullish": order[0],
+            "regular_bearish": order[1],
+            "hidden_bullish": order[2],
+            "hidden_bearish": order[3],
+        },
     )
 
 

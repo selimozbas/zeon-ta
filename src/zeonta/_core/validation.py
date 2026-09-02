@@ -26,6 +26,7 @@ __all__ = [
     "common_index",
     "require_aligned_index",
     "require_same_length",
+    "resolve_role",
     "validate_length",
     "validate_multiplier",
     "wrap_frame",
@@ -163,9 +164,58 @@ def wrap_frame(
     columns: Mapping[str, np.ndarray],
     index: pd.Index | None,
     order: Sequence[str] | None = None,
+    roles: Mapping[str, str] | None = None,
 ) -> pd.DataFrame:
-    """Wrap several computed arrays as a ``pd.DataFrame`` with stable column order."""
+    """Wrap several computed arrays as a ``pd.DataFrame`` with stable column order.
+
+    ``roles`` (optional) maps a stable, parameter-free role name (e.g.
+    ``"signal"``, ``"histogram"``) to the actual (parameterized) column name
+    in this frame, e.g. ``{"line": "MACD_12_26_9", "signal": "MACDs_12_26_9",
+    "histogram": "MACDh_12_26_9"}``. It is stored on the returned frame as
+    ``frame.attrs["roles"]`` so callers can look a column up by a name that
+    stays constant across parameter changes, via ``zeonta.role(frame, "signal")``,
+    without the parameterized column names ever changing.
+    """
     names = list(order) if order is not None else list(columns)
     first = columns[names[0]]
     resolved = _resolve_index(first, index)
-    return pd.DataFrame({name: columns[name] for name in names}, index=resolved)
+    frame = pd.DataFrame({name: columns[name] for name in names}, index=resolved)
+    if roles is not None:
+        for role, column in roles.items():
+            if column not in names:
+                raise ValueError(
+                    f"role {role!r} maps to column {column!r}, which is not one of "
+                    f"this frame's columns {names!r}"
+                )
+        frame.attrs["roles"] = dict(roles)
+    return frame
+
+
+def resolve_role(frame: pd.DataFrame, role: str) -> pd.Series:
+    """Return the column of *frame* matching a stable, parameter-free role name.
+
+    Works on any ``pd.DataFrame`` returned by one of zeonta's own multi-output
+    indicators (``macd()``, ``bbands()``, ``supertrend()``, ...): those frames
+    carry a ``frame.attrs["roles"]`` map from role name (e.g. ``"histogram"``)
+    to the actual parameterized column name (e.g. ``"MACDh_12_26_9"``). This
+    lets code retrieve a column by its constant role instead of hardcoding a
+    name that changes with the indicator's parameters.
+
+    Raises
+    ------
+    KeyError
+        If *frame* carries no role map (it wasn't returned by one of this
+        library's indicators, or is a single-output ``pd.Series`` instead —
+        roles only exist on multi-output DataFrames), or if *role* isn't one
+        of the roles *frame* defines.
+    """
+    roles = frame.attrs.get("roles")
+    if not roles:
+        raise KeyError(
+            "this DataFrame carries no role map — role() only works on DataFrames "
+            "returned by zeonta's own multi-output indicators"
+        )
+    if role not in roles:
+        raise KeyError(f"unknown role {role!r}; available roles: {sorted(roles)}")
+    column: pd.Series = frame[roles[role]]
+    return column

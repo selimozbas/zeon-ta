@@ -8,6 +8,8 @@ that covers and what counts as a patch, minor, or major change.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-09-02
+
 ### Changed
 
 - **Clarified that the minor-vs-patch versioning discipline applies now,
@@ -71,8 +73,13 @@ that covers and what counts as a patch, minor, or major change.
   `Topic :: Office/Business :: Financial`,
   `Topic :: Scientific/Engineering :: Mathematics`,
   `Topic :: Software Development :: Libraries :: Python Modules`).
-  Takes effect on the next published release — PyPI metadata is
-  immutable per-version, so 0.3.0 itself is unaffected.
+  Takes effect as of this release — PyPI metadata is immutable
+  per-version, so 0.3.0 itself was unaffected.
+- **`CONTRIBUTING.md#versioning`**: added a fourth category — a new
+  backward-compatible top-level helper that isn't itself an indicator
+  (like `zeonta.role()` below) is a **patch** release, not a minor one.
+  It grows `zeonta.__all__`, but doesn't add a new indicator or change
+  how any existing one is called or named.
 
 ## [0.3.0] - 2026-08-31
 

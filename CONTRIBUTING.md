@@ -177,6 +177,12 @@ column-naming convention (`RSI_14`, `MACD_12_26_9`, and so on).
 
 - Adding a new indicator, or a new optional parameter with a
   backward-compatible default, is a **minor** release.
+- Adding a new backward-compatible top-level helper — a utility that isn't
+  itself an indicator, like `zeonta.role()` for reading a multi-output
+  frame's stable column-role map — is a **patch** release. It grows
+  `zeonta.__all__`, but doesn't add a new indicator or change how any
+  existing one is called or named, which is what the minor/major split
+  above is really tracking.
 - Raising the minimum supported Python, NumPy or pandas version is a
   **minor** release — this project deliberately tracks recent dependency
   versions rather than pinning to old floors.

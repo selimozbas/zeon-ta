@@ -762,6 +762,42 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.roc(df["close"], length=12).tail(3),
         ],
     },
+    "kalman_filter": {
+        "title": "Kalman Filter",
+        "formula": (
+            "On log(Close): predict P = P_prev + process_variance; correct "
+            "K = P / (P + measurement_variance), x = x_prev + K x (log(Close) - x_prev), "
+            "P = (1 - K) x P; seeded x = log(Close[0]), P = 1.0; output = exp(x)"
+        ),
+        "about": (
+            "The Kalman filter (Kalman, 1960) is the textbook recursive estimator for a hidden "
+            "quantity observed through noise — used everywhere from spacecraft guidance to GPS. "
+            "Applied to log(Close), it treats the 'true' price level as a random walk observed "
+            "noisily bar by bar, and updates a minimum-mean-square-error estimate of it one bar "
+            "at a time. There's no fixed window and no hand-picked smoothing constant like an "
+            "EMA's `length` — the filter's own running confidence in its estimate (`P`) decides "
+            "how much weight each new bar gets."
+        ),
+        "reading": (
+            "Read it like any other adaptive moving average — trend direction, dynamic "
+            "support/resistance. `process_variance`/`measurement_variance` set the "
+            "smoothness/responsiveness trade-off the way `length` does for an EMA: smaller "
+            "`process_variance` relative to `measurement_variance` trusts the running estimate "
+            "more and produces a smoother, slower line."
+        ),
+        "pitfalls": (
+            "There is no single 'correct' process_variance/measurement_variance pairing — unlike "
+            "the filter's own update equations (a single, universally cited formulation), the "
+            "noise variances are a tuning choice specific to the instrument and timeframe, the "
+            "same way an EMA's `length` is. Filtering happens in log-price space specifically so "
+            "the defaults stay roughly scale-free across instruments at very different price "
+            "levels; passing raw non-log values elsewhere and comparing variances across two "
+            "differently-scaled instruments directly would be a mismatch."
+        ),
+        "example": [
+            lambda df: zeonta.kalman_filter(df["close"]).tail(3),
+        ],
+    },
     "kama": {
         "title": "Kaufman's Adaptive Moving Average (KAMA)",
         "formula": (
@@ -1958,6 +1994,42 @@ CONTENT: dict[str, Doc] = {
         ),
         "example": [
             lambda df: zeonta.sample_entropy(df["close"]).tail(3),
+        ],
+    },
+    "shannon_entropy": {
+        "title": "Shannon Entropy",
+        "formula": (
+            "Bin a window's log returns into `bins` equal-width buckets spanning that window's "
+            "own min-to-max range; H = -sum(p_i x log(p_i)) over buckets with p_i > 0, "
+            "p_i = count_i / window; normalized result = H / log(bins)"
+        ),
+        "about": (
+            "Shannon's 1948 entropy measures how uniformly a distribution's probability mass is "
+            "spread across its possible outcomes. Applied to a rolling window of log returns, "
+            "'outcomes' are equal-width return-size buckets: a window whose returns pile into one "
+            "or two buckets (a quiet, directional stretch) has low entropy, one whose returns "
+            "spread evenly across every bucket (no dominant move size) approaches the maximum, "
+            "`log(bins)` — this indicator reports that ratio, so the result stays 0-1 regardless "
+            "of `bins`. Unlike sample_entropy/approximate_entropy/permutation_entropy, it asks "
+            "nothing about order or repetition — only how the move *sizes* are distributed."
+        ),
+        "reading": (
+            "Low values mean recent returns have clustered around one typical size — often a "
+            "quiet, low-volatility or persistently one-directional stretch. High values (near 1) "
+            "mean return sizes have been spread out with no dominant scale — often choppier or "
+            "more heterogeneous conditions. A sudden entropy drop or spike is sometimes read as a "
+            "precursor to a volatility regime change, though this indicator only measures the "
+            "current window's own spread, not what comes next."
+        ),
+        "pitfalls": (
+            "`bins` is a real, tunable choice — like sample_entropy's `m`/`r` — not a value with "
+            "one provably correct setting: more buckets resolve finer structure but need more "
+            "bars per bucket to estimate each `p_i` reliably, so a small `window` with a large "
+            "`bins` count produces a noisy estimate. A window whose returns are all identical "
+            "(zero range) is defined as exactly `0.0` rather than left undefined."
+        ),
+        "example": [
+            lambda df: zeonta.shannon_entropy(df["close"]).tail(3),
         ],
     },
     "emd_imf1": {

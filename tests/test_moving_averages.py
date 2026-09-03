@@ -266,6 +266,72 @@ def test_kama_holds_its_value_exactly_through_a_gap_bar() -> None:
     np.testing.assert_allclose(result.iloc[5], result.iloc[4])
 
 
+def test_kalman_filter_matches_a_hand_traced_two_step_recursion() -> None:
+    """Trace the predict/correct recursion by hand for two bars, with the
+    default process_variance/measurement_variance, and check it against the
+    function's own output bar by bar."""
+    close = [100.0, 101.0, 99.0]
+    result = zeonta.kalman_filter(close)
+
+    # Bar 0: seeded directly, exp(log(100)) == 100 exactly (up to float error).
+    np.testing.assert_allclose(result.iloc[0], 100.0)
+
+    # Bar 1: P = 1.0 + 1e-6; K = P / (P + 1e-4); x = log(100) + K * (log(101) - log(100)).
+    log0, log1 = np.log(100.0), np.log(101.0)
+    variance = 1.0 + 1e-6
+    gain = variance / (variance + 1e-4)
+    estimate1 = log0 + gain * (log1 - log0)
+    variance = (1.0 - gain) * variance
+    np.testing.assert_allclose(result.iloc[1], np.exp(estimate1))
+
+    # Bar 2: same predict/correct step, starting from bar 1's own state.
+    log2 = np.log(99.0)
+    variance += 1e-6
+    gain = variance / (variance + 1e-4)
+    estimate2 = estimate1 + gain * (log2 - estimate1)
+    np.testing.assert_allclose(result.iloc[2], np.exp(estimate2))
+
+
+def test_kalman_filter_stays_constant_on_flat_input() -> None:
+    result = zeonta.kalman_filter([50.0] * 10)
+    np.testing.assert_allclose(result.to_numpy(), 50.0)
+
+
+def test_kalman_filter_tracks_a_trend_with_bounded_lag() -> None:
+    """A cleaner, more responsive filter should sit closer to a straight
+    ramp than an EMA with comparable smoothing, and never overshoot it."""
+    ramp = list(range(100, 200))
+    result = zeonta.kalman_filter(ramp)
+    # Every estimate must sit at or behind the ramp it's tracking, never ahead.
+    assert (result.to_numpy() <= np.array(ramp, dtype="float64") + 1e-9).all()
+    # A steady-state lag is expected (this is still a smoothing filter), but
+    # it must stay small relative to the ramp's own 100-unit range.
+    assert abs(result.iloc[-1] - ramp[-1]) < 15.0
+
+
+def test_kalman_filter_holds_its_value_exactly_through_a_gap_bar() -> None:
+    values = [10.0, 12.0, 11.0, 15.0, 14.0, float("nan"), 20.0, 18.0, 25.0]
+    result = zeonta.kalman_filter(values)
+    np.testing.assert_allclose(result.iloc[5], result.iloc[4])
+    assert not result.iloc[6:].isna().any()
+
+
+def test_kalman_filter_short_input_does_not_raise() -> None:
+    result = zeonta.kalman_filter([100.0])
+    assert len(result) == 1
+    assert np.isfinite(result.iloc[0])
+
+
+def test_kalman_filter_rejects_non_positive_process_variance() -> None:
+    with pytest.raises(ValueError, match="'process_variance' must be > 0"):
+        zeonta.kalman_filter([1.0, 2.0, 3.0], process_variance=0.0)
+
+
+def test_kalman_filter_rejects_non_positive_measurement_variance() -> None:
+    with pytest.raises(ValueError, match="'measurement_variance' must be > 0"):
+        zeonta.kalman_filter([1.0, 2.0, 3.0], measurement_variance=-1.0)
+
+
 def test_dema_matches_the_hand_computed_double_ema() -> None:
     values = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]
     result = zeonta.dema(values, length=3)

@@ -72,3 +72,15 @@ by `tests/test_examples.py`" rule the existing ones do.
   the standing rule, not a one-time decision. `STC`, `JMA`, `MAMA`,
   `TD Sequential` and `Decycler` are declined for this reason today; the
   same test applies to every future candidate.
+- **KNN / Lorentzian Distance Classifier** and similar machine-learning
+  "indicators" popularized on retail charting platforms. These are one
+  specific author's implementation choices (feature set, distance metric,
+  training window), not a published formula multiple independent sources
+  agree on — the same class of problem as `STC`/`JMA`/`MAMA` above. They
+  also don't fit this library's stateless, formula-in/values-out contract:
+  a trained classifier over a rolling history is a different shape of tool.
+- **Fuzzy-logic oscillators.** Membership functions and rule sets are
+  designed per paper/implementation with no standard choice — the "0-100
+  buy/sell fuzziness" score two implementations produce for the same input
+  can differ entirely, which fails the same formula-verification bar as
+  everything else on this list.

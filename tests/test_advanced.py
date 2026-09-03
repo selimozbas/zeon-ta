@@ -538,6 +538,66 @@ def test_permutation_entropy_rejects_non_positive_delay() -> None:
         zeonta.permutation_entropy(list(range(1, 50)), delay=0)
 
 
+def test_shannon_entropy_matches_a_hand_traced_two_bucket_window() -> None:
+    """20 log returns split 15-5 across two equal-width buckets should give
+    the textbook two-outcome Shannon entropy for p = 0.75/0.25, normalized by
+    log(2) for a 2-bucket window."""
+    # 15 returns clustered near -0.01, 5 clustered near +0.03: bucket edges
+    # split the [-0.01, 0.03] range into a "low" and a "high" half.
+    log_returns = [-0.01] * 15 + [0.03] * 5
+    prices = [100.0]
+    for r in log_returns:
+        prices.append(prices[-1] * np.exp(r))
+    result = zeonta.shannon_entropy(prices, window=20, bins=2)
+
+    p_low, p_high = 0.75, 0.25
+    expected = -(p_low * np.log(p_low) + p_high * np.log(p_high)) / np.log(2)
+    np.testing.assert_allclose(result.iloc[-1], expected)
+
+
+def test_shannon_entropy_is_zero_on_a_perfectly_flat_series() -> None:
+    """Zero log returns everywhere means a zero-width bucket range - defined
+    as exactly 0.0 (no spread at all), not NaN or a divide-by-zero warning."""
+    result = zeonta.shannon_entropy([100.0] * 50, window=20)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_shannon_entropy_is_higher_for_noise_than_a_single_repeated_move() -> None:
+    """A window whose returns take on almost the same one value every bar
+    (all mass in one or two neighboring buckets) has low entropy; Gaussian
+    noise spread across many move sizes should score noticeably higher."""
+    rng = np.random.default_rng(1)
+    repeated = 100.0 * np.cumprod(1.0 + np.full(60, 0.005))
+    noisy = 100.0 * np.cumprod(1.0 + rng.normal(scale=0.01, size=60))
+
+    repeated_entropy = zeonta.shannon_entropy(repeated, window=50).dropna().iloc[-1]
+    noisy_entropy = zeonta.shannon_entropy(noisy, window=50).dropna().iloc[-1]
+    assert noisy_entropy > repeated_entropy
+
+
+def test_shannon_entropy_stays_within_zero_to_one() -> None:
+    rng = np.random.default_rng(4)
+    prices = 100.0 * np.cumprod(1.0 + rng.normal(scale=0.02, size=200))
+    result = zeonta.shannon_entropy(prices, window=50).dropna()
+    assert ((result >= 0.0) & (result <= 1.0)).all()
+
+
+def test_shannon_entropy_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.shannon_entropy([1.0, 2.0, 3.0], window=100)
+    assert len(result) == 3
+    assert result.isna().all()
+
+
+def test_shannon_entropy_rejects_window_below_twenty() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.shannon_entropy(list(range(1, 50)), window=10)
+
+
+def test_shannon_entropy_rejects_bins_below_two() -> None:
+    with pytest.raises(ValueError, match="'bins' must be an integer >= 2"):
+        zeonta.shannon_entropy(list(range(1, 50)), bins=1)
+
+
 def test_permutation_entropy_rejects_a_window_too_small_for_two_patterns() -> None:
     with pytest.raises(ValueError, match="'window' must be large enough"):
         zeonta.permutation_entropy(list(range(1, 50)), window=20, order=25, delay=1)

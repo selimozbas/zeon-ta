@@ -44,6 +44,7 @@ from .advanced import (
     permutation_entropy,
     pivot_points,
     sample_entropy,
+    shannon_entropy,
     vwap,
 )
 from .foundations import (
@@ -68,6 +69,7 @@ from .moving_averages import (
     gmma,
     hma,
     instantaneous_trendline,
+    kalman_filter,
     kama,
     ma_cross,
     mcgd,
@@ -247,6 +249,7 @@ __all__ = [
     "ichimoku",
     "ift_rsi",
     "instantaneous_trendline",
+    "kalman_filter",
     "kama",
     "kdj",
     "keltner",
@@ -288,6 +291,7 @@ __all__ = [
     "rsi",
     "rvgi",
     "sample_entropy",
+    "shannon_entropy",
     "skewness",
     "sma",
     "smi",

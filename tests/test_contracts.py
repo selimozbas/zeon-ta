@@ -164,6 +164,8 @@ def test_indicators_with_a_reference() -> None:
         "cyber_cycle",
         "voss_predictive_filter",
         "reflex_trendflex",
+        "kalman_filter",
+        "shannon_entropy",
     }
     with_reference = {spec.name for spec in iter_specs() if spec.reference is not None}
     assert with_reference == expected

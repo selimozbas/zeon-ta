@@ -48,6 +48,7 @@ __all__ = [
     "gmma",
     "hma",
     "instantaneous_trendline",
+    "kalman_filter",
     "kama",
     "ma_cross",
     "mcgd",
@@ -622,6 +623,116 @@ def kama(close: ArrayLike, length: int = 10, fast: int = 2, slow: int = 30) -> p
         result[i] = previous
 
     return wrap_series(result, common_index(close), f"KAMA_{length}_{fast}_{slow}")
+
+
+@indicator(
+    category="moving_averages",
+    summary="Recursive minimum-variance price estimate that updates its own confidence bar by bar.",
+    reference="https://www.cs.unc.edu/~welch/media/pdf/kalman_intro.pdf",
+    outputs=("KALMAN",),
+)
+def kalman_filter(
+    close: ArrayLike,
+    process_variance: Number = 1e-6,
+    measurement_variance: Number = 1e-4,
+) -> pd.Series:
+    """Kalman Filter (Kalman, 1960; recursion per Welch & Bishop's tutorial).
+
+    Treats ``log(Close)`` as a hidden, slowly drifting "true" level observed
+    through noise, and tracks a minimum-mean-square-error estimate of it one
+    bar at a time — no fixed window, no hand-picked smoothing constant.
+    Every bar is a predict/correct pair::
+
+        # predict
+        P[i] = P[i-1] + process_variance
+        # correct
+        K[i] = P[i] / (P[i] + measurement_variance)
+        x[i] = x[i-1] + K[i] * (log(Close[i]) - x[i-1])
+        P[i] = (1 - K[i]) * P[i]
+
+    seeded at the first finite bar with ``x = log(Close)``, ``P = 1.0``. The
+    output is ``exp(x)``, back in price units. Filtering in log space keeps
+    ``process_variance``/``measurement_variance`` on the same, roughly
+    scale-free footing (daily log-return variance) whether the instrument
+    trades at 10 or 100,000 — the same reason :func:`sample_entropy` works
+    from log returns rather than raw price.
+
+    The gain ``K`` starts high — an uncertain filter trusts its first few
+    observations almost completely — and falls as ``P`` shrinks with each
+    correction. Unlike :func:`ema`'s fixed smoothing constant, it is the
+    filter's own running confidence in its estimate, not a hand-picked
+    length, that decides how much each new bar moves it.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    process_variance:
+        How much the hidden "true" log-price is assumed to drift between
+        bars. Smaller values trust the running estimate more and produce a
+        smoother, slower line; must be > 0. There is no single correct
+        value — tune it the way you would :func:`ema`'s ``length``, as a
+        smoothness/responsiveness trade-off, not a formula input with one
+        right answer.
+    measurement_variance:
+        How noisy a single bar's ``log(Close)`` is assumed to be around the
+        true level. The default, ``1e-4``, is on the order of a ~1% daily
+        move's variance; must be > 0.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``KALMAN_{process_variance}_{measurement_variance}``. ``NaN``
+        only where ``close`` itself has no finite value yet to seed from.
+
+    Notes
+    -----
+    A ``NaN`` inside ``close`` holds the estimate across the gap rather than
+    poisoning every bar after it — the same convention :func:`ema` and
+    :func:`kama` use — and resumes updating from that held estimate as soon
+    as a finite bar returns.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> round(float(zeonta.kalman_filter([100, 101, 99, 102, 105]).iloc[-1]), 2)
+    101.77
+
+    References
+    ----------
+    https://www.cs.unc.edu/~welch/media/pdf/kalman_intro.pdf
+    """
+    process_variance = validate_multiplier(process_variance, "process_variance")
+    measurement_variance = validate_multiplier(measurement_variance, "measurement_variance")
+
+    values = as_array(close, "close")
+    size = values.shape[0]
+    result = np.full(size, np.nan, dtype="float64")
+    if size:
+        with np.errstate(divide="ignore", invalid="ignore"):
+            log_price = np.log(values)
+        finite = np.isfinite(log_price)
+        seed = int(np.argmax(finite)) if finite.any() else -1
+        if seed >= 0:
+            estimate = log_price[seed]
+            variance = 1.0
+            result[seed] = estimate
+            for i in range(seed + 1, size):
+                if not finite[i]:
+                    # Hold the estimate across the gap rather than letting a
+                    # single NaN propagate forever, matching kama()/ema_values().
+                    result[i] = estimate
+                    continue
+                variance += process_variance
+                gain = variance / (variance + measurement_variance)
+                estimate = estimate + gain * (log_price[i] - estimate)
+                variance = (1.0 - gain) * variance
+                result[i] = estimate
+        result = np.exp(result)
+
+    return wrap_series(
+        result, common_index(close), f"KALMAN_{process_variance}_{measurement_variance}"
+    )
 
 
 @indicator(

@@ -31,6 +31,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`gmma`](indicators/gmma.md) | Guppy Multiple Moving Average |
 | [`hma`](indicators/hma.md) | Hull Moving Average (HMA) |
 | [`instantaneous_trendline`](indicators/instantaneous_trendline.md) | Instantaneous Trendline (Ehlers) |
+| [`kalman_filter`](indicators/kalman_filter.md) | Kalman Filter |
 | [`kama`](indicators/kama.md) | Kaufman's Adaptive Moving Average (KAMA) |
 | [`ma_cross`](indicators/ma_cross.md) | Moving Average Crossovers |
 | [`mcgd`](indicators/mcgd.md) | McGinley Dynamic |
@@ -157,6 +158,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`permutation_entropy`](indicators/permutation_entropy.md) | Permutation Entropy |
 | [`pivot_points`](indicators/pivot_points.md) | Pivot Points |
 | [`sample_entropy`](indicators/sample_entropy.md) | Sample Entropy (SampEn) |
+| [`shannon_entropy`](indicators/shannon_entropy.md) | Shannon Entropy |
 | [`vwap`](indicators/vwap.md) | VWAP (Volume-Weighted Average Price) |
 
 ## Statistics

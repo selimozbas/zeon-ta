@@ -37,6 +37,7 @@ __all__ = [
     "permutation_entropy",
     "pivot_points",
     "sample_entropy",
+    "shannon_entropy",
     "vwap",
 ]
 
@@ -1224,3 +1225,96 @@ def permutation_entropy(
         result[i - 1] = float(-np.sum(probabilities * np.log(probabilities)))
 
     return wrap_series(result, common_index(close), f"PERMEN_{window}_{order}_{delay}")
+
+
+@indicator(
+    category="advanced",
+    summary="How spread out a window's log returns are — noise vs. clustered structure.",
+    outputs=("SHENT",),
+    reference="https://ieeexplore.ieee.org/document/6773024",
+)
+def shannon_entropy(close: ArrayLike, window: int = 50, bins: int = 10) -> pd.Series:
+    """Shannon Entropy (Shannon, 1948) of a rolling window's log returns.
+
+    Bins each window's log returns into ``bins`` equal-width buckets
+    spanning that window's own min-to-max range, and takes the entropy of
+    the resulting frequency distribution::
+
+        H = -sum(p_i * log(p_i))   over every bucket i with p_i > 0
+
+    ``p_i`` the fraction of the window's returns landing in bucket ``i``.
+    Divided by ``log(bins)`` (the maximum possible entropy for that many
+    buckets, reached when every bucket holds an equal share) so the
+    result is a bin-count-independent ``0``-``1`` reading: returns packed
+    into one or two buckets (a quiet, directional stretch) score low;
+    returns spread evenly across every bucket (no dominant move size)
+    score close to ``1``.
+
+    Unlike :func:`sample_entropy`/:func:`approximate_entropy`, which ask
+    whether a window's *shape* repeats over time, this asks nothing about
+    order or repetition at all — only how uniformly the move sizes
+    themselves are distributed within the window.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    window:
+        Bars per rolling estimate, in log returns. Must be >= 20.
+    bins:
+        Equal-width buckets the window's own return range is divided
+        into. Must be >= 2. Like :func:`sample_entropy`'s ``m``/``r``,
+        this is a tunable resolution, not a value with one provably
+        correct setting — more buckets resolve finer structure at the
+        cost of needing more bars per bucket to estimate each ``p_i``
+        reliably.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``SHENT_{window}_{bins}``, normalized to ``0``-``1``.
+        ``NaN`` wherever a window has too few log returns to fill (the
+        warm-up) or contains a non-finite one. A window whose returns are
+        all identical (every bucket but one empty) is defined as exactly
+        ``0.0`` rather than left undefined.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import zeonta
+    >>> rng = np.random.default_rng(0)
+    >>> noisy = 100.0 * np.cumprod(1.0 + rng.normal(scale=0.01, size=150))
+    >>> result = zeonta.shannon_entropy(noisy, window=50)
+    >>> bool(0.0 <= result.iloc[-1] <= 1.0)
+    True
+
+    References
+    ----------
+    Shannon, C.E. (1948). "A Mathematical Theory of Communication".
+    https://ieeexplore.ieee.org/document/6773024
+    """
+    window = validate_length(window, "window", minimum=20)
+    if not isinstance(bins, (int, np.integer)) or isinstance(bins, bool) or bins < 2:
+        raise ValueError(f"'bins' must be an integer >= 2, got {bins!r}")
+
+    values = as_array(close, "close")
+    size = values.shape[0]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        log_returns = np.diff(np.log(values), prepend=np.nan)
+
+    result = np.full(size, np.nan, dtype="float64")
+    log_bins = np.log(bins)
+    for i in range(window, size + 1):
+        segment = log_returns[i - window : i]
+        if not np.all(np.isfinite(segment)):
+            continue
+        low, high = segment.min(), segment.max()
+        if high == low:
+            result[i - 1] = 0.0
+            continue
+        counts, _ = np.histogram(segment, bins=bins, range=(low, high))
+        probabilities = counts[counts > 0] / window
+        entropy = -np.sum(probabilities * np.log(probabilities))
+        result[i - 1] = entropy / log_bins
+
+    return wrap_series(result, common_index(close), f"SHENT_{window}_{bins}")

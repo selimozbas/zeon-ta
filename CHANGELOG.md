@@ -8,6 +8,26 @@ that covers and what counts as a patch, minor, or major change.
 
 ## [Unreleased]
 
+### Added
+
+- **`kalman_filter(close, process_variance, measurement_variance)`**: a
+  recursive minimum-mean-square-error price estimator (Kalman, 1960; the
+  predict/correct recursion follows Welch & Bishop's widely cited tutorial
+  formulation) tracking `log(Close)` as a random walk observed through
+  noise. No fixed window or hand-picked smoothing constant — the filter's
+  own running confidence in its estimate decides how much each bar moves
+  it, the same role `length` plays for an EMA.
+- **`shannon_entropy(close, window, bins)`**: Shannon's 1948 entropy of a
+  rolling window's log returns, binned into equal-width buckets and
+  normalized by `log(bins)` to a `0`-`1` reading. Unlike
+  `sample_entropy`/`approximate_entropy`/`permutation_entropy` (which ask
+  whether a window's *shape* repeats), this asks only how uniformly the
+  *move sizes* are spread within it.
+- `ROADMAP.md`'s declined-indicator list gained two entries:
+  **KNN / Lorentzian Distance Classifier** and **fuzzy-logic oscillators**,
+  both declined for the same "no single agreed-on formula across
+  independent sources" reason as `STC`/`JMA`/`MAMA`.
+
 ## [0.3.1] - 2026-09-02
 
 ### Changed

@@ -177,6 +177,14 @@ column-naming convention (`RSI_14`, `MACD_12_26_9`, and so on).
 
 - Adding a new indicator, or a new optional parameter with a
   backward-compatible default, is a **minor** release.
+- Adding one or a few new indicators outside the planned
+  [ROADMAP.md](ROADMAP.md)/`INTERNAL_ROADMAP.md` sequence — the result of
+  ad-hoc research between planned batches rather than a scheduled sourcing
+  pass — is a **patch** release instead, provided it changes nothing about
+  any *existing* indicator. A planned sourcing batch (TA-Lib's
+  non-candlestick set, MQL5/cTrader's community indicators, and so on)
+  stays **minor**, same as always; this exception is specifically for the
+  smaller, unscheduled additions that come up between those batches.
 - Adding a new backward-compatible top-level helper — a utility that isn't
   itself an indicator, like `zeonta.role()` for reading a multi-output
   frame's stable column-role map — is a **patch** release. It grows

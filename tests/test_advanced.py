@@ -601,3 +601,62 @@ def test_shannon_entropy_rejects_bins_below_two() -> None:
 def test_permutation_entropy_rejects_a_window_too_small_for_two_patterns() -> None:
     with pytest.raises(ValueError, match="'window' must be large enough"):
         zeonta.permutation_entropy(list(range(1, 50)), window=20, order=25, delay=1)
+
+
+def test_markov_regime_switching_separates_a_planted_low_and_high_volatility_regime() -> None:
+    """150 bars of quiet returns followed by 150 bars of turbulent returns is
+    an unambiguous 2-regime series. With window=60, index 110 sits well
+    inside the low-volatility stretch (its whole window, bars 50-109, is
+    quiet, with a 40-bar margin from the regime change at 150) and index
+    270 sits well inside the high-volatility stretch (its whole window,
+    bars 210-269, is turbulent, 120 bars past the change) - both far enough
+    from the boundary that neither window straddles it."""
+    rng = np.random.default_rng(0)
+    quiet_returns = rng.normal(scale=0.002, size=150)
+    turbulent_returns = rng.normal(scale=0.03, size=150)
+    prices = 100.0 * np.cumprod(1 + np.concatenate([quiet_returns, turbulent_returns]))
+
+    result = zeonta.markov_regime_switching(prices, window=60)
+
+    assert result.iloc[110] < 0.3
+    assert result.iloc[270] > 0.7
+
+
+def test_markov_regime_switching_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.markov_regime_switching([1.0, 2.0, 3.0], window=100)
+    assert len(result) == 3
+    assert result.isna().all()
+
+
+def test_markov_regime_switching_rejects_window_below_twenty() -> None:
+    with pytest.raises(ValueError, match="'window' must be >="):
+        zeonta.markov_regime_switching(list(range(1, 50)), window=10)
+
+
+def test_markov_regime_switching_rejects_max_iterations_below_one() -> None:
+    with pytest.raises(ValueError, match="'max_iterations' must be >="):
+        zeonta.markov_regime_switching(list(range(1, 50)), max_iterations=0)
+
+
+def test_markov_regime_switching_rejects_non_positive_tolerance() -> None:
+    with pytest.raises(ValueError, match="'tolerance' must be > 0"):
+        zeonta.markov_regime_switching(list(range(1, 50)), tolerance=0.0)
+
+
+def test_markov_regime_switching_is_deterministic() -> None:
+    """EM is otherwise sensitive to starting values; this is the property
+    that makes the fixed, deterministic initialisation scheme correct."""
+    rng = np.random.default_rng(3)
+    prices = 100.0 * np.cumprod(1 + rng.normal(scale=0.01, size=200))
+    first = zeonta.markov_regime_switching(prices, window=50)
+    second = zeonta.markov_regime_switching(prices, window=50)
+    pd.testing.assert_series_equal(first, second)
+
+
+def test_markov_regime_switching_stays_within_zero_to_one() -> None:
+    rng = np.random.default_rng(9)
+    quiet_returns = rng.normal(scale=0.002, size=150)
+    turbulent_returns = rng.normal(scale=0.03, size=150)
+    prices = 100.0 * np.cumprod(1 + np.concatenate([quiet_returns, turbulent_returns]))
+    result = zeonta.markov_regime_switching(prices, window=50).dropna()
+    assert ((result >= 0.0) & (result <= 1.0)).all()

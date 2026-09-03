@@ -33,6 +33,7 @@ __all__ = [
     "divergence",
     "fib_retracement",
     "hurst_exponent",
+    "markov_regime_switching",
     "ou_half_life",
     "permutation_entropy",
     "pivot_points",
@@ -677,6 +678,304 @@ def hurst_exponent(close: ArrayLike, window: int = 100) -> pd.Series:
             result[i - 1] = slope
 
     return wrap_series(result, common_index(close), f"HURST_{window}")
+
+
+#: Floor applied to every fitted/estimated variance (Hamilton filter density
+#: evaluation and the EM M-step) so a state that momentarily explains only a
+#: handful of points can't collapse its variance to exactly zero and blow up
+#: the density evaluated at that point.
+_MRSW_VARIANCE_FLOOR = 1e-12
+
+#: Floor applied to every transition probability and to the denominator used
+#: to normalise the Hamilton filter's predictive mixture, keeping every
+#: recursion well-defined (no divide-by-zero) even on a degenerate/flat
+#: segment. Transition probabilities are kept within
+#: ``[_MRSW_PROB_FLOOR, 1 - _MRSW_PROB_FLOOR]``.
+_MRSW_PROB_FLOOR = 1e-6
+
+
+def _markov_stationary_distribution(p00: float, p11: float) -> np.ndarray:
+    """Stationary distribution ``[P(S=0), P(S=1)]`` of the 2-state chain.
+
+    Falls back to ``[0.5, 0.5]`` when the chain is (numerically) degenerate,
+    e.g. ``p00 = p11 = 1`` (no mixing at all, so no well-defined stationary
+    distribution exists). Every ``p00``/``p11`` this module actually passes
+    in is either the fixed ``0.9`` seed or already kept within
+    ``[_MRSW_PROB_FLOOR, 1 - _MRSW_PROB_FLOOR]`` by :func:`_markov_m_step`,
+    so this branch is a defensive guard, not a reachable path today.
+    """
+    denominator = (1.0 - p00) + (1.0 - p11)
+    if denominator < _MRSW_PROB_FLOOR:  # pragma: no cover - defensive; see docstring
+        return np.array([0.5, 0.5])
+    pi0 = (1.0 - p11) / denominator
+    return np.array([pi0, 1.0 - pi0])
+
+
+def _markov_hamilton_filter(
+    y: np.ndarray, mu: np.ndarray, sigma2: np.ndarray, p00: float, p11: float
+) -> tuple[np.ndarray, np.ndarray, float]:
+    """Hamilton (1989) forward filter for one segment of log returns.
+
+    Returns ``filtered[t, j] = P(S_t=j | Y_1..Y_t)``,
+    ``predicted[t, j] = P(S_t=j | Y_1..Y_{t-1})`` (the one-step-ahead
+    prediction the Kim smoother needs), and the segment's log-likelihood
+    under ``mu``/``sigma2``/``p00``/``p11``.
+    """
+    size = y.shape[0]
+    transition = np.array([[p00, 1.0 - p00], [1.0 - p11, p11]])
+    sigma2_floored = np.maximum(sigma2, _MRSW_VARIANCE_FLOOR)
+    probability = _markov_stationary_distribution(p00, p11)
+
+    filtered = np.empty((size, 2))
+    predicted = np.empty((size, 2))
+    log_likelihood = 0.0
+    for t in range(size):
+        predicted_t = probability @ transition
+        density = np.exp(-0.5 * (y[t] - mu) ** 2 / sigma2_floored) / np.sqrt(
+            2.0 * np.pi * sigma2_floored
+        )
+        joint = predicted_t * density
+        total = max(float(joint.sum()), _MRSW_VARIANCE_FLOOR)
+        probability = joint / total
+        log_likelihood += np.log(total)
+        filtered[t] = probability
+        predicted[t] = predicted_t
+
+    return filtered, predicted, float(log_likelihood)
+
+
+def _markov_kim_smoother(
+    filtered: np.ndarray, predicted: np.ndarray, p00: float, p11: float
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Kim (1994) backward smoother, given one Hamilton filter pass.
+
+    Returns ``smoothed[t, j] = P(S_t=j | Y_1..Y_T)`` (``gamma_t(j)``), the
+    segment-summed transition counts ``sum_t xi_t(i, j)`` for
+    ``t = 2..T`` (0-indexed transitions ``0..T-2``), and
+    ``sum_t smoothed[t, i]`` over that same range (the M-step's transition
+    denominator, ``sum_t gamma_{t-1}(i)``).
+    """
+    transition = np.array([[p00, 1.0 - p00], [1.0 - p11, p11]])
+    size = filtered.shape[0]
+    smoothed = np.empty_like(filtered)
+    smoothed[-1] = filtered[-1]
+    xi_sum = np.zeros((2, 2))
+    gamma_prior_sum = np.zeros(2)
+    for t in range(size - 2, -1, -1):
+        ratio = smoothed[t + 1] / np.maximum(predicted[t + 1], _MRSW_VARIANCE_FLOOR)
+        xi_t = filtered[t][:, None] * transition * ratio[None, :]
+        xi_sum += xi_t
+        smoothed[t] = xi_t.sum(axis=1)
+        gamma_prior_sum += smoothed[t]
+
+    return smoothed, xi_sum, gamma_prior_sum
+
+
+def _markov_m_step(
+    y: np.ndarray, smoothed: np.ndarray, xi_sum: np.ndarray, gamma_prior_sum: np.ndarray
+) -> tuple[np.ndarray, np.ndarray, float, float]:
+    """Closed-form EM M-step update from one E-step's gamma/xi."""
+    totals = np.maximum(smoothed.sum(axis=0), _MRSW_VARIANCE_FLOOR)
+    mu = (smoothed * y[:, None]).sum(axis=0) / totals
+    sigma2 = (smoothed * (y[:, None] - mu[None, :]) ** 2).sum(axis=0) / totals
+    sigma2 = np.maximum(sigma2, _MRSW_VARIANCE_FLOOR)
+
+    gamma_prior = np.maximum(gamma_prior_sum, _MRSW_VARIANCE_FLOOR)
+    p00 = float(np.clip(xi_sum[0, 0] / gamma_prior[0], _MRSW_PROB_FLOOR, 1.0 - _MRSW_PROB_FLOOR))
+    p11 = float(np.clip(xi_sum[1, 1] / gamma_prior[1], _MRSW_PROB_FLOOR, 1.0 - _MRSW_PROB_FLOOR))
+    return mu, sigma2, p00, p11
+
+
+def _markov_regime_probability(y: np.ndarray, max_iterations: int, tolerance: float) -> float:
+    """Fit the 2-state Hamilton model to one *segment* via EM.
+
+    Returns the filtered probability of its higher-variance regime at the
+    segment's last bar. Initialisation is fixed and deterministic (see
+    :func:`markov_regime_switching`'s docstring): split *y* at its own
+    median into a low/high half to seed each state's mean/variance, and
+    seed both self-transition probabilities at ``0.9``. EM then alternates
+    the Hamilton filter/Kim smoother E-step with the closed-form M-step
+    until the segment's log-likelihood improves by less than *tolerance*,
+    or *max_iterations* is reached — whichever comes first; the last
+    iterate's parameters are used either way.
+    """
+    median = np.median(y)
+    low_half = y[y <= median]
+    high_half = y[y > median]
+    if low_half.size == 0 or high_half.size == 0:
+        # Perfectly flat segment: nothing to split on either side of the
+        # median. Seed both states identically; the variance floor below
+        # keeps every recursion well-defined regardless.
+        low_half = y
+        high_half = y
+
+    mu = np.array([low_half.mean(), high_half.mean()])
+    sigma2 = np.maximum(np.array([low_half.var(), high_half.var()]), _MRSW_VARIANCE_FLOOR)
+    p00 = 0.9
+    p11 = 0.9
+
+    previous_log_likelihood: float | None = None
+    for _ in range(max_iterations):
+        filtered, predicted, log_likelihood = _markov_hamilton_filter(y, mu, sigma2, p00, p11)
+        if (
+            previous_log_likelihood is not None
+            and (log_likelihood - previous_log_likelihood) < tolerance
+        ):
+            break
+        previous_log_likelihood = log_likelihood
+        smoothed, xi_sum, gamma_prior_sum = _markov_kim_smoother(filtered, predicted, p00, p11)
+        mu, sigma2, p00, p11 = _markov_m_step(y, smoothed, xi_sum, gamma_prior_sum)
+
+    filtered, _, _ = _markov_hamilton_filter(y, mu, sigma2, p00, p11)
+    high_variance_state = 1 if sigma2[1] >= sigma2[0] else 0
+    return float(filtered[-1, high_variance_state])
+
+
+@indicator(
+    category="advanced",
+    summary="Filtered probability the current bar is in a Hamilton 2-state high-volatility regime.",
+    outputs=("MRSW",),
+    reference="https://www.jstor.org/stable/1912559",
+)
+def markov_regime_switching(
+    close: ArrayLike,
+    window: int = 100,
+    max_iterations: int = 50,
+    tolerance: Number = 1e-6,
+) -> pd.Series:
+    """Hamilton (1989) 2-state Markov-switching model of log returns.
+
+    Fits ``y_t = mu_{S_t} + eps_t``, ``eps_t ~ N(0, sigma_{S_t}^2)`` on each
+    rolling *window* of log returns, where ``S_t in {0, 1}`` is a
+    first-order Markov chain with self-transition probabilities ``p00`` and
+    ``p11``. Reports the *filtered* probability, ``P(S_t = high | Y_1..t)``,
+    that the window's last bar belongs to whichever of the two converged
+    states has the larger variance — the "high-volatility" regime.
+
+    Parameters are estimated per window by Expectation-Maximization: the
+    E-step runs the Hamilton filter forward and the Kim (1994) smoother
+    backward over the window to get each bar's regime probabilities
+    (``gamma``) and each bar-pair's transition probabilities (``xi``); the
+    M-step re-estimates ``mu``, ``sigma^2`` and the transition matrix from
+    those in closed form::
+
+        mu_j      = sum_t(gamma_t(j) * y_t) / sum_t(gamma_t(j))
+        sigma_j^2 = sum_t(gamma_t(j) * (y_t - mu_j)^2) / sum_t(gamma_t(j))
+        p_ij      = sum_t(xi_t(i, j)) / sum_t(gamma_{t-1}(i))
+
+    repeated until the window's log-likelihood improves by less than
+    *tolerance* or *max_iterations* is hit.
+
+    This is the only indicator in this library that fits an iterative
+    statistical model rather than evaluating a formula directly — but it
+    still passes this project's "single verifiable formula" bar: Hamilton's
+    own paper, and every standard reference since (his own 1994 textbook
+    *Time Series Analysis* ch. 22; Kim & Nelson (1999) *State-Space Models
+    with Regime Switching*), describe exactly this Hamilton-filter/Kim-
+    smoother/EM combination. There is no formula ambiguity here, only the
+    normal, expected fact that EM is iterative rather than closed-form.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    window:
+        Bars per rolling re-estimation, in log returns. Must be >= 20 (as
+        with :func:`sample_entropy`) — a 2-state model with 6 free
+        parameters (two means, two variances, two transition
+        probabilities) needs a reasonable minimum sample to estimate at
+        all, and this library's other rolling-window statistical
+        estimators use the same floor.
+    max_iterations:
+        EM iteration cap per window, bounding worst-case runtime. EM's own
+        convergence is not guaranteed within any fixed number of
+        iterations; a window that has not converged by *max_iterations*
+        still reports its *last* iterate's estimate, not ``NaN`` — this
+        parameter is a safety valve on runtime, not a correctness
+        guarantee. Must be an integer >= 1.
+    tolerance:
+        Log-likelihood improvement, in nats, below which EM stops early.
+        Must be > 0.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``MRSW_{window}_{max_iterations}_{tolerance}``, in
+        ``[0, 1]``. ``NaN`` for warm-up bars (fewer than *window* log
+        returns available yet) and for any window containing a
+        non-finite log return. A value near ``1`` means the model is
+        confident the current bar sits in the higher-variance of its two
+        fitted regimes; near ``0`` means the lower-variance regime —
+        which internal EM label ("state 0" vs "state 1") that corresponds
+        to is resolved and discarded on every window, since EM's own
+        labelling is arbitrary (the well-known "label-switching" problem).
+
+    Notes
+    -----
+    Deterministic, fixed initialisation, chosen specifically so the same
+    input always produces the same output (EM is otherwise sensitive to
+    starting values and can converge to different local optima from
+    different seeds): each window's own log returns are split at their own
+    median into a "low" and "high" half; ``mu``/``sigma^2`` for state 0 and
+    state 1 are seeded from the low and high half's own mean/variance;
+    both self-transition probabilities are seeded at ``0.9``, the standard
+    "regimes are persistent" prior used throughout this literature (a
+    regime is assumed to typically last many bars, not flip every bar) —
+    not an arbitrary guess. A window whose low/high halves happen to share
+    the same variance (a degenerate, flat window) is not special-cased
+    beyond the variance floor below; the recursion stays well-defined.
+
+    Every bar re-fits the model from scratch on only the trailing *window*
+    bars ending at that bar — the only choice consistent with this
+    library's no-look-ahead, aligned-output contract, but also the most
+    expensive computation in this library: roughly ``O(window *
+    max_iterations)`` per bar, i.e. ``O(size * window * max_iterations)``
+    overall, since each of the ``size`` bars re-runs up to
+    *max_iterations* full forward/backward passes over its own *window*.
+    ``BENCHMARKS.md`` does not cover this indicator (only
+    ``supertrend``/``adx``/``parabolic_sar``).
+
+    A variance floor (``1e-12``) and a transition-probability floor
+    (keeping every ``p_ij`` within ``[1e-6, 1 - 1e-6]``) are applied inside
+    both the Hamilton filter's density evaluation and the M-step's
+    parameter updates, so a degenerate or very short window cannot divide
+    by zero or produce an undefined log-likelihood.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import zeonta
+    >>> rng = np.random.default_rng(0)
+    >>> calm = rng.normal(scale=0.002, size=80)
+    >>> turbulent = rng.normal(scale=0.03, size=80)
+    >>> prices = 100.0 * np.cumprod(1 + np.concatenate([calm, turbulent]))
+    >>> result = zeonta.markov_regime_switching(prices, window=60)
+    >>> bool(result.iloc[-1] > result.iloc[79])
+    True
+
+    References
+    ----------
+    Hamilton, J.D. (1989). "A New Approach to the Economic Analysis of
+    Nonstationary Time Series and the Business Cycle". Econometrica 57(2).
+    https://www.jstor.org/stable/1912559
+    """
+    window = validate_length(window, "window", minimum=20)
+    max_iterations = validate_length(max_iterations, "max_iterations", minimum=1)
+    tolerance = validate_multiplier(tolerance, "tolerance")
+
+    values = as_array(close, "close")
+    size = values.shape[0]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        log_returns = np.diff(np.log(values), prepend=np.nan)
+
+    result = np.full(size, np.nan, dtype="float64")
+    for i in range(window, size + 1):
+        segment = log_returns[i - window : i]
+        if not np.all(np.isfinite(segment)):
+            continue
+        result[i - 1] = _markov_regime_probability(segment, max_iterations, tolerance)
+
+    return wrap_series(result, common_index(close), f"MRSW_{window}_{max_iterations}_{tolerance}")
 
 
 @indicator(

@@ -154,6 +154,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`divergence`](indicators/divergence.md) | Divergences |
 | [`fib_retracement`](indicators/fib_retracement.md) | Fibonacci Retracement |
 | [`hurst_exponent`](indicators/hurst_exponent.md) | Hurst Exponent (Rescaled Range Analysis) |
+| [`markov_regime_switching`](indicators/markov_regime_switching.md) | Markov Regime-Switching Probability |
 | [`ou_half_life`](indicators/ou_half_life.md) | Ornstein-Uhlenbeck Half-Life of Mean Reversion |
 | [`permutation_entropy`](indicators/permutation_entropy.md) | Permutation Entropy |
 | [`pivot_points`](indicators/pivot_points.md) | Pivot Points |

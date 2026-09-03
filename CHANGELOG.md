@@ -8,6 +8,20 @@ that covers and what counts as a patch, minor, or major change.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-09-03
+
+### Changed
+
+- **`CONTRIBUTING.md#versioning`**: added a fifth category — one or a few
+  new indicators added between planned `ROADMAP.md`/`INTERNAL_ROADMAP.md`
+  sourcing batches (ad-hoc research rather than a scheduled pass) are a
+  **patch** release, provided no *existing* indicator changes. A planned
+  sourcing batch (TA-Lib's non-candlestick set, MQL5/cTrader's community
+  indicators) stays **minor** as before — this exception covers only the
+  smaller, unscheduled additions that come up between those batches, which
+  is exactly how `kalman_filter`, `shannon_entropy` and
+  `markov_regime_switching` below arrived.
+
 ### Added
 
 - **`kalman_filter(close, process_variance, measurement_variance)`**: a
@@ -27,6 +41,18 @@ that covers and what counts as a patch, minor, or major change.
   **KNN / Lorentzian Distance Classifier** and **fuzzy-logic oscillators**,
   both declined for the same "no single agreed-on formula across
   independent sources" reason as `STC`/`JMA`/`MAMA`.
+- **`markov_regime_switching(close, window, max_iterations, tolerance)`**: a
+  2-state Hamilton (1989) Markov-switching model fit by Expectation-
+  Maximization (Hamilton filter forward, Kim (1994) smoother backward, both
+  on every rolling `window`), reporting the filtered probability that the
+  current bar belongs to the higher-variance regime of the two fitted
+  states. The only indicator in this library that fits an iterative
+  statistical model rather than evaluating a formula directly — and, by
+  the same token, the most expensive one here (see its own docstring for
+  the actual complexity). Deterministic by construction: every window is
+  seeded the same fixed way (a median split of its own returns, both
+  self-transition probabilities at `0.9`) rather than randomly, since EM
+  is otherwise sensitive to its starting point.
 
 ## [0.3.1] - 2026-09-02
 

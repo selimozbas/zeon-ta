@@ -21,7 +21,7 @@ why.
 
 ## Why another TA library
 
-- **Broad on purpose.** 130 indicators across 8 categories
+- **Broad on purpose.** 134 indicators across 8 categories
   (moving averages, oscillators, volatility, trend, volume, statistics)
   — not just the popular dozen.
 - **Classic and modern, both formula-verified.** Every indicator — whether
@@ -100,7 +100,7 @@ the cloud that projects past the last bar, rather than discarding it.
 
 ## Documentation
 
-The full indicator reference — 130 indicators across 8 categories,
+The full indicator reference — 134 indicators across 8 categories,
 each with its formula, parameters, worked examples and (where one exists) the
 external source it was verified against — is published at:
 

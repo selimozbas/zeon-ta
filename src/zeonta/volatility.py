@@ -35,6 +35,7 @@ __all__ = [
     "atr",
     "bbands",
     "chaikin_volatility",
+    "corwin_schultz_spread",
     "garman_klass_volatility",
     "keltner",
     "mass_index",
@@ -751,6 +752,105 @@ def chaikin_volatility(high: ArrayLike, low: ArrayLike, length: int = 10) -> pd.
             )
 
     return wrap_series(result, common_index(high, low), f"CVI_{length}")
+
+
+#: 3 - 2*sqrt(2), the constant Corwin & Schultz's closed-form solution for
+#: alpha divides by (it falls out of solving their two-day/one-day range
+#: expectations simultaneously for the spread-free volatility term).
+_CORWIN_SCHULTZ_DENOMINATOR = 3.0 - 2.0 * np.sqrt(2.0)
+
+
+@indicator(
+    category="volatility",
+    summary="Bid-ask spread estimated from two days' high-low ranges alone.",
+    reference="https://doi.org/10.1111/j.1540-6261.2012.01729.x",
+    outputs=("CS",),
+)
+def corwin_schultz_spread(high: ArrayLike, low: ArrayLike) -> pd.Series:
+    """Corwin-Schultz bid-ask spread estimator (Corwin & Schultz, 2012).
+
+    Needs no trade or quote data at all — only two consecutive bars' highs
+    and lows. The idea: a bar's high is usually a buyer-initiated trade (at
+    the ask) and its low a seller-initiated one (at the bid), so a bar's own
+    high-low range reflects both the day's price *volatility* and a fixed
+    contribution from the bid-ask bounce. Volatility scales with the length
+    of the interval measured; the bounce does not. Writing down the expected
+    squared log range for one bar and for the two-bar window together and
+    solving the resulting pair of equations for the volatility-free spread
+    term isolates the spread::
+
+        beta  = [ln(H[t-1]/L[t-1])]^2 + [ln(H[t]/L[t])]^2
+        gamma = [ln(max(H[t-1],H[t]) / min(L[t-1],L[t]))]^2
+        alpha = (sqrt(2*beta) - sqrt(beta)) / (3 - 2*sqrt(2))
+                - sqrt(gamma / (3 - 2*sqrt(2)))
+        S     = 2 * (exp(alpha) - 1) / (1 + exp(alpha))
+
+    Parameters
+    ----------
+    high, low:
+        Price series of equal length.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``CS``, as a fraction of price (``0.01`` reads as a 1% quoted
+        spread). ``NaN`` on the first bar (no previous bar to pair with).
+
+    Notes
+    -----
+    The closed-form ``alpha`` can come out negative on a bar pair whose
+    two-day range happens to be tighter than either single day's own range
+    — an estimate that would imply a negative spread, which has no meaning.
+    Corwin & Schultz's own paper addresses this directly: negative
+    estimates are set to zero before use, which this function does as well,
+    rather than left negative or turned into ``NaN``.
+
+    This implements the paper's core two-day estimator only, not its
+    optional overnight-return adjustment (for cases where the previous
+    close fell outside the current day's own high-low range) — that
+    adjustment is a documented refinement in the same paper, not a
+    correction to the formula above, and every bar pair here is still
+    handled by the one formula.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> high = [100.0, 103.0, 106.0, 110.0]
+    >>> low = [98.0, 99.0, 100.0, 101.0]
+    >>> round(float(zeonta.corwin_schultz_spread(high, low).iloc[-1]), 6)
+    0.019413
+
+    References
+    ----------
+    https://doi.org/10.1111/j.1540-6261.2012.01729.x
+    """
+    require_aligned_index(high=high, low=low)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    size = require_same_length(high=high_values, low=low_values)
+
+    result = np.full(size, np.nan, dtype="float64")
+    if size > 1:
+        previous_high = high_values[:-1]
+        previous_low = low_values[:-1]
+        current_high = high_values[1:]
+        current_low = low_values[1:]
+
+        with np.errstate(divide="ignore", invalid="ignore"):
+            beta = (
+                np.log(previous_high / previous_low) ** 2 + np.log(current_high / current_low) ** 2
+            )
+            two_day_high = np.maximum(previous_high, current_high)
+            two_day_low = np.minimum(previous_low, current_low)
+            gamma = np.log(two_day_high / two_day_low) ** 2
+
+            alpha = (np.sqrt(2.0 * beta) - np.sqrt(beta)) / _CORWIN_SCHULTZ_DENOMINATOR - np.sqrt(
+                gamma / _CORWIN_SCHULTZ_DENOMINATOR
+            )
+            spread = 2.0 * (np.exp(alpha) - 1.0) / (1.0 + np.exp(alpha))
+        result[1:] = np.maximum(spread, 0.0)
+
+    return wrap_series(result, common_index(high, low), "CS")
 
 
 @indicator(

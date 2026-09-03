@@ -120,6 +120,45 @@ def test_mfi_uses_plain_sums_not_wilder_smoothing() -> None:
     np.testing.assert_allclose(result.iloc[10], 50.0)
 
 
+def test_amihud_illiquidity_matches_a_hand_computed_ratio() -> None:
+    close = [10.0, 10.5, 10.0, 10.6]
+    volume = [1000.0, 1200.0, 900.0, 1100.0]
+    result = zeonta.amihud_illiquidity(close, volume, length=3)
+
+    r1, r2, r3 = (10.5 - 10.0) / 10.0, (10.0 - 10.5) / 10.5, (10.6 - 10.0) / 10.0
+    dv1, dv2, dv3 = 10.5 * 1200.0, 10.0 * 900.0, 10.6 * 1100.0
+    expected_last = (abs(r1) / dv1 + abs(r2) / dv2 + abs(r3) / dv3) / 3.0
+    np.testing.assert_allclose(result.iloc[-1], expected_last)
+    assert result.iloc[:3].isna().all()
+
+
+def test_amihud_illiquidity_is_always_non_negative(ohlcv: pd.DataFrame) -> None:
+    result = zeonta.amihud_illiquidity(ohlcv["close"], ohlcv["volume"], length=10)
+    assert (result.dropna() >= 0.0).all()
+
+
+def test_amihud_illiquidity_treats_zero_dollar_volume_as_undefined_not_infinite() -> None:
+    close = [10.0, 10.5, 10.0, 10.6, 10.2]
+    volume = [1000.0, 0.0, 900.0, 1100.0, 1000.0]
+    result = zeonta.amihud_illiquidity(close, volume, length=2)
+    # Every 2-bar window still containing bar 1 (zero volume) is NaN, not
+    # inf; once that bar ages out of the window the ratio recovers to a
+    # finite number again.
+    assert result.iloc[:3].isna().all()
+    assert np.isfinite(result.iloc[-1])
+
+
+def test_amihud_illiquidity_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.amihud_illiquidity([1.0, 2.0], [100.0, 100.0], length=5)
+    assert len(result) == 2
+    assert result.isna().all()
+
+
+def test_amihud_illiquidity_rejects_negative_volume() -> None:
+    with pytest.raises(ValueError, match="'volume' must not contain negative values"):
+        zeonta.amihud_illiquidity([10.0, 11.0], [-100.0, 100.0])
+
+
 @pytest.mark.parametrize("func_name", ["cmf", "mfi"])
 def test_length_must_be_positive(func_name: str) -> None:
     func = getattr(zeonta, func_name)

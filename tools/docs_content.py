@@ -3563,4 +3563,140 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.reflex_trendflex(df["close"]).tail(3),
         ],
     },
+    "higuchi_fractal_dimension": {
+        "title": "Higuchi Fractal Dimension",
+        "formula": (
+            "For k = 1..k_max, resample the window every k-th point starting at each offset "
+            "m = 1..k: L_m(k) = (N-1) / (floor((N-m)/k) x k^2) x "
+            "sum |x(m+i x k) - x(m+(i-1) x k)|; L(k) = mean over m of L_m(k); "
+            "HFD = slope of log(L(k)) regressed against log(1/k)"
+        ),
+        "about": (
+            "Higuchi (1988) estimates a time series' fractal dimension directly from its own "
+            "curve, without going through returns first the way hurst_exponent and dfa do: it "
+            "measures how much shorter the window's own path gets when only every k-th point is "
+            "kept, for several step sizes k, and reads the fractal dimension off how fast that "
+            "shrinkage compounds. It is also a different construction from frama()'s internal "
+            "box-counting dimension, which compares high-low range at two window halves rather "
+            "than resampling the price path itself."
+        ),
+        "reading": (
+            "Reads the same way as any box-counting fractal dimension: values near 1 describe a "
+            "path close to a straight line (a strong, persistent trend); values near 2 describe "
+            "a path that fills space as roughly as pure noise (choppy, directionless). Unlike "
+            "hurst_exponent/dfa, there is no 0.5 'random walk' reference point built into the "
+            "reading — 1 and 2 are the two ends of the scale here, not a midpoint split."
+        ),
+        "pitfalls": (
+            "k_max is a free parameter the original paper does not pin to one value; 10 is the "
+            "convention most secondary literature on this method has settled on, not something "
+            "Higuchi's own paper mandates. A short or unusually smooth window can produce fewer "
+            "than two usable (k, L(k)) pairs to regress against, in which case the result is "
+            "NaN rather than an unreliable single-point slope."
+        ),
+        "example": [
+            lambda df: zeonta.higuchi_fractal_dimension(df["close"]).tail(3),
+        ],
+    },
+    "ffd": {
+        "title": "Fixed-Width Window Fractional Differentiation",
+        "formula": (
+            "w_0 = 1, w_k = -w_{k-1} x (d-k+1)/k generated until |w_k| < threshold (l* weights "
+            "kept); FFD[t] = sum(w_k x Close[t-k], k = 0..l*)"
+        ),
+        "about": (
+            "Plain differencing (a 1-bar log_return or Close.diff()) makes a price series "
+            "stationary but throws away all memory of its own level along with it. Lopez de "
+            "Prado (2018) generalizes differencing to a fractional order d between 0 and 1 via "
+            "the binomial series expansion of (1-B)^d, then truncates that expansion's weights "
+            "to a fixed count once they fall below a threshold — the 'fixed-width window' this "
+            "method is named for, as opposed to the same book's expanding-window variant, which "
+            "reweights a series' entire history at every bar instead of a fixed trailing window."
+        ),
+        "reading": (
+            "d close to 0 barely differences the series (it stays close to raw Close, and "
+            "non-stationary); d close to 1 approaches plain first differencing (stationary, but "
+            "memory-free). The book's own point is to search for the smallest d that a "
+            "stationarity test (e.g. ADF) accepts, keeping as much memory as the transform "
+            "allows — this function computes the transform for a d you choose, not that search."
+        ),
+        "pitfalls": (
+            "threshold controls a real memory/window-length trade-off, not just a numerical "
+            "nicety: the book's own default (1e-5) keeps several hundred weights even at "
+            "d=0.5, which needs a correspondingly long history before the first output bar. "
+            "This function defaults to a shorter, more usable 1e-3 instead — the weight "
+            "recursion and truncation rule are unchanged from the book, only the default cutoff "
+            "is this library's own choice, the same way many rolling-window defaults elsewhere "
+            "here are a reasonable pick rather than something the source itself mandates."
+        ),
+        "example": [
+            lambda df: zeonta.ffd(df["close"]).tail(3),
+        ],
+    },
+    "amihud_illiquidity": {
+        "title": "Amihud Illiquidity Ratio",
+        "formula": "ILLIQ = mean(|R_t| / DollarVolume_t, length), R_t = (Close_t - Close_{t-1}) / Close_{t-1}, DollarVolume_t = Close_t x Volume_t",
+        "about": (
+            "Amihud (2002) proposes the simplest possible price-impact proxy available from "
+            "daily bars alone: how far price moves, per dollar of volume that traded. A bar "
+            "that swings a lot on thin dollar volume is illiquid — a small order was enough to "
+            "move the price; a bar that barely moves on heavy dollar volume is liquid. Averaged "
+            "over a window, this gives a rough, easily computed stand-in for the "
+            "microstructure-level measures (quoted spreads, order-book depth) that need data "
+            "most markets and most history don't have."
+        ),
+        "reading": (
+            "Higher values mean less liquidity (more price impact per dollar traded); lower "
+            "values mean more. Amihud's own paper uses ILLIQ cross-sectionally, ranking many "
+            "stocks against each other and against their own history — the raw number is not "
+            "comparable across instruments quoted in different currencies or at very different "
+            "price and volume levels without further normalization."
+        ),
+        "pitfalls": (
+            "A bar with zero dollar volume produces an undefined ratio (treated as NaN, not "
+            "infinite), which only makes the windows still containing it NaN rather than "
+            "corrupting the series from that point on. length=21 (roughly one trading month) is "
+            "this library's own choice of averaging window, not something the 2002 paper "
+            "prescribes — the paper's own cross-sectional study averages over a full year."
+        ),
+        "example": [
+            lambda df: zeonta.amihud_illiquidity(df["close"], df["volume"]).tail(3),
+        ],
+    },
+    "corwin_schultz_spread": {
+        "title": "Corwin-Schultz Spread Estimator",
+        "formula": (
+            "beta = ln(H[t-1]/L[t-1])^2 + ln(H[t]/L[t])^2; "
+            "gamma = ln(max(H[t-1],H[t]) / min(L[t-1],L[t]))^2; "
+            "alpha = (sqrt(2 x beta) - sqrt(beta))/(3-2 x sqrt(2)) - sqrt(gamma/(3-2 x sqrt(2))); "
+            "S = max(2 x (exp(alpha)-1) / (1+exp(alpha)), 0)"
+        ),
+        "about": (
+            "Corwin & Schultz (2012) estimate a bid-ask spread from nothing but two consecutive "
+            "bars' highs and lows — no trade or quote data at all. The insight: a bar's high is "
+            "usually a buyer-initiated trade at the ask and its low a seller-initiated trade at "
+            "the bid, so a bar's own high-low range carries both the day's price volatility and "
+            "a fixed bid-ask-bounce contribution. Volatility grows with the length of the "
+            "interval measured; the bounce does not, so writing down the expected squared range "
+            "for one bar and for a two-bar window and solving that pair of equations together "
+            "isolates the spread on its own."
+        ),
+        "reading": (
+            "Read CS as a fraction of price — 0.01 is a 1% quoted spread. It is a liquidity-cost "
+            "estimate, not a volatility measure in the usual sense: a wider CS means trading "
+            "this instrument costs more of the price just to cross the spread, independent of "
+            "how much the price itself is moving."
+        ),
+        "pitfalls": (
+            "The closed-form estimate can come out negative on a bar pair whose combined 2-day "
+            "range happens to be tighter than either single day's own range — the paper's own "
+            "remedy, floored to zero here, is what this function applies rather than leaving a "
+            "meaningless negative number or turning it into NaN. This implements the paper's "
+            "core two-day estimator only, not its optional overnight-jump adjustment for cases "
+            "where the previous close printed outside the current day's own high-low range."
+        ),
+        "example": [
+            lambda df: zeonta.corwin_schultz_spread(df["high"], df["low"]).tail(3),
+        ],
+    },
 }

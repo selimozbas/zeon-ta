@@ -228,6 +228,69 @@ def test_no_divergence_flags_in_a_clean_trend() -> None:
     assert out["DIVREGBULL_3_3"].sum() == 0
 
 
+def test_higuchi_fractal_dimension_matches_an_independent_reimplementation() -> None:
+    """Recompute L_m(k)/L(k)/the regression a different way (no shared
+    helper function) to catch a bug either implementation alone would miss."""
+
+    def reference_hfd(values: list[float], k_max: int) -> float:
+        n = len(values)
+        log_inv_k, log_length = [], []
+        for k in range(1, k_max + 1):
+            lengths = []
+            for m in range(1, k + 1):
+                positions = list(range(m - 1, n, k))
+                if len(positions) < 2:
+                    continue
+                n_max = len(positions) - 1
+                total = sum(
+                    abs(values[positions[i + 1]] - values[positions[i]]) for i in range(n_max)
+                )
+                lengths.append(total * (n - 1) / (n_max * k * k))
+            if lengths:
+                log_inv_k.append(np.log(1.0 / k))
+                log_length.append(np.log(float(np.mean(lengths))))
+        return float(np.polyfit(log_inv_k, log_length, 1)[0])
+
+    rng = np.random.default_rng(7)
+    prices = (100.0 + np.cumsum(rng.normal(size=60))).tolist()
+    result = zeonta.higuchi_fractal_dimension(prices, window=60, k_max=6)
+
+    expected = reference_hfd(prices, 6)
+    np.testing.assert_allclose(result.iloc[-1], expected)
+
+
+def test_higuchi_fractal_dimension_is_lower_for_a_straight_line_than_noise() -> None:
+    """A straight line's curve length barely shrinks as the sampling step
+    widens (HFD near 1); pure noise's shrinks as fast as possible (HFD near
+    the theoretical ceiling of 2)."""
+    line = np.arange(1.0, 201.0)
+    rng = np.random.default_rng(1)
+    noise = rng.normal(size=200)
+
+    h_line = zeonta.higuchi_fractal_dimension(line, window=100, k_max=10).dropna().iloc[-1]
+    h_noise = zeonta.higuchi_fractal_dimension(noise, window=100, k_max=10).dropna().iloc[-1]
+
+    assert h_line < h_noise
+    assert 1.0 <= h_line <= 1.1
+    assert 1.8 <= h_noise <= 2.2
+
+
+def test_higuchi_fractal_dimension_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.higuchi_fractal_dimension([1.0, 2.0, 3.0], window=100, k_max=10)
+    assert len(result) == 3
+    assert result.isna().all()
+
+
+def test_higuchi_fractal_dimension_rejects_k_max_below_two() -> None:
+    with pytest.raises(ValueError, match="k_max"):
+        zeonta.higuchi_fractal_dimension(list(range(1, 50)), window=20, k_max=1)
+
+
+def test_higuchi_fractal_dimension_rejects_a_window_too_small_for_k_max() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.higuchi_fractal_dimension(list(range(1, 50)), window=10, k_max=10)
+
+
 def test_hurst_exponent_matches_an_independent_reimplementation() -> None:
     """Recompute the same R/S regression a different way (no shared helper
     function) to catch a bug either implementation alone would miss."""

@@ -8,6 +8,57 @@ that covers and what counts as a patch, minor, or major change.
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-09-03
+
+### Added
+
+- **`higuchi_fractal_dimension(close, window, k_max)`**: Higuchi's (1988)
+  fractal dimension, estimated directly from the window's own price path
+  (not from returns, unlike `hurst_exponent`/`dfa`) by resampling it at
+  several step sizes and measuring how fast the resulting curve length
+  shrinks. A different construction from `frama()`'s internal box-counting
+  dimension (which compares high-low range at two window halves rather than
+  resampling the path itself), despite both landing in the same `[1, 2]`
+  reading convention.
+- **`ffd(close, d, threshold)`**: Fixed-width window Fractional
+  Differentiation (Lopez de Prado, *Advances in Financial Machine
+  Learning*, 2018) — generalizes plain differencing to a fractional order
+  `0 < d < 1` via the binomial series expansion of `(1-B)^d`, truncated to
+  a fixed weight count once a weight's magnitude drops below `threshold`.
+  Defaults to a shorter, more usable `threshold=1e-3` rather than the
+  book's own `1e-5` (which keeps several hundred weights even at `d=0.5`);
+  the weight recursion and truncation rule themselves are unchanged from
+  the book and its independent open-source replications (e.g. mlfinlab's
+  `frac_diff_ffd`).
+- **`amihud_illiquidity(close, volume, length)`**: Amihud's (2002)
+  illiquidity ratio, the rolling average of a bar's absolute return per
+  dollar of volume traded — a coarse, cross-market price-impact proxy
+  computable from nothing more than close and volume.
+- **`corwin_schultz_spread(high, low)`**: Corwin & Schultz's (2012)
+  closed-form bid-ask spread estimator, derived from two consecutive bars'
+  high-low ranges alone (no trade or quote data). Negative raw estimates —
+  an edge case the paper's own text addresses — are floored at zero, per
+  the paper, rather than left negative or turned into `NaN`.
+- `ROADMAP.md`'s declined-indicator list gained an entry for "Fractal
+  Dimension Index" — the name is used for two genuinely different,
+  independently-sourced formulas (Sevcik/Matulich's normalized-waveform
+  arc-length construction vs. Ehlers & Way's box-counting dimension), with
+  no single one both sources agree is "the" FDI.
+
+Two other candidates from this same research pass were investigated and
+declined rather than implemented:
+
+- **Fractal Dimension Index (FDI)** — see the `ROADMAP.md` entry above.
+- **VPIN via Bulk Volume Classification** — the BVC classification step
+  itself (splitting a bar's volume into buy/sell fractions from its own
+  price change) is well-defined from OHLCV+volume alone, but the paper's
+  VPIN construction on top of it requires *equal-volume* buckets, and
+  adapting that to this library's fixed-time-bar contract would mean
+  inventing a bucket-formation convention the paper does not specify for
+  this granularity (whether/how to split a single bar's volume across a
+  bucket boundary). `ROADMAP.md`'s existing VPIN/microstructure entry is
+  left as-is.
+
 ## [0.3.2] - 2026-09-03
 
 ### Changed

@@ -84,3 +84,12 @@ by `tests/test_examples.py`" rule the existing ones do.
   buy/sell fuzziness" score two implementations produce for the same input
   can differ entirely, which fails the same formula-verification bar as
   everything else on this list.
+- **"Fractal Dimension Index" (FDI).** The name is genuinely ambiguous
+  across independent sources, not just inconsistently described: Carlos
+  Sevcik's original FDI (corrected by Alex Matulich) is a normalized
+  waveform arc-length construction, while John Ehlers & Ric Way's own
+  "Fractal Dimension" (TASC, June 2010) is a box-counting dimension — the
+  same family of calculation `frama()` already computes internally as its
+  `dimen`, but not the same formula as Sevcik/Matulich's. No source treats
+  one of these as "the" canonical FDI over the other; declined for the
+  same reason `STC`/`JMA`/`MAMA` are.

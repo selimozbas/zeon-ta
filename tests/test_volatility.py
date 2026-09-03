@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import warnings
 
 import numpy as np
@@ -396,6 +397,53 @@ def test_garman_klass_volatility_is_zero_when_every_bar_is_flat() -> None:
 def test_garman_klass_volatility_rejects_non_positive_length() -> None:
     with pytest.raises(ValueError, match="must be >="):
         zeonta.garman_klass_volatility([1.0, 2.0], [2.0, 3.0], [1.0, 2.0], [1.5, 2.5], length=0)
+
+
+def test_corwin_schultz_spread_matches_a_hand_traced_two_day_estimate() -> None:
+    high = [100.0, 103.0, 106.0, 110.0]
+    low = [98.0, 99.0, 100.0, 101.0]
+    result = zeonta.corwin_schultz_spread(high, low)
+
+    beta = math.log(high[2] / low[2]) ** 2 + math.log(high[3] / low[3]) ** 2
+    two_day_high, two_day_low = max(high[2], high[3]), min(low[2], low[3])
+    gamma = math.log(two_day_high / two_day_low) ** 2
+    denominator = 3.0 - 2.0 * math.sqrt(2.0)
+    alpha = (math.sqrt(2.0 * beta) - math.sqrt(beta)) / denominator - math.sqrt(gamma / denominator)
+    expected = 2.0 * (math.exp(alpha) - 1.0) / (1.0 + math.exp(alpha))
+
+    np.testing.assert_allclose(result.iloc[-1], expected)
+    assert np.isnan(result.iloc[0])
+
+
+def test_corwin_schultz_spread_floors_a_negative_closed_form_estimate_at_zero() -> None:
+    """A bar pair whose two-day combined range happens to be tight relative
+    to what the sum of each day's own squared range implies makes the
+    closed-form alpha negative — an estimate that would imply a negative
+    spread. The paper's own remedy, which this function applies, is to
+    floor it at zero rather than report the negative value or NaN."""
+    high = [116.888437, 108.411432]
+    low = [110.372630, 94.764439]
+
+    beta = math.log(high[0] / low[0]) ** 2 + math.log(high[1] / low[1]) ** 2
+    two_day_high, two_day_low = max(high), min(low)
+    gamma = math.log(two_day_high / two_day_low) ** 2
+    denominator = 3.0 - 2.0 * math.sqrt(2.0)
+    alpha = (math.sqrt(2.0 * beta) - math.sqrt(beta)) / denominator - math.sqrt(gamma / denominator)
+    assert alpha < 0.0, "test fixture must produce a negative raw estimate to be meaningful"
+
+    result = zeonta.corwin_schultz_spread(high, low)
+    assert result.iloc[-1] == 0.0
+
+
+def test_corwin_schultz_spread_is_never_negative(ohlcv: pd.DataFrame) -> None:
+    result = zeonta.corwin_schultz_spread(ohlcv["high"], ohlcv["low"])
+    assert (result.dropna() >= 0.0).all()
+
+
+def test_corwin_schultz_spread_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.corwin_schultz_spread([10.0], [9.0])
+    assert len(result) == 1
+    assert result.isna().all()
 
 
 def test_rogers_satchell_volatility_matches_an_independent_reimplementation() -> None:

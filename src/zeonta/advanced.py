@@ -32,6 +32,7 @@ __all__ = [
     "dfa",
     "divergence",
     "fib_retracement",
+    "higuchi_fractal_dimension",
     "hurst_exponent",
     "markov_regime_switching",
     "ou_half_life",
@@ -563,6 +564,132 @@ def divergence(
             "hidden_bearish": order[3],
         },
     )
+
+
+def _higuchi_fd_value(segment: np.ndarray, k_max: int) -> float:
+    """Higuchi Fractal Dimension of one *segment* (Higuchi, 1988).
+
+    For each ``k`` from 1 to *k_max*, builds ``k`` sub-series (one per
+    offset ``m``) by sampling ``segment`` every ``k``-th point starting at
+    ``m``, measures each sub-series' own mean curve length ``L_m(k)``, and
+    averages them into ``L(k)``. The returned value is the slope of
+    ``log(L(k))`` regressed against ``log(1/k)`` — the rate curve length
+    shrinks as the sampling step widens.
+    """
+    n = segment.shape[0]
+    log_inv_k = []
+    log_length = []
+    for k in range(1, k_max + 1):
+        lengths = []
+        for m in range(1, k + 1):
+            # n_max = floor((n-m)/k) is always >= 1 here: the caller only ever
+            # passes a segment of length n = window >= 2*k_max (enforced by
+            # this function's own validation), so n-m >= n-k_max >= k_max >= k.
+            n_max = (n - m) // k
+            index = (m - 1) + np.arange(n_max + 1) * k
+            curve_length = np.abs(np.diff(segment[index])).sum() * (n - 1) / (n_max * k * k)
+            lengths.append(curve_length)
+        if lengths:
+            average_length = float(np.mean(lengths))
+            if average_length > 0.0:
+                log_inv_k.append(np.log(1.0 / k))
+                log_length.append(np.log(average_length))
+    if len(log_inv_k) < 2:
+        return np.nan
+    slope, _ = np.polyfit(log_inv_k, log_length, 1)
+    return float(slope)
+
+
+@indicator(
+    category="advanced",
+    summary="Fractal dimension of price itself, from curve-length scaling (Higuchi, 1988).",
+    reference="https://doi.org/10.1016/0167-2789(88)90081-4",
+    outputs=("HFD",),
+)
+def higuchi_fractal_dimension(close: ArrayLike, window: int = 100, k_max: int = 10) -> pd.Series:
+    """Higuchi Fractal Dimension (Higuchi, 1988).
+
+    Measures the fractal dimension of the rolling window's own price path —
+    a different question from :func:`hurst_exponent`/:func:`dfa` (which
+    estimate a scaling exponent from *returns*) and from :func:`frama`'s
+    internal box-counting dimension (which compares high-low *range* at two
+    scales over a fixed short window). Higuchi's method instead works
+    directly on price, by literally re-sampling the window at ``k`` step
+    sizes for ``k = 1 .. k_max``, measuring how much each re-sampled curve's
+    total length shrinks as the step widens::
+
+        L_m(k) = (N-1)/(floor((N-m)/k)*k^2) *
+                 sum_{i=1..floor((N-m)/k)} |x(m+i*k) - x(m+(i-1)*k)|
+        L(k)   = mean over m=1..k of L_m(k)
+        HFD    = slope of log(L(k)) regressed against log(1/k), k=1..k_max
+
+    where ``N`` is *window* and ``x`` is the window's own price series
+    (0-indexed here; ``m`` ranges 1..k as in Higuchi's own paper). A curve
+    that fills a straight line has ``HFD`` near ``1``; one that fills the
+    plane as roughly as pure noise approaches ``2`` — the same reading
+    convention as any box-counting fractal dimension, :func:`frama`'s
+    included.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    window:
+        Rolling look-back, in bars. Must be >= ``2 * k_max`` so the largest
+        step size still has room for at least one full sub-series.
+    k_max:
+        Largest step size sampled. Higuchi's own paper leaves this a free
+        choice; ``10`` is the value most commonly used in the literature
+        that has followed it (electroencephalography and other biomedical
+        signal-processing applications, where this estimator is most
+        widely used). Must be an integer >= 2 (at least two step sizes are
+        needed to regress a slope at all).
+
+    Returns
+    -------
+    pandas.Series
+        Named ``HFD_{window}_{k_max}``, nominally in ``[1, 2]`` (a noisy
+        short window can push the fitted slope slightly outside that
+        range). ``NaN`` for warm-up bars and for any window producing
+        fewer than two usable ``(k, L(k))`` pairs to regress against
+        (e.g. every re-sampling degenerates to a single repeated value).
+
+    Notes
+    -----
+    Like :func:`hurst_exponent` and :func:`dfa`, this is a per-bar loop
+    over several step sizes rather than a single vectorised pass — this
+    library's usual O(1)-per-bar shape does not apply here (see
+    ``BENCHMARKS.md`` for the comparable indicators it does cover).
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> import numpy as np
+    >>> rng = np.random.default_rng(0)
+    >>> walk = 100.0 + np.cumsum(rng.normal(size=200))
+    >>> result = zeonta.higuchi_fractal_dimension(walk, window=100, k_max=10)
+    >>> bool(1.0 <= result.dropna().iloc[-1] <= 2.0)
+    True
+
+    References
+    ----------
+    https://doi.org/10.1016/0167-2789(88)90081-4
+    """
+    if isinstance(k_max, bool) or not isinstance(k_max, (int, np.integer)) or k_max < 2:
+        raise ValueError(f"'k_max' must be an integer >= 2, got {k_max!r}")
+    k_max = int(k_max)
+    window = validate_length(window, minimum=2 * k_max)
+    values = as_array(close, "close")
+    size = values.shape[0]
+
+    result = np.full(size, np.nan, dtype="float64")
+    for i in range(window, size + 1):
+        segment = values[i - window : i]
+        if not np.all(np.isfinite(segment)):
+            continue
+        result[i - 1] = _higuchi_fd_value(segment, k_max)
+
+    return wrap_series(result, common_index(close), f"HFD_{window}_{k_max}")
 
 
 def _rescaled_range(segment: np.ndarray, lag: int) -> float | None:

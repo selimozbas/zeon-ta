@@ -167,6 +167,10 @@ def test_indicators_with_a_reference() -> None:
         "kalman_filter",
         "shannon_entropy",
         "markov_regime_switching",
+        "higuchi_fractal_dimension",
+        "ffd",
+        "amihud_illiquidity",
+        "corwin_schultz_spread",
     }
     with_reference = {spec.name for spec in iter_specs() if spec.reference is not None}
     assert with_reference == expected

@@ -35,6 +35,7 @@ from .moving_averages import vwma
 
 __all__ = [
     "adl",
+    "amihud_illiquidity",
     "bop",
     "chaikin_oscillator",
     "cmf",
@@ -227,6 +228,88 @@ def adl(high: ArrayLike, low: ArrayLike, close: ArrayLike, volume: ArrayLike) ->
     result = _adl_values(high_values, low_values, close_values, volume_values)
 
     return wrap_series(result, common_index(high, low, close, volume), "ADL")
+
+
+@indicator(
+    category="volume",
+    summary="Average price impact per dollar traded: a coarse, cross-market illiquidity proxy.",
+    reference="https://doi.org/10.1016/S1386-4181(01)00024-6",
+    outputs=("AMIHUD",),
+)
+def amihud_illiquidity(close: ArrayLike, volume: ArrayLike, length: int = 21) -> pd.Series:
+    """Amihud Illiquidity Ratio (Amihud, 2002).
+
+    ``ILLIQ = mean(|R_t| / DollarVolume_t, length)``, where ``R_t`` is the
+    simple return ``(Close_t - Close_{t-1}) / Close_{t-1}`` and
+    ``DollarVolume_t = Close_t * Volume_t``. The paper's own words: "the
+    daily price response associated with one dollar of trading volume,
+    thus serving as a rough measure of price impact" — a bar that moves a
+    lot on thin dollar volume is illiquid (a small order shifted the price
+    a lot); one that moves little on heavy dollar volume is liquid.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    volume:
+        Bar volume. Must not be negative.
+    length:
+        Bars averaged over. Amihud's own cross-sectional study uses
+        one full year of daily bars per estimate; ``21`` (one trading
+        month) here is this library's own, shorter-window choice, the
+        same kind of default :func:`stddev` or :func:`rogers_satchell_volatility`
+        pick rather than something the paper itself prescribes.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``AMIHUD_{length}``. Always ``>= 0``. ``NaN`` for warm-up
+        bars, and wherever every bar in the window traded on zero dollar
+        volume (the ratio is undefined there, not zero).
+
+    Notes
+    -----
+    A bar with zero dollar volume (no trade, or a zero close) is treated as
+    an undefined ratio (``NaN``) rather than an infinite one, so it makes
+    only the windows that still contain it ``NaN`` — the same
+    self-recovering behaviour every rolling-window indicator in this
+    library has once the offending bar slides out of the window, rather
+    than a division-by-zero value corrupting the series from that point on.
+    Unlike the closely related :func:`~zeonta.vwap`/:func:`~zeonta.relative_volume`,
+    this scales with the *currency* dollar volume is denominated in and is
+    not comparable across instruments quoted in different currencies or at
+    very different price levels without further normalisation — the paper's
+    own use is cross-sectional *ranking*, not a level with an absolute
+    "liquid"/"illiquid" cutoff.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> close = [10.0, 10.5, 10.0, 10.6, 10.2, 10.8]
+    >>> volume = [1000.0, 1200.0, 900.0, 1100.0, 1000.0, 1300.0]
+    >>> round(float(zeonta.amihud_illiquidity(close, volume, length=3).iloc[-1]), 8)
+    4.35e-06
+
+    References
+    ----------
+    https://doi.org/10.1016/S1386-4181(01)00024-6
+    """
+    length = validate_length(length)
+    require_aligned_index(close=close, volume=volume)
+    close_values = as_array(close, "close")
+    volume_values = as_array(volume, "volume")
+    require_same_length(close=close_values, volume=volume_values)
+    require_non_negative(volume=volume_values)
+
+    size = close_values.shape[0]
+    returns = np.full(size, np.nan, dtype="float64")
+    with np.errstate(divide="ignore", invalid="ignore"):
+        returns[1:] = (close_values[1:] - close_values[:-1]) / close_values[:-1]
+        dollar_volume = close_values * volume_values
+        ratio = np.where(dollar_volume > 0.0, np.abs(returns) / dollar_volume, np.nan)
+
+    result = rolling_mean(ratio, length)
+    return wrap_series(result, common_index(close, volume), f"AMIHUD_{length}")
 
 
 @indicator(

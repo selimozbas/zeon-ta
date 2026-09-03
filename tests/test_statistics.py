@@ -65,6 +65,50 @@ def test_mad_is_robust_to_a_single_outlier_unlike_stddev() -> None:
     assert mad_outlier / mad_calm < std_outlier / std_calm
 
 
+def test_ffd_matches_a_hand_traced_binomial_weight_recursion() -> None:
+    """d=0.5, threshold=0.2 truncates to just two weights: w0=1, w1=-0.5
+    (w2 = -w1*(0.5-1)/2 = -0.125, whose magnitude is below the threshold and
+    so is not kept). FFD[t] is then just Close[t] - 0.5*Close[t-1]."""
+    closes = [100.0, 101.0, 99.0, 102.0]
+    result = zeonta.ffd(closes, d=0.5, threshold=0.2)
+    expected = [np.nan, 101.0 - 0.5 * 100.0, 99.0 - 0.5 * 101.0, 102.0 - 0.5 * 99.0]
+    np.testing.assert_allclose(result.to_numpy(), expected)
+
+
+def test_ffd_preserves_more_correlation_than_plain_differencing() -> None:
+    """The whole point of fractional (vs. integer) differencing: on a
+    long-memory (random-walk) series, FFD's output should still track the
+    original level far more closely than a plain first difference does."""
+    rng = np.random.default_rng(2)
+    raw = 100.0 + np.cumsum(rng.normal(size=2000))
+
+    ffd_values = zeonta.ffd(raw, d=0.4, threshold=1e-4).to_numpy()
+    diff_values = np.diff(raw, prepend=np.nan)
+
+    valid = ~np.isnan(ffd_values)
+    corr_ffd = np.corrcoef(raw[valid], ffd_values[valid])[0, 1]
+    corr_diff = np.corrcoef(raw[valid], diff_values[valid])[0, 1]
+    assert corr_ffd > corr_diff
+
+
+def test_ffd_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.ffd([1.0, 2.0, 3.0])  # default threshold needs far more than 3 bars
+    assert len(result) == 3
+    assert result.isna().all()
+
+
+@pytest.mark.parametrize("bad_d", [0.0, 1.0, -0.5, 1.5])
+def test_ffd_rejects_d_outside_open_unit_interval(bad_d: float) -> None:
+    with pytest.raises(ValueError, match="'d'"):
+        zeonta.ffd([1.0, 2.0, 3.0], d=bad_d)
+
+
+@pytest.mark.parametrize("bad_threshold", [0.0, 1.0, -0.1, 1.1])
+def test_ffd_rejects_threshold_outside_open_unit_interval(bad_threshold: float) -> None:
+    with pytest.raises(ValueError, match="'threshold'"):
+        zeonta.ffd([1.0, 2.0, 3.0], threshold=bad_threshold)
+
+
 def test_log_return_matches_the_hand_computed_value() -> None:
     result = zeonta.log_return([100.0, 110.0, 121.0], length=1)
     np.testing.assert_allclose(result.dropna().to_numpy(), [np.log(1.1), np.log(1.1)])

@@ -91,6 +91,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | Indicator | Summary |
 | --- | --- |
 | [`adl`](indicators/adl.md) | Accumulation/Distribution Line (ADL) |
+| [`amihud_illiquidity`](indicators/amihud_illiquidity.md) | Amihud Illiquidity Ratio |
 | [`bop`](indicators/bop.md) | Balance of Power (BOP) |
 | [`chaikin_oscillator`](indicators/chaikin_oscillator.md) | Chaikin Oscillator |
 | [`cmf`](indicators/cmf.md) | Chaikin Money Flow (CMF) |
@@ -113,6 +114,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`atr`](indicators/atr.md) | Average True Range (ATR) |
 | [`bbands`](indicators/bbands.md) | Bollinger Bands |
 | [`chaikin_volatility`](indicators/chaikin_volatility.md) | Chaikin Volatility (CVI) |
+| [`corwin_schultz_spread`](indicators/corwin_schultz_spread.md) | Corwin-Schultz Spread Estimator |
 | [`garman_klass_volatility`](indicators/garman_klass_volatility.md) | Garman-Klass Volatility |
 | [`keltner`](indicators/keltner.md) | Keltner Channels |
 | [`mass_index`](indicators/mass_index.md) | Mass Index |
@@ -153,6 +155,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`dfa`](indicators/dfa.md) | Detrended Fluctuation Analysis (DFA) |
 | [`divergence`](indicators/divergence.md) | Divergences |
 | [`fib_retracement`](indicators/fib_retracement.md) | Fibonacci Retracement |
+| [`higuchi_fractal_dimension`](indicators/higuchi_fractal_dimension.md) | Higuchi Fractal Dimension |
 | [`hurst_exponent`](indicators/hurst_exponent.md) | Hurst Exponent (Rescaled Range Analysis) |
 | [`markov_regime_switching`](indicators/markov_regime_switching.md) | Markov Regime-Switching Probability |
 | [`ou_half_life`](indicators/ou_half_life.md) | Ornstein-Uhlenbeck Half-Life of Mean Reversion |
@@ -168,6 +171,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | --- | --- |
 | [`cumulative_return`](indicators/cumulative_return.md) | Cumulative Return |
 | [`drawdown`](indicators/drawdown.md) | Drawdown |
+| [`ffd`](indicators/ffd.md) | Fixed-Width Window Fractional Differentiation |
 | [`kurtosis`](indicators/kurtosis.md) | Kurtosis |
 | [`log_return`](indicators/log_return.md) | Logarithmic Return |
 | [`mad`](indicators/mad.md) | Median Absolute Deviation (MAD) |

@@ -8,18 +8,21 @@ from numpy.lib.stride_tricks import sliding_window_view
 
 from ._core import (
     ArrayLike,
+    Number,
     as_array,
     common_index,
     indicator,
     rolling_mean,
     rolling_std,
     validate_length,
+    validate_multiplier,
     wrap_series,
 )
 
 __all__ = [
     "cumulative_return",
     "drawdown",
+    "ffd",
     "kurtosis",
     "log_return",
     "mad",
@@ -345,6 +348,129 @@ def log_return(close: ArrayLike, length: int = 1) -> pd.Series:
         with np.errstate(divide="ignore", invalid="ignore"):
             result[length:] = np.log(values[length:] / values[:-length])
     return wrap_series(result, common_index(close), f"LOGRET_{length}")
+
+
+def _ffd_weights(d: float, threshold: float) -> np.ndarray:
+    """Binomial-series weights for fixed-width fractional differentiation.
+
+    ``w_0 = 1``, ``w_k = -w_{k-1} * (d - k + 1) / k`` (the coefficients of
+    ``(1-B)^d`` expanded as a binomial series in the backshift operator
+    ``B``), generated until the newest weight's magnitude drops below
+    *threshold* — the fixed truncation window this indicator is named for.
+    """
+    weights = [1.0]
+    k = 1
+    while True:
+        next_weight = -weights[-1] * (d - k + 1) / k
+        if abs(next_weight) < threshold:
+            break
+        weights.append(next_weight)
+        k += 1
+    return np.array(weights, dtype="float64")
+
+
+@indicator(
+    category="statistics",
+    summary="Fractionally differenced price with a fixed-width weight window (Lopez de Prado).",
+    reference="https://doi.org/10.1002/9781119482086",
+    outputs=("FFD",),
+)
+def ffd(close: ArrayLike, d: Number = 0.5, threshold: Number = 1e-3) -> pd.Series:
+    """Fixed-width window Fractional Differentiation (Lopez de Prado, 2018).
+
+    Plain differencing (:func:`log_return`'s ``length=1`` case, or a plain
+    ``Close.diff()``) removes *all* memory of a series' own level to force
+    stationarity — order ``d=1``. This generalizes differencing to any
+    fractional order ``0 < d < 1`` via the binomial series expansion of
+    ``(1-B)^d`` (``B`` the backshift/lag operator)::
+
+        w_0 = 1
+        w_k = -w_{k-1} * (d - k + 1) / k,  k = 1, 2, ...
+
+    generating weights until ``|w_k| < threshold`` — the *fixed-width*
+    truncation this indicator is named for, chapter 5 of *Advances in
+    Financial Machine Learning*'s alternative to expanding-window fractional
+    differentiation, which instead reweights its *entire* history at every
+    bar and is not causal in the same simple convolution sense. With the
+    weights truncated to a fixed count ``l*`` (one shy of the first index
+    whose weight falls below *threshold*), the output at each bar is::
+
+        FFD[t] = sum(w_k * Close[t-k], k = 0 .. l*)
+
+    the same fixed set of weights applied at every bar. A ``d`` close to
+    ``0`` barely differences the series at all (it stays close to
+    ``Close`` itself, non-stationary); ``d`` close to ``1`` approaches
+    plain first differencing (stationary, but memory-free). The idea is
+    to find the *smallest* ``d`` that achieves stationarity, keeping as
+    much of the original series' memory as the transform allows — this
+    function computes the transform for a chosen ``d``, not that search.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    d:
+        Fractional differencing order. Must satisfy ``0 < d < 1``; this
+        function does not estimate an optimal ``d`` for you (typically
+        found externally via an ADF stationarity test on a grid of ``d``
+        values, per the book's own worked example).
+    threshold:
+        Weight-loss threshold controlling how many weights are kept: a
+        smaller value keeps a longer (and slower) weight window with less
+        approximation error relative to the full, untruncated expansion.
+        Must satisfy ``0 < threshold < 1``. The book's own default (also
+        used by this method's independent open-source replications, e.g.
+        ``mlfinlab``'s ``frac_diff_ffd``) is ``1e-5``, but that keeps
+        several *hundred* weights even at ``d=0.5`` — a window this
+        library's other rolling indicators never ask for. ``1e-3`` (this
+        function's own default, not the book's) keeps the same weight
+        *formula* and truncation *rule* while needing a far shorter, more
+        usable window; pass ``1e-5`` yourself to match the book's own
+        examples exactly.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``FFD_{d}_{threshold}``. ``NaN`` for the first ``l*`` bars,
+        where ``l*`` (one less than the weight count) is the width of the
+        fixed window every later bar's estimate is convolved over.
+
+    Notes
+    -----
+    Every output bar is a fixed linear combination of a *fixed* number of
+    trailing closes, so a single non-finite bar only poisons the bars whose
+    own window still contains it — the same self-recovering behaviour every
+    other rolling-window indicator in this library has, with no special
+    casing needed.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> closes = [100.0, 101.0, 99.0, 102.0, 98.0, 103.0, 97.0, 104.0]
+    >>> round(float(zeonta.ffd(closes, d=0.5, threshold=0.2).iloc[-1]), 6)
+    55.5
+
+    References
+    ----------
+    https://doi.org/10.1002/9781119482086
+    """
+    d = validate_multiplier(d, "d", minimum=0.0)
+    if d >= 1.0:
+        raise ValueError(f"'d' must satisfy 0 < d < 1, got {d}")
+    threshold = validate_multiplier(threshold, "threshold", minimum=0.0)
+    if threshold >= 1.0:
+        raise ValueError(f"'threshold' must satisfy 0 < threshold < 1, got {threshold}")
+
+    values = as_array(close, "close")
+    size = values.shape[0]
+    weights = _ffd_weights(float(d), float(threshold))
+    width = weights.shape[0] - 1  # l*: bars looked back beyond the current one
+
+    result = np.full(size, np.nan, dtype="float64")
+    if size > width:
+        windows = sliding_window_view(values, width + 1)
+        result[width:] = windows @ weights[::-1]
+    return wrap_series(result, common_index(close), f"FFD_{d}_{threshold}")
 
 
 @indicator(

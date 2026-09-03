@@ -14,18 +14,22 @@ from ._core import (
     indicator,
     rolling_mean,
     rolling_std,
+    rolling_sum,
     validate_length,
     validate_multiplier,
     wrap_series,
 )
 
 __all__ = [
+    "cdar",
     "cumulative_return",
     "drawdown",
     "ffd",
     "kurtosis",
     "log_return",
     "mad",
+    "realized_kurtosis",
+    "realized_skewness",
     "skewness",
     "stddev",
     "variance",
@@ -562,3 +566,238 @@ def drawdown(close: ArrayLike) -> pd.Series:
         result = np.where(running_peak != 0.0, (values - running_peak) / running_peak * 100.0, 0.0)
     result = np.where(np.isfinite(running_peak), result, np.nan)
     return wrap_series(result, common_index(close), "DD")
+
+
+@indicator(
+    category="statistics",
+    summary="Realized skewness of returns, normalized by realized volatility (Amaya et al., 2015).",
+    reference="https://doi.org/10.1016/j.jfineco.2015.02.009",
+    outputs=("RSKEW",),
+)
+def realized_skewness(close: ArrayLike, length: int = 20) -> pd.Series:
+    r"""Realized Skewness (Amaya, Christoffersen, Jacobs & Vasquez, 2015).
+
+    A different construction from :func:`skewness`: that function computes
+    the adjusted Fisher-Pearson moment ratio directly on rolling *price*
+    levels; this one follows Amaya et al.'s own normalization, built from
+    the window's *log returns* rescaled by its own realized volatility
+    rather than by a bias-adjustment factor::
+
+        RVar   = sum(r_i^2, i = 1..n)
+        RSkew  = sqrt(n) * sum(r_i^3, i = 1..n) / RVar^1.5
+
+    over a window of ``n`` log returns ``r_i``. The paper's own setting
+    computes this from 5-minute intraday returns aggregated into a daily,
+    then weekly, statistic; this function applies the identical formula to
+    whatever bar frequency ``close`` is sampled at, generalizing the
+    *estimator* rather than the paper's own specific data frequency — the
+    same "same formula, this library's own bar-based generalization"
+    relationship :func:`~zeonta.bipower_variation` and
+    :func:`~zeonta.realized_semivariance` already have with their own
+    sources.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Number of log returns per estimate (one more bar than this is
+        needed). Must be >= 2.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``RSKEW_{length}``. Negative means the window's return
+        distribution has a fatter left (down-move) tail than right,
+        positive the opposite — the same sign convention as
+        :func:`skewness`, on a differently normalized quantity. ``NaN`` for
+        warm-up bars and wherever the window's realized variance is exactly
+        ``0`` (a perfectly flat window, undefined ratio).
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> close = [100.0, 101.0, 99.0, 102.0, 98.0, 103.0]
+    >>> round(float(zeonta.realized_skewness(close, length=5).iloc[-1]), 6)
+    0.435825
+
+    References
+    ----------
+    Amaya, D., Christoffersen, P., Jacobs, K., Vasquez, A. (2015). "Does
+    Realized Skewness Predict the Cross-Section of Equity Returns?".
+    Journal of Financial Economics 118(1), 135-167.
+    https://doi.org/10.1016/j.jfineco.2015.02.009
+    """
+    length = validate_length(length, minimum=2)
+    values = as_array(close, "close")
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        log_returns = np.diff(np.log(values))
+    padded_sq = np.concatenate(([np.nan], log_returns**2))
+    padded_cubed = np.concatenate(([np.nan], log_returns**3))
+
+    realized_variance = rolling_sum(padded_sq, length)
+    sum_cubed = rolling_sum(padded_cubed, length)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = np.where(
+            realized_variance > 0.0,
+            np.sqrt(length) * sum_cubed / realized_variance**1.5,
+            np.nan,
+        )
+    result = np.where(np.isnan(realized_variance), np.nan, result)
+
+    return wrap_series(result, common_index(close), f"RSKEW_{length}")
+
+
+@indicator(
+    category="statistics",
+    summary="Realized kurtosis of returns, normalized by realized volatility (Amaya et al., 2015).",
+    reference="https://doi.org/10.1016/j.jfineco.2015.02.009",
+    outputs=("RKURT",),
+)
+def realized_kurtosis(close: ArrayLike, length: int = 20) -> pd.Series:
+    r"""Realized Kurtosis (Amaya, Christoffersen, Jacobs & Vasquez, 2015).
+
+    :func:`realized_skewness`'s companion statistic, from the same paper:
+    the window's 4th-power log returns rescaled by its own squared realized
+    volatility rather than :func:`kurtosis`'s bias-adjustment factor applied
+    to price levels::
+
+        RVar   = sum(r_i^2, i = 1..n)
+        RKurt  = n * sum(r_i^4, i = 1..n) / RVar^2
+
+    over a window of ``n`` log returns ``r_i``. See :func:`realized_skewness`
+    for how this differs from :func:`kurtosis` and how it generalizes the
+    paper's own intraday construction to an arbitrary bar frequency.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Number of log returns per estimate (one more bar than this is
+        needed). Must be >= 2.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``RKURT_{length}``. Always ``>= 0``; larger means fatter
+        tails relative to the window's own realized volatility (unlike
+        :func:`kurtosis`, this is not *excess* kurtosis — there is no ``-3``
+        term, so a normal-like return process reads near the fourth
+        standardized moment of ``3``, not near ``0``). ``NaN`` for warm-up
+        bars and wherever the window's realized variance is exactly ``0``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> close = [100.0, 101.0, 99.0, 102.0, 98.0, 103.0]
+    >>> round(float(zeonta.realized_kurtosis(close, length=5).iloc[-1]), 6)
+    1.615609
+
+    References
+    ----------
+    Amaya, D., Christoffersen, P., Jacobs, K., Vasquez, A. (2015). "Does
+    Realized Skewness Predict the Cross-Section of Equity Returns?".
+    Journal of Financial Economics 118(1), 135-167.
+    https://doi.org/10.1016/j.jfineco.2015.02.009
+    """
+    length = validate_length(length, minimum=2)
+    values = as_array(close, "close")
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        log_returns = np.diff(np.log(values))
+    padded_sq = np.concatenate(([np.nan], log_returns**2))
+    padded_quartic = np.concatenate(([np.nan], log_returns**4))
+
+    realized_variance = rolling_sum(padded_sq, length)
+    sum_quartic = rolling_sum(padded_quartic, length)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = np.where(
+            realized_variance > 0.0,
+            length * sum_quartic / realized_variance**2,
+            np.nan,
+        )
+    result = np.where(np.isnan(realized_variance), np.nan, result)
+
+    return wrap_series(result, common_index(close), f"RKURT_{length}")
+
+
+@indicator(
+    category="statistics",
+    summary="Conditional Drawdown at Risk: average of the worst drawdowns in a rolling window.",
+    reference="https://doi.org/10.21314/JCF.2005.121",
+    outputs=("CDAR",),
+)
+def cdar(close: ArrayLike, length: int = 100, alpha: Number = 0.95) -> pd.Series:
+    """Conditional Drawdown at Risk (Chekhlov, Uryasev & Zabarankin, 2005).
+
+    The CVaR/Expected-Shortfall construction applied to a drawdown series
+    instead of a return series, reusing :func:`drawdown` rather than
+    recomputing the running peak. Over a rolling window of ``length``
+    drawdown *magnitudes* (``-drawdown``, so every value is ``>= 0``), CDaR
+    at confidence ``alpha`` is the mean of the worst ``(1 - alpha)``
+    fraction of that window's drawdowns::
+
+        k     = ceil((1 - alpha) * length)
+        CDaR  = mean of the k largest drawdown magnitudes in the window
+
+    The paper's own definition is a Rockafellar-Uryasev-style optimization
+    (``min_zeta { zeta + mean[(D - zeta)_+] / (1 - alpha) }``), but its own
+    Theorem 1 proves the optimal ``zeta`` equals the window's own
+    ``alpha``-quantile drawdown (the "Drawdown at Risk", DaR) and that at
+    that optimum the objective reduces exactly to the worst-fraction average
+    above — this function implements that closed-form equivalent directly,
+    not an independent approximation.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Rolling window, in bars, over the drawdown series. Must be >= 2.
+    alpha:
+        Confidence level. Must satisfy ``0 < alpha < 1``. ``0.95`` (the
+        default) means "the average of the worst 5% of drawdowns in the
+        window".
+
+    Returns
+    -------
+    pandas.Series
+        Named ``CDAR_{length}_{alpha}``, reported as a positive percentage
+        (like :func:`~zeonta.ulcer_index`, not signed like
+        :func:`drawdown` itself) — ``8.0`` reads as "the expected worst-case
+        drawdown magnitude over this window is about 8%". ``NaN`` for
+        warm-up bars and for any window containing a non-finite drawdown.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> close = [100.0, 90.0, 80.0, 70.0, 60.0]
+    >>> round(float(zeonta.cdar(close, length=5, alpha=0.6).iloc[-1]), 6)
+    35.0
+
+    References
+    ----------
+    Chekhlov, A., Uryasev, S., Zabarankin, M. (2005). "Drawdown Measure in
+    Portfolio Optimization". International Journal of Theoretical and
+    Applied Finance 8(1), 13-58. https://doi.org/10.21314/JCF.2005.121
+    """
+    length = validate_length(length, minimum=2)
+    alpha = validate_multiplier(alpha, "alpha")
+    if alpha >= 1.0:
+        raise ValueError(f"'alpha' must satisfy 0 < alpha < 1, got {alpha}")
+
+    magnitude = -drawdown(close).to_numpy()
+    size = magnitude.shape[0]
+    k = max(1, int(np.ceil((1.0 - alpha) * length)))
+
+    result = np.full(size, np.nan, dtype="float64")
+    if size >= length:
+        windows = sliding_window_view(magnitude, length)
+        finite = np.all(np.isfinite(windows), axis=1)
+        sorted_desc = -np.sort(-windows, axis=1)
+        top_k_mean = sorted_desc[:, :k].mean(axis=1)
+        result[length - 1 :] = np.where(finite, top_k_mean, np.nan)
+
+    return wrap_series(result, common_index(close), f"CDAR_{length}_{alpha}")

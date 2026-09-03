@@ -830,3 +830,105 @@ def test_markov_regime_switching_stays_within_zero_to_one() -> None:
     prices = 100.0 * np.cumprod(1 + np.concatenate([quiet_returns, turbulent_returns]))
     result = zeonta.markov_regime_switching(prices, window=50).dropna()
     assert ((result >= 0.0) & (result <= 1.0)).all()
+
+
+def test_cusum_filter_matches_a_hand_traced_recursion() -> None:
+    """log returns: ln(101/100)=0.00995, ln(102/101)=0.00985, ln(103/102)=0.00976,
+    ln(90/103)=-0.13353.
+
+    threshold=0.01:
+    t1: sPos=0.00995 (<=0.01), sNeg=0 -> 0.0
+    t2: sPos=0.00995+0.00985=0.01980 (>0.01) -> event +1.0, sPos reset to 0
+    t3: sPos=0.00976 (<=0.01), sNeg=0 -> 0.0
+    t4: sNeg=0-0.13353=-0.13353 (< -0.01) -> event -1.0, sNeg reset to 0
+    """
+    close = [100.0, 101.0, 102.0, 103.0, 90.0]
+    result = zeonta.cusum_filter(close, threshold=0.01)
+    assert result.iloc[1:].tolist() == [0.0, 1.0, 0.0, -1.0]
+    assert np.isnan(result.iloc[0])
+
+
+def test_cusum_filter_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.cusum_filter([1.0, 2.0], threshold=0.05)
+    assert len(result) == 2
+    assert np.isnan(result.iloc[0])
+
+
+def test_cusum_filter_rejects_non_positive_threshold() -> None:
+    with pytest.raises(ValueError, match="'threshold' must be > 0"):
+        zeonta.cusum_filter([1.0, 2.0, 3.0], threshold=0.0)
+
+
+def test_cusum_filter_never_fires_below_a_high_threshold() -> None:
+    rng = np.random.default_rng(0)
+    prices = 100.0 * np.cumprod(1.0 + rng.normal(scale=0.001, size=100))
+    result = zeonta.cusum_filter(prices, threshold=10.0)
+    assert (result.dropna() == 0.0).all()
+
+
+def test_cusum_filter_gap_does_not_poison_later_bars() -> None:
+    close = [100.0, -1.0, 101.0, 200.0]
+    result = zeonta.cusum_filter(close, threshold=0.01)
+    assert np.isnan(result.iloc[1])  # log(-1/100) undefined
+    assert not np.isnan(result.iloc[3])
+
+
+def test_multiscale_entropy_scale_one_matches_sample_entropy() -> None:
+    rng = np.random.default_rng(1)
+    prices = 100.0 * np.cumprod(1.0 + rng.normal(scale=0.01, size=150))
+    mse = zeonta.multiscale_entropy(prices, window=100, scales=2)
+    sampen = zeonta.sample_entropy(prices, window=100)
+    pd.testing.assert_series_equal(mse["MSE_100_2_0.2_1"], sampen, check_names=False)
+
+
+def test_multiscale_entropy_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.multiscale_entropy([1.0, 2.0, 3.0], window=100, scales=2)
+    assert len(result) == 3
+    assert result.isna().all().all()
+
+
+def test_multiscale_entropy_rejects_scales_below_one() -> None:
+    with pytest.raises(ValueError, match="'scales' must be an integer >= 1"):
+        zeonta.multiscale_entropy(list(range(1, 30)), window=20, scales=0)
+
+
+def test_multiscale_entropy_rejects_m_below_one() -> None:
+    with pytest.raises(ValueError, match="'m' must be an integer >= 1"):
+        zeonta.multiscale_entropy(list(range(1, 30)), window=20, m=0)
+
+
+def test_multiscale_entropy_column_count_matches_scales() -> None:
+    result = zeonta.multiscale_entropy(list(range(1, 130)), window=100, scales=4)
+    assert len(result.columns) == 4
+
+
+def test_kl_divergence_is_near_zero_when_recent_matches_history() -> None:
+    rng = np.random.default_rng(2)
+    prices = 100.0 * np.cumprod(1.0 + rng.normal(scale=0.01, size=150))
+    result = zeonta.kl_divergence(prices, short=20, long=100, bins=5)
+    assert (result.dropna() >= 0.0).all()
+
+
+def test_kl_divergence_grows_when_recent_window_diverges_from_history() -> None:
+    rng = np.random.default_rng(0)
+    calm = rng.normal(scale=0.005, size=100)
+    turbulent = rng.normal(scale=0.05, size=20)
+    prices = 100.0 * np.cumprod(1.0 + np.concatenate([calm, turbulent]))
+    result = zeonta.kl_divergence(prices, short=20, long=100, bins=5)
+    assert result.iloc[-1] > 0.0
+
+
+def test_kl_divergence_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.kl_divergence([1.0, 2.0, 3.0], short=20, long=100)
+    assert len(result) == 3
+    assert result.isna().all()
+
+
+def test_kl_divergence_rejects_short_not_less_than_long() -> None:
+    with pytest.raises(ValueError, match="'long' must be >= "):
+        zeonta.kl_divergence(list(range(1, 30)), short=20, long=20)
+
+
+def test_kl_divergence_rejects_bins_below_two() -> None:
+    with pytest.raises(ValueError, match="'bins' must be an integer >= 2"):
+        zeonta.kl_divergence(list(range(1, 130)), short=20, long=100, bins=1)

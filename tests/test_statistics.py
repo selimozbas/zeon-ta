@@ -171,3 +171,112 @@ def test_drawdown_survives_a_gap_by_holding_the_last_real_peak() -> None:
     assert np.isnan(result.iloc[2])
     np.testing.assert_allclose(result.iloc[3], (8.0 - 12.0) / 12.0 * 100.0)
     np.testing.assert_allclose(result.iloc[4], 0.0)
+
+
+def test_realized_skewness_matches_a_hand_computed_value() -> None:
+    close = [100.0, 101.0, 99.0, 102.0, 98.0, 103.0]
+    result = zeonta.realized_skewness(close, length=5)
+
+    log_returns = np.diff(np.log(close))
+    n = 5
+    window = log_returns[-n:]
+    rvar = float(np.sum(window**2))
+    expected = np.sqrt(n) * float(np.sum(window**3)) / rvar**1.5
+
+    np.testing.assert_allclose(result.iloc[-1], expected)
+    assert result.iloc[:-1].isna().all()
+
+
+def test_realized_kurtosis_matches_a_hand_computed_value() -> None:
+    close = [100.0, 101.0, 99.0, 102.0, 98.0, 103.0]
+    result = zeonta.realized_kurtosis(close, length=5)
+
+    log_returns = np.diff(np.log(close))
+    n = 5
+    window = log_returns[-n:]
+    rvar = float(np.sum(window**2))
+    expected = n * float(np.sum(window**4)) / rvar**2
+
+    np.testing.assert_allclose(result.iloc[-1], expected)
+    assert result.iloc[:-1].isna().all()
+
+
+def test_realized_kurtosis_is_always_non_negative(ohlcv: pd.DataFrame) -> None:
+    result = zeonta.realized_kurtosis(ohlcv["close"], length=20)
+    assert (result.dropna() >= 0.0).all()
+
+
+def test_realized_skewness_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.realized_skewness([1.0, 2.0], length=20)
+    assert len(result) == 2
+    assert result.isna().all()
+
+
+def test_realized_skewness_rejects_length_below_two() -> None:
+    with pytest.raises(ValueError, match="'length' must be >= 2"):
+        zeonta.realized_skewness([1.0, 2.0, 3.0], length=1)
+
+
+def test_realized_kurtosis_rejects_length_below_two() -> None:
+    with pytest.raises(ValueError, match="'length' must be >= 2"):
+        zeonta.realized_kurtosis([1.0, 2.0, 3.0], length=1)
+
+
+def test_realized_skewness_and_kurtosis_negative_on_an_injected_crash() -> None:
+    """Amaya et al.'s own cross-sectional result is about *future* returns
+    following *lagged* realized skewness/kurtosis, not a same-window
+    identity — the direction actually guaranteed by the formula itself is
+    that a window's own realized skewness has the same *sign* as its own
+    sum of cubed returns (since RVar^1.5 > 0), and its realized kurtosis is
+    always non-negative. A single large negative return within an
+    otherwise calm window makes the cubed-return sum negative, so realized
+    skewness on that window must come out negative."""
+    rng = np.random.default_rng(4)
+    returns = rng.normal(scale=0.005, size=30)
+    returns[15] = -0.1  # a single large crash return
+    close = 100.0 * np.cumprod(1.0 + returns)
+    close = np.concatenate(([100.0], close))
+
+    result = zeonta.realized_skewness(close, length=30).iloc[-1]
+    assert result < 0.0
+
+
+def test_cdar_matches_a_hand_computed_worst_fraction_average() -> None:
+    close = [100.0, 90.0, 80.0, 70.0, 60.0]
+    result = zeonta.cdar(close, length=5, alpha=0.6)
+    # drawdown magnitudes are [0, 10, 20, 30, 40]; k=ceil(0.4*5)=2;
+    # mean of the two worst (40, 30) = 35.0
+    np.testing.assert_allclose(result.iloc[-1], 35.0)
+    assert result.iloc[:-1].isna().all()
+
+
+def test_cdar_is_between_average_and_maximum_drawdown() -> None:
+    """CDaR contains the average drawdown (alpha -> 0) and the maximal
+    drawdown (alpha -> 1) as its own limiting cases (Chekhlov et al.,
+    2005)."""
+    rng = np.random.default_rng(5)
+    close = 100.0 * np.cumprod(1.0 + rng.normal(scale=0.01, size=100))
+    magnitude = -zeonta.drawdown(close).to_numpy()
+    window = magnitude[-50:]
+
+    mid_cdar = zeonta.cdar(close, length=50, alpha=0.9).iloc[-1]
+    average = window.mean()
+    maximum = window.max()
+
+    assert average <= mid_cdar <= maximum
+
+
+def test_cdar_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.cdar([1.0, 2.0], length=100)
+    assert len(result) == 2
+    assert result.isna().all()
+
+
+def test_cdar_rejects_length_below_two() -> None:
+    with pytest.raises(ValueError, match="'length' must be >= 2"):
+        zeonta.cdar([1.0, 2.0, 3.0], length=1)
+
+
+def test_cdar_rejects_alpha_outside_zero_one() -> None:
+    with pytest.raises(ValueError, match="'alpha' must satisfy 0 < alpha < 1"):
+        zeonta.cdar([1.0, 2.0, 3.0], length=2, alpha=1.0)

@@ -8,6 +8,47 @@ that covers and what counts as a patch, minor, or major change.
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-09-03
+
+### Added
+
+- **`cusum_filter(close, threshold)`**: Lopez de Prado's (2018, *Advances in
+  Financial Machine Learning*, section 2.5.2.1) Symmetric CUSUM Filter,
+  reporting the discrete up/down/no-event flag at every bar rather than the
+  book's own use of the same recursion to drop bars — the shape that fits
+  this library's aligned-per-bar contract.
+- **`multiscale_entropy(close, window, scales, m, r)`**: Costa, Goldberger &
+  Peng's (2002) Multiscale Entropy, coarse-graining the rolling window at
+  several scale factors and reusing `sample_entropy`'s own template-matching
+  machinery at each one rather than reimplementing it.
+- **`kl_divergence(close, short, long, bins)`**: Kullback-Leibler divergence
+  (Kullback & Leibler, 1951) between a short and a long rolling window's own
+  return distributions, reusing `shannon_entropy`'s equal-width-bucket
+  binning convention.
+- **`realized_skewness(close, length)`** / **`realized_kurtosis(close, length)`**:
+  Amaya, Christoffersen, Jacobs & Vasquez's (2015, *Journal of Financial
+  Economics* 118(1), 135-167) realized higher moments — a window's cubed/
+  quartic log returns normalized by its own realized volatility, distinct
+  from the existing `skewness()`/`kurtosis()` (which compute the adjusted
+  Fisher-Pearson moment directly on price levels).
+- **`cdar(close, length, alpha)`**: Conditional Drawdown at Risk (Chekhlov,
+  Uryasev & Zabarankin, 2005, *International Journal of Theoretical and
+  Applied Finance* 8(1), 13-58), the CVaR construction applied to
+  `drawdown()`'s own series — the mean of the worst `(1-alpha)` fraction of
+  drawdowns in a rolling window, the paper's own proven closed-form
+  equivalent of its Rockafellar-Uryasev optimization definition.
+
+This research pass also investigated, and declined, eleven other
+candidates — added to `ROADMAP.md`'s declined-indicator list with the
+specific reason each failed this project's formula-verification bar:
+Bai-Perron multiple structural break test, the Zivot-Andrews structural-
+break unit root test, Hasbrouck's Bayesian Gibbs estimate of Roll's model,
+the Fong-Holden-Trzcinka (FHT) spread estimator, the Florackis-Gregoriou-
+Kostakis (FGK) illiquidity ratio, Fuzzy Entropy, the Horizontal Visibility
+Graph tail exponent, Variational Mode Decomposition, Ehlers' Autocorrelation
+Periodogram, the Synchrosqueezed Wavelet Transform, and the Meilijson
+volatility estimator.
+
 ## [0.3.4] - 2026-09-03
 
 ### Added

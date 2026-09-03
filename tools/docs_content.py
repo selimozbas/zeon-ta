@@ -3859,4 +3859,183 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.multifractal_dfa(df["close"]).tail(3),
         ],
     },
+    "cusum_filter": {
+        "title": "CUSUM Filter",
+        "formula": (
+            "S+[t] = max(0, S+[t-1] + r[t]); S-[t] = min(0, S-[t-1] + r[t]); "
+            "event = -1 and S- reset to 0 if S-[t] < -threshold; "
+            "event = +1 and S+ reset to 0 if S+[t] > threshold; else event = 0"
+        ),
+        "about": (
+            "Lopez de Prado's Symmetric CUSUM Filter tracks two running sums of log returns, "
+            "one for upward drift and one for downward, each reset to zero the moment it "
+            "crosses a fixed threshold. In the book it is used to sample bars for a downstream "
+            "ML pipeline — only the bars where an event fires are kept. This library's "
+            "aligned-per-bar contract has no place for dropping bars, so this function reports "
+            "the discrete event flag itself at every bar instead, the same flag-column shape "
+            "divergence already uses for events that only fire on some bars."
+        ),
+        "reading": (
+            "A +1 means enough cumulative upward drift has built up since the last reset to "
+            "cross threshold; -1 the same for downward drift; 0 means neither running sum has "
+            "crossed yet. Because the running sums only reset on a crossing, the series will "
+            "not fire repeatedly while hovering near the threshold — it takes a fresh, full run "
+            "of drift to trigger the next event."
+        ),
+        "pitfalls": (
+            "This is a genuinely stateful, whole-series recursion, not a fixed rolling window — "
+            "like drawdown's running peak, prepending more history changes every later flag, "
+            "since the running sums start accumulating from a different point. threshold is a "
+            "fixed level in log-return units, not a multiple of a rolling volatility estimate; "
+            "picking one that suits the instrument's typical volatility is left to the caller."
+        ),
+        "example": [
+            lambda df: zeonta.cusum_filter(df["close"]).tail(3),
+        ],
+    },
+    "multiscale_entropy": {
+        "title": "Multiscale Entropy",
+        "formula": (
+            "y_j^(tau) = mean of log returns [(j-1)*tau+1 .. j*tau], j = 1..floor(window/tau); "
+            "MSE(tau) = sample_entropy's own SampEn computed on y^(tau), for tau = 1..scales"
+        ),
+        "about": (
+            "sample_entropy measures unpredictability at one, single time scale. Costa, "
+            "Goldberger & Peng (2002) repeat that same measurement after coarse-graining the "
+            "window at several scale factors — replacing every non-overlapping run of tau "
+            "consecutive log returns with their own mean — and reuse sample_entropy's own "
+            "template-matching machinery directly on each coarse-grained series rather than "
+            "reimplementing it. Scale 1 (no coarse-graining) is exactly sample_entropy on the "
+            "same window."
+        ),
+        "reading": (
+            "A series with structure spread across multiple timescales keeps a roughly flat or "
+            "rising entropy profile across scales; a series that is only complex at the finest "
+            "scale (e.g. close to pure noise) has its entropy collapse quickly as tau grows, "
+            "since averaging noise into blocks removes most of what made it unpredictable bar "
+            "to bar. Comparing the whole profile, not just one scale, is the point of the method."
+        ),
+        "pitfalls": (
+            "The tolerance r*std is fixed at scale 1's own standard deviation and reused, "
+            "unchanged, at every coarser scale — the convention Costa et al.'s own papers and "
+            "the PhysioNet MSE toolkit use, not a per-scale recomputation some later papers use "
+            "instead. Same O(window^2) per-bar, per-scale cost as sample_entropy, now repeated "
+            "once per scale."
+        ),
+        "example": [
+            lambda df: zeonta.multiscale_entropy(df["close"], scales=3).tail(3),
+        ],
+    },
+    "kl_divergence": {
+        "title": "Kullback-Leibler Divergence",
+        "formula": (
+            "edges = bins equal-width buckets spanning the long window's own min..max; "
+            "P_i = short window's fraction in bucket i; Q_i = long window's fraction in bucket i; "
+            "KL = sum(P_i * ln(P_i / Q_i), over buckets with P_i > 0)"
+        ),
+        "about": (
+            "Reuses shannon_entropy's own equal-width-bucket binning convention, applied to two "
+            "nested windows ending on the same bar: a short, recent one and a long, older one "
+            "that contains it. Because the short window is always the long window's own most "
+            "recent trailing subset, its values are automatically bounded by the long window's "
+            "own range, so both distributions can share one set of bin edges with no separate "
+            "alignment convention to invent."
+        ),
+        "reading": (
+            "KL is 0 when the recent return distribution looks just like the longer history it "
+            "sits inside, and grows as the recent window's shape — not just its level — "
+            "diverges from it: a recent stretch of unusually one-sided, narrow, or fat-tailed "
+            "returns compared to the longer lookback reads as a large KL value."
+        ),
+        "pitfalls": (
+            "`long` must exceed `short`. Because the short window is a literal trailing subset "
+            "of the long window's own return array, every bucket the short distribution puts "
+            "mass in is guaranteed to have some long-window mass too, so KL is always finite "
+            "and well-defined here (unlike a KL divergence between two unrelated samples)."
+        ),
+        "example": [
+            lambda df: zeonta.kl_divergence(df["close"]).tail(3),
+        ],
+    },
+    "realized_skewness": {
+        "title": "Realized Skewness",
+        "formula": "RVar = sum(r_i^2); RSkew = sqrt(n) * sum(r_i^3) / RVar^1.5, over a window of n log returns",
+        "about": (
+            "skewness computes the adjusted Fisher-Pearson moment ratio directly on rolling "
+            "price levels. Amaya, Christoffersen, Jacobs & Vasquez (2015) instead build a "
+            "skewness measure from the window's own log returns, normalized by its own realized "
+            "volatility rather than by a bias-adjustment factor — the same construction the "
+            "high-frequency realized-variance literature (bipower_variation and "
+            "realized_semivariance's own family) already uses, extended to the third moment."
+        ),
+        "reading": (
+            "Negative means the window's return distribution has a fatter left (down-move) "
+            "tail than right; positive the opposite — the same sign convention as skewness, on "
+            "a differently normalized quantity. The paper finds a strong, robust negative "
+            "relationship between a stock's realized skewness and its subsequent week's return "
+            "in the cross-section."
+        ),
+        "pitfalls": (
+            "length counts log returns, one more close bar than that is needed. The paper's own "
+            "setting builds this from 5-minute intraday returns aggregated into a weekly "
+            "statistic; this function applies the identical formula at whatever bar frequency "
+            "close is sampled at, generalizing the estimator rather than the paper's specific "
+            "data frequency. NaN wherever the window's realized variance is exactly 0."
+        ),
+        "example": [
+            lambda df: zeonta.realized_skewness(df["close"]).tail(3),
+        ],
+    },
+    "realized_kurtosis": {
+        "title": "Realized Kurtosis",
+        "formula": "RVar = sum(r_i^2); RKurt = n * sum(r_i^4) / RVar^2, over a window of n log returns",
+        "about": (
+            "realized_skewness's companion statistic from the same paper: the window's "
+            "4th-power log returns rescaled by its own squared realized volatility rather than "
+            "kurtosis's bias-adjustment factor applied to price levels."
+        ),
+        "reading": (
+            "Always >= 0; larger means fatter tails relative to the window's own realized "
+            "volatility. Unlike kurtosis, this is not excess kurtosis — there is no -3 term, so "
+            "a normal-like return process reads near 3, not near 0. The paper finds a positive "
+            "relationship between a stock's realized kurtosis and its subsequent week's return."
+        ),
+        "pitfalls": (
+            "Same length/warm-up/NaN conventions as realized_skewness — see that indicator's "
+            "own notes."
+        ),
+        "example": [
+            lambda df: zeonta.realized_kurtosis(df["close"]).tail(3),
+        ],
+    },
+    "cdar": {
+        "title": "Conditional Drawdown at Risk (CDaR)",
+        "formula": (
+            "k = ceil((1-alpha)*length); CDaR = mean of the k largest drawdown magnitudes "
+            "(-drawdown) in the rolling window"
+        ),
+        "about": (
+            "The CVaR/Expected-Shortfall construction applied to a drawdown series instead of a "
+            "return series, reusing drawdown rather than recomputing the running peak. "
+            "Chekhlov, Uryasev & Zabarankin (2005) originally define this as a "
+            "Rockafellar-Uryasev-style optimization, but their own Theorem 1 proves the optimum "
+            "coincides exactly with the worst-fraction average implemented here — a closed-form "
+            "equivalent, not an independent approximation."
+        ),
+        "reading": (
+            "Reported as a positive percentage, like ulcer_index, not signed like drawdown "
+            "itself — 8.0 reads as 'the expected worst-case drawdown magnitude over this window "
+            "is about 8%'. alpha=0.95 (the default) means 'the average of the worst 5% of "
+            "drawdowns in the window'."
+        ),
+        "pitfalls": (
+            "CDaR contains the maximal drawdown (alpha -> 1, k -> 1) and the average drawdown "
+            "(alpha -> 0, k -> length) as its two limiting cases — a useful sanity check when "
+            "picking alpha. NaN for warm-up bars and any window containing a non-finite "
+            "drawdown."
+        ),
+        "example": [
+            lambda df: zeonta.cdar(df["close"]).tail(3),
+        ],
+    },
 }

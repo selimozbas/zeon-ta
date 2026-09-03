@@ -29,13 +29,16 @@ from .oscillators import rsi
 __all__ = [
     "approximate_entropy",
     "cpr",
+    "cusum_filter",
     "dfa",
     "divergence",
     "fib_retracement",
     "higuchi_fractal_dimension",
     "hurst_exponent",
+    "kl_divergence",
     "markov_regime_switching",
     "multifractal_dfa",
+    "multiscale_entropy",
     "ou_half_life",
     "permutation_entropy",
     "pivot_points",
@@ -1920,3 +1923,334 @@ def shannon_entropy(close: ArrayLike, window: int = 50, bins: int = 10) -> pd.Se
         result[i - 1] = entropy / log_bins
 
     return wrap_series(result, common_index(close), f"SHENT_{window}_{bins}")
+
+
+@indicator(
+    category="advanced",
+    summary="Symmetric CUSUM filter: flags bars where cumulative log-return drift crosses a level.",
+    outputs=("CUSUM",),
+    reference="https://doi.org/10.1002/9781119482086",
+)
+def cusum_filter(close: ArrayLike, threshold: Number = 0.05) -> pd.Series:
+    """Symmetric CUSUM Filter (Lopez de Prado, 2018, *Advances in Financial Machine Learning*).
+
+    Section 2.5.2.1. Maintains two running sums of log returns, one tracking upward drift and
+    one downward, each reset to zero the moment it fires::
+
+        S+[0] = S-[0] = 0
+        S+[t] = max(0, S+[t-1] + r[t])
+        S-[t] = min(0, S-[t-1] + r[t])
+
+        if S-[t] < -threshold: event = -1, S-[t] reset to 0
+        elif S+[t] > threshold: event = +1, S+[t] reset to 0
+        else: event = 0
+
+    where ``r[t] = ln(Close[t] / Close[t-1])``. Originally used in the book
+    to *sample* bars for a downstream ML pipeline (only bars where an event
+    fires are kept) rather than to produce a value at every bar. This
+    library's aligned-per-bar output contract has no place for dropping
+    bars, so this function instead reports the discrete event flag itself at
+    every bar — ``0.0`` on every bar with no crossing, matching the same
+    binary/discrete-flag shape :func:`divergence` already uses in this
+    module for an event that only fires on some bars.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    threshold:
+        The fixed drift threshold ``h``, in the same units as the log
+        returns being summed (e.g. ``0.05`` means "5% of cumulative log
+        drift since the last reset"). The book parameterizes this directly
+        as a fixed level rather than a multiple of a rolling volatility
+        estimate; this function does the same, to avoid inventing a second,
+        uncited convention on top of the book's own one. Must be > 0.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``CUSUM_{threshold}``, one of ``1.0`` (upward drift crossed
+        ``threshold``), ``-1.0`` (downward drift crossed ``-threshold``) or
+        ``0.0`` (no crossing this bar). ``NaN`` on the first bar (no log
+        return yet) and on any bar whose own log return is non-finite —
+        the running sums are left unchanged there rather than poisoned,
+        the same self-recovering behaviour :func:`bipower_variation` and
+        similar running estimators in this library already have.
+
+    Notes
+    -----
+    This is a genuinely stateful, whole-series recursion — like
+    :func:`~zeonta.drawdown`'s running peak, not a fixed rolling window — so
+    prepending more history to the same series can change every later flag
+    (the running sums start from a different point). The recursion and its
+    exact reset rule are also implemented, independently of this library,
+    in the open-source ``mlfinlab``/``mlfinpy`` replications of the book's
+    own ``getTEvents`` function, cross-checked against this implementation
+    while it was written.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> close = [100.0, 101.0, 102.0, 103.0, 90.0]
+    >>> zeonta.cusum_filter(close, threshold=0.01).tolist()
+    [nan, 0.0, 1.0, 0.0, -1.0]
+
+    References
+    ----------
+    Lopez de Prado, M. (2018). *Advances in Financial Machine Learning*,
+    section 2.5.2.1. https://doi.org/10.1002/9781119482086
+    """
+    threshold = validate_multiplier(threshold, "threshold")
+    values = as_array(close, "close")
+    size = values.shape[0]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        log_returns = np.diff(np.log(values), prepend=np.nan)
+
+    result = np.full(size, np.nan, dtype="float64")
+    s_pos = 0.0
+    s_neg = 0.0
+    for i in range(1, size):
+        change = log_returns[i]
+        if not np.isfinite(change):
+            continue
+        s_pos = max(0.0, s_pos + change)
+        s_neg = min(0.0, s_neg + change)
+        if s_neg < -threshold:
+            s_neg = 0.0
+            result[i] = -1.0
+        elif s_pos > threshold:
+            s_pos = 0.0
+            result[i] = 1.0
+        else:
+            result[i] = 0.0
+
+    return wrap_series(result, common_index(close), f"CUSUM_{threshold}")
+
+
+@indicator(
+    category="advanced",
+    summary="Sample Entropy recomputed at several coarse-graining scales (Costa et al., 2002).",
+    outputs=("MSE",),
+    returns_frame=True,
+    reference="https://doi.org/10.1103/PhysRevLett.89.068102",
+)
+def multiscale_entropy(
+    close: ArrayLike, window: int = 100, scales: int = 5, m: int = 2, r: Number = 0.2
+) -> pd.DataFrame:
+    """Multiscale Entropy (Costa, Goldberger & Peng, 2002).
+
+    :func:`sample_entropy` measures unpredictability at the series' own,
+    single time scale. Multiscale Entropy repeats that same measurement
+    after *coarse-graining* the window at several scale factors ``tau``,
+    replacing every non-overlapping run of ``tau`` consecutive log returns
+    with their own mean::
+
+        y_j^(tau) = (1/tau) * sum(log_return[(j-1)*tau + 1 .. j*tau]),
+                    j = 1 .. floor(window / tau)
+
+    then computes :func:`sample_entropy`'s own ``SampEn`` statistic on each
+    ``y^(tau)`` series (reusing that function's template-matching machinery
+    directly rather than reimplementing it). ``tau=1`` is the coarse-graining
+    identity, so scale 1 is exactly :func:`sample_entropy` on the same
+    window. A series with structure spread across multiple timescales (many
+    real physiological and financial series) keeps a roughly flat or rising
+    entropy profile across scales; a series that is only complex at the
+    finest scale (e.g. pure white noise) has its entropy collapse quickly as
+    ``tau`` grows, since averaging pure noise into blocks removes most of
+    what made it "unpredictable" bar to bar.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    window:
+        Bars per rolling estimate, in log returns, at scale 1 (the finest).
+        Must be >= 20, the same floor :func:`sample_entropy` itself uses;
+        coarser scales see a proportionally shorter, coarse-grained series
+        from the same window.
+    scales:
+        Number of scale factors evaluated, ``tau = 1, 2, .., scales``. Must
+        be an integer >= 1.
+    m, r:
+        Passed through to :func:`sample_entropy`'s own template length and
+        tolerance at every scale. Per Costa et al.'s own papers and the
+        PhysioNet ``pyMSE``/``mse`` reference toolkit built from them, the
+        tolerance is **not** recomputed from each coarse-grained series' own
+        (shrinking) standard deviation — it stays fixed at ``r`` times the
+        *original*, scale-1 window's standard deviation across every scale,
+        which is what this function does. Recomputing ``r * std`` per scale
+        is a documented alternative some later papers use instead, but
+        Costa et al.'s own construction, and the toolkit built directly from
+        it, use the fixed-original-SD convention implemented here.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``MSE_{window}_{m}_{r}_{tau}`` for ``tau = 1 .. scales``.
+        ``NaN`` for warm-up bars, for any window containing a non-finite log
+        return, and for any scale whose coarse-grained series is too short
+        to form at least two ``SampEn`` template matches (the same
+        condition :func:`sample_entropy` itself uses).
+
+    Notes
+    -----
+    Same ``O(window^2)`` per-bar, per-scale cost as :func:`sample_entropy`,
+    now repeated ``scales`` times per bar.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import zeonta
+    >>> rng = np.random.default_rng(0)
+    >>> noisy = 100.0 * np.cumprod(1.0 + rng.normal(scale=0.01, size=150))
+    >>> result = zeonta.multiscale_entropy(noisy, window=100, scales=3)
+    >>> list(result.columns)
+    ['MSE_100_2_0.2_1', 'MSE_100_2_0.2_2', 'MSE_100_2_0.2_3']
+    >>> bool(np.isfinite(result.iloc[-1]).all())
+    True
+
+    References
+    ----------
+    Costa, M., Goldberger, A.L., Peng, C.-K. (2002). "Multiscale Entropy
+    Analysis of Complex Physiologic Time Series". Physical Review Letters
+    89, 068102. https://doi.org/10.1103/PhysRevLett.89.068102
+    """
+    window = validate_length(window, "window", minimum=20)
+    if not isinstance(scales, (int, np.integer)) or isinstance(scales, bool) or scales < 1:
+        raise ValueError(f"'scales' must be an integer >= 1, got {scales!r}")
+    if not isinstance(m, (int, np.integer)) or isinstance(m, bool) or m < 1:
+        raise ValueError(f"'m' must be an integer >= 1, got {m!r}")
+    r = validate_multiplier(r, "r")
+
+    values = as_array(close, "close")
+    size = values.shape[0]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        log_returns = np.diff(np.log(values), prepend=np.nan)
+
+    columns = {
+        f"MSE_{window}_{m}_{r}_{tau}": np.full(size, np.nan, dtype="float64")
+        for tau in range(1, scales + 1)
+    }
+    order = list(columns)
+
+    for i in range(window, size + 1):
+        segment = log_returns[i - window : i]
+        if not np.all(np.isfinite(segment)):
+            continue
+        tolerance = r * segment.std()
+        if tolerance == 0.0:
+            continue
+        for tau in range(1, scales + 1):
+            n_blocks = window // tau
+            coarse = segment[: n_blocks * tau].reshape(n_blocks, tau).mean(axis=1)
+            columns[f"MSE_{window}_{m}_{r}_{tau}"][i - 1] = _sample_entropy_value(
+                coarse, m, tolerance
+            )
+
+    return wrap_frame(columns, common_index(close), order=order)
+
+
+@indicator(
+    category="advanced",
+    summary="Kullback-Leibler divergence between a short and a long window's return distributions.",
+    outputs=("KLDIV",),
+    reference="https://doi.org/10.1214/aoms/1177729694",
+)
+def kl_divergence(close: ArrayLike, short: int = 20, long: int = 100, bins: int = 10) -> pd.Series:
+    """Kullback-Leibler Divergence between a rolling short and long window.
+
+    Kullback & Leibler (1951). Reuses :func:`shannon_entropy`'s own binning convention (equal-width
+    buckets, histogram counts turned into a frequency distribution) rather
+    than inventing a new one, applied to *two* nested windows ending on the
+    same bar: a short, recent one (``P``) and a long, older one that
+    contains it (``Q``)::
+
+        edges = bins equal-width buckets spanning Q's own min..max
+        P_i   = fraction of the short window's returns in bucket i
+        Q_i   = fraction of the long window's returns in bucket i
+        KL    = sum(P_i * ln(P_i / Q_i), over every bucket i with P_i > 0)
+
+    Because the short window is always the long window's own most recent
+    trailing subset (``short <= long``, both ending at the current bar), its
+    values are automatically bounded by the long window's own range — the
+    same *Q*-spanning bin edges used for both distributions, with no
+    separate alignment convention to invent. ``KL`` is ``0`` when the recent
+    return distribution looks just like the longer history it sits inside,
+    and grows as the recent window's shape (not just its level) diverges
+    from it — e.g. a recent stretch of unusually one-sided, narrow, or
+    fat-tailed returns compared to the longer lookback.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    short:
+        Bars in the recent window, in log returns. Must be >= 20 (the same
+        floor :func:`shannon_entropy` uses).
+    long:
+        Bars in the older, containing window. Must be > ``short``.
+    bins:
+        Equal-width buckets the long window's own return range is divided
+        into for both distributions. Must be >= 2; a tunable resolution,
+        the same convention :func:`shannon_entropy` already documents.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``KLDIV_{short}_{long}_{bins}``. Always ``>= 0`` (Gibbs'
+        inequality) and always well-defined: because the short window's
+        values are a literal subset of the long window's own array (not
+        merely bounded by the same range), any bucket ``P`` puts mass in
+        necessarily has ``Q`` mass in it too — the same values are counted
+        in both histograms. ``NaN`` for warm-up bars and for any window
+        containing a non-finite log return.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import zeonta
+    >>> rng = np.random.default_rng(0)
+    >>> calm = rng.normal(scale=0.005, size=100)
+    >>> turbulent = rng.normal(scale=0.05, size=20)
+    >>> prices = 100.0 * np.cumprod(1.0 + np.concatenate([calm, turbulent]))
+    >>> result = zeonta.kl_divergence(prices, short=20, long=100)
+    >>> bool(result.iloc[-1] > 0.0)
+    True
+
+    References
+    ----------
+    Kullback, S., Leibler, R.A. (1951). "On Information and Sufficiency".
+    Annals of Mathematical Statistics 22(1). https://doi.org/10.1214/aoms/1177729694
+    """
+    short = validate_length(short, "short", minimum=20)
+    long = validate_length(long, "long", minimum=short + 1)
+    if not isinstance(bins, (int, np.integer)) or isinstance(bins, bool) or bins < 2:
+        raise ValueError(f"'bins' must be an integer >= 2, got {bins!r}")
+
+    values = as_array(close, "close")
+    size = values.shape[0]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        log_returns = np.diff(np.log(values), prepend=np.nan)
+
+    result = np.full(size, np.nan, dtype="float64")
+    for i in range(long, size + 1):
+        long_segment = log_returns[i - long : i]
+        if not np.all(np.isfinite(long_segment)):
+            continue
+        short_segment = long_segment[-short:]
+        low, high = long_segment.min(), long_segment.max()
+        if high == low:
+            result[i - 1] = 0.0
+            continue
+        long_counts, edges = np.histogram(long_segment, bins=bins, range=(low, high))
+        short_counts, _ = np.histogram(short_segment, bins=edges)
+        p = short_counts / short
+        q = long_counts / long
+        mask = p > 0.0
+        # q[mask] > 0 always holds: every value short_segment contributes to
+        # bucket i is a literal element of long_segment too (short is its
+        # trailing subset, not merely bounded by its range), so that same
+        # value also counts toward q_i.
+        result[i - 1] = float(np.sum(p[mask] * np.log(p[mask] / q[mask])))
+
+    return wrap_series(result, common_index(close), f"KLDIV_{short}_{long}_{bins}")

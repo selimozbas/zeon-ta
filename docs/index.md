@@ -156,13 +156,16 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | --- | --- |
 | [`approximate_entropy`](indicators/approximate_entropy.md) | Approximate Entropy |
 | [`cpr`](indicators/cpr.md) | Central Pivot Range (CPR) |
+| [`cusum_filter`](indicators/cusum_filter.md) | CUSUM Filter |
 | [`dfa`](indicators/dfa.md) | Detrended Fluctuation Analysis (DFA) |
 | [`divergence`](indicators/divergence.md) | Divergences |
 | [`fib_retracement`](indicators/fib_retracement.md) | Fibonacci Retracement |
 | [`higuchi_fractal_dimension`](indicators/higuchi_fractal_dimension.md) | Higuchi Fractal Dimension |
 | [`hurst_exponent`](indicators/hurst_exponent.md) | Hurst Exponent (Rescaled Range Analysis) |
+| [`kl_divergence`](indicators/kl_divergence.md) | Kullback-Leibler Divergence |
 | [`markov_regime_switching`](indicators/markov_regime_switching.md) | Markov Regime-Switching Probability |
 | [`multifractal_dfa`](indicators/multifractal_dfa.md) | Multifractal Detrended Fluctuation Analysis |
+| [`multiscale_entropy`](indicators/multiscale_entropy.md) | Multiscale Entropy |
 | [`ou_half_life`](indicators/ou_half_life.md) | Ornstein-Uhlenbeck Half-Life of Mean Reversion |
 | [`permutation_entropy`](indicators/permutation_entropy.md) | Permutation Entropy |
 | [`pivot_points`](indicators/pivot_points.md) | Pivot Points |
@@ -174,12 +177,15 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 
 | Indicator | Summary |
 | --- | --- |
+| [`cdar`](indicators/cdar.md) | Conditional Drawdown at Risk (CDaR) |
 | [`cumulative_return`](indicators/cumulative_return.md) | Cumulative Return |
 | [`drawdown`](indicators/drawdown.md) | Drawdown |
 | [`ffd`](indicators/ffd.md) | Fixed-Width Window Fractional Differentiation |
 | [`kurtosis`](indicators/kurtosis.md) | Kurtosis |
 | [`log_return`](indicators/log_return.md) | Logarithmic Return |
 | [`mad`](indicators/mad.md) | Median Absolute Deviation (MAD) |
+| [`realized_kurtosis`](indicators/realized_kurtosis.md) | Realized Kurtosis |
+| [`realized_skewness`](indicators/realized_skewness.md) | Realized Skewness |
 | [`skewness`](indicators/skewness.md) | Skewness |
 | [`stddev`](indicators/stddev.md) | Standard Deviation |
 | [`variance`](indicators/variance.md) | Variance |

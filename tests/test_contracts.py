@@ -176,6 +176,12 @@ def test_indicators_with_a_reference() -> None:
         "bipower_variation",
         "realized_semivariance",
         "multifractal_dfa",
+        "cusum_filter",
+        "multiscale_entropy",
+        "kl_divergence",
+        "realized_skewness",
+        "realized_kurtosis",
+        "cdar",
     }
     with_reference = {spec.name for spec in iter_specs() if spec.reference is not None}
     assert with_reference == expected

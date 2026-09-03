@@ -141,3 +141,150 @@ by `tests/test_examples.py`" rule the existing ones do.
   declined VPIN's Bulk Volume Classification bucketing above. The
   tick/order-book-data requirement for the *true* Kyle's lambda, in the
   entry above, stands as originally written.
+- **Bai-Perron multiple structural break test** (Bai & Perron, 1998,
+  Econometrica). Its usual application dates an unknown number of
+  breakpoints *ex post* over a whole, fixed series via dynamic programming
+  over sum-of-squared-residuals, then picks the break count with a
+  BIC-type criterion or sequential testing — a procedure built around
+  seeing the whole series at once. Reworking it into a per-bar, no-
+  look-ahead rolling estimate with a single, independently-agreed
+  break-count selection rule usable at every bar could not be confirmed
+  against a primary or secondary source; every rolling adaptation found
+  invents its own truncation of the method rather than following one the
+  literature already agrees on.
+- **Zivot-Andrews structural-break unit root test** (Zivot & Andrews,
+  1992, Journal of Business & Economic Statistics). Its own break-date
+  search is a real, endogenous procedure with one commonly-implemented
+  default (Model C, breaking both intercept and trend — the default in
+  both `statsmodels.tsa.stattools.zivot_andrews` and `arch.unitroot.ZivotAndrews`),
+  but the ADF-type regression at each candidate breakpoint additionally
+  needs a lagged-difference order, and *that* choice (a fixed lag, AIC/BIC
+  selection, or Ng-Perron's general-to-specific search) is a second,
+  independently-contested convention layered on top of the model-A/B/C
+  choice — the same class of "a second free parameter with no single
+  agreed selection rule" problem that declined MODWT's block-length and
+  SSA's component count. Combined with the cost of searching every
+  candidate break point inside every rolling window (an ADF-type
+  regression per candidate, repeated at every bar — asymptotically
+  heavier than `markov_regime_switching`, this library's current slowest
+  indicator), this is declined rather than shipped on an invented lag
+  convention.
+- **Hasbrouck's Bayesian Gibbs estimate of Roll's model** (Hasbrouck,
+  2009, Journal of Finance). Requires Markov Chain Monte Carlo (Gibbs)
+  sampling — a fundamentally different computational shape from every
+  other indicator in this library, and a genuinely stochastic one:
+  correctness would depend on a chain length, a burn-in period, and a
+  fixed RNG seed, none of which have one agreed convention for a generic
+  per-bar use case. `markov_regime_switching`'s own EM fit was only
+  accepted because its M-step is closed-form and deterministic; Gibbs
+  sampling has no such determinism without inventing an arbitrary
+  seed/chain-length/burn-in convention this project declines to invent.
+- **Fong-Holden-Trzcinka (FHT) spread estimator** (Fong, Holden &
+  Trzcinka, 2017, *Review of Financial Studies* 30(12), 4437-4480 —
+  corrected from a research note's mistaken "Journal of Finance"; the
+  actual title is "A Simple Estimation of Bid-Ask Spreads from Daily
+  Close, High, and Low Prices"). The measure is a closed-form function of
+  the proportion of zero-return days and the standard deviation of daily
+  returns via the standard normal quantile, but the paper additionally
+  requires the LOT-style effective spread this simplifies from to
+  identify which of two candidate closed-form roots is the economically
+  meaningful one, plus a stated minimum sample length (a full month of
+  daily data in the paper's own calibration) before the zero-return-day
+  proportion is reliable at all. This library's per-bar, arbitrary-window
+  contract has no single, independently cross-checked way to adapt that
+  root-selection and minimum-sample-length machinery to an
+  arbitrary rolling window; declined rather than guessed.
+- **Florackis-Gregoriou-Kostakis (FGK) illiquidity ratio** (Florackis,
+  Gregoriou & Kostakis, 2011, *Journal of Banking & Finance* 35(12),
+  3335-3350 — corrected from a research note's "2014"; the actual title
+  is "Trading Frequency and Asset Pricing on the London Stock Exchange:
+  Evidence from a New Price Impact Ratio", introducing what the paper
+  calls the "Return-to-Turnover" ratio). An Amihud-style illiquidity
+  ratio using turnover rather than dollar volume, but independent
+  secondary sources describing it disagree on whether the turnover term
+  enters as a plain ratio or through the specific log-cycle weighting a
+  research note attributed to this paper — no source found reproduces
+  the paper's own exact formula closely enough to resolve that, only its
+  name and its general "turnover instead of dollar volume" idea. Declined
+  rather than reconstruct an unverified formula.
+- **Fuzzy Entropy (FuzzEn)** (Chen et al., 2007, IEEE Transactions on
+  Biomedical Engineering). Shares `sample_entropy`'s template-matching
+  structure, replacing the hard Chebyshev-distance cutoff with a soft
+  fuzzy membership function — but the exact exponential family used for
+  that membership function is genuinely inconsistent across the
+  literature that has followed the original paper: Chen et al.'s own
+  construction, later "local" baseline-corrected variants, and other
+  authors' own reformulations use different exponents and different
+  template baseline-removal conventions, with no independent source
+  treating one as the settled default the way Richman & Moorman's
+  Sample Entropy formula itself is settled. The same class of "which of
+  several published exponential families is canonical" ambiguity that
+  declined fuzzy-logic oscillators.
+- **Horizontal Visibility Graph (HVG) tail exponent** (Lacasa et al.,
+  2008, PNAS/EPL). The visibility criterion itself (two bars connected
+  iff every bar strictly between them is below both) is unambiguous, and
+  an uncorrelated series' own degree distribution has an exact closed
+  form the original paper derives (`P(k) = (1/3)(2/3)^(k-2)`). But the
+  practical *summary statistic* this library would need to output — the
+  exponential decay rate lambda fit from a correlated series' own degree
+  distribution — has no single agreed estimation procedure across the
+  literature that followed: a plain log-linear least-squares fit over
+  every observed degree, a fit restricted to the distribution's tail
+  only (with no agreed cutoff for where "the tail" begins), and a
+  maximum-likelihood exponential fit all appear in different papers with
+  materially different results on the same series. Declined rather than
+  pick one estimation convention with no independent source treating it
+  as the standard.
+- **Variational Mode Decomposition (VMD)** (Dragomiretskiy & Zosso,
+  2014, IEEE Transactions on Signal Processing). Requires an iterative
+  ADMM optimization with several hyperparameters (`alpha`, `K`,
+  convergence tolerance) that the literature genuinely varies on by
+  application; `pywt`, this project's only wavelet dependency, does not
+  implement VMD at all (the reference Python implementation, `vmdpy`, is
+  a separate, unadopted third-party package this project will not add as
+  a dependency for one indicator). A much heavier numerical-optimization
+  undertaking than this library's existing iterative estimator
+  (`markov_regime_switching`'s EM, which at least has closed-form
+  M-steps) with no single dominant, independently cross-checked
+  parameterization; declined.
+- **Autocorrelation Periodogram** (Ehlers). This project has already
+  declined `Decycler` for exactly this reason, and the same problem
+  recurs here: Ehlers' own 2013 book presentation (*Cycle Analytics for
+  Traders*) and his own 2016 TASC magazine article ("Measuring Market
+  Cycles") disagree on two material implementation details — the
+  roofing/high-pass pre-filter used before the autocorrelation itself
+  (a simple first-order high-pass in one presentation vs. a canonical
+  2-pole high-pass feeding a Super Smoother bandpass in the other), and
+  how the dominant cycle length is extracted from the resulting spectrum
+  (peak-finding vs. a center-of-gravity-weighted average over bins at or
+  above half the peak power). Two internally inconsistent presentations
+  by the method's own author, the same standing problem that already
+  declined `STC`/`JMA`/`Decycler`.
+- **Synchrosqueezed Wavelet Transform (SWT)** (Daubechies, Lu & Wu,
+  2011, Applied and Computational Harmonic Analysis). `pywt` has no
+  synchrosqueezing support at all — a feature request for it
+  (`PyWavelets/pywt#258`) has stood open, unimplemented, since 2016 — so
+  unlike `pywt.swt`'s "closely related" but confirmed-inequivalent
+  relationship to MODWT (already declined above), there is no existing
+  primitive in this project's wavelet dependency to build on at all.
+  Implementing the reassignment method from scratch would be substantial
+  novel numerical work with real risk of subtle bugs in a published
+  algorithm this library has no supporting machinery for; declined
+  rather than attempted from a blank page.
+- **Meilijson volatility estimator** (Meilijson, 2009 working paper,
+  published 2011 in *REVSTAT — Statistical Journal* 9(2), as "The
+  Garman-Klass Volatility Estimator Revisited" — corrected from a
+  research note's "1992"). The paper is *not* the drift-corrected
+  extension of Garman-Klass a research note described: it stays within
+  Garman & Klass's own zero-drift Brownian-motion assumption and instead
+  improves the estimator's statistical *efficiency* (7.7322 vs. 7.4) by
+  compressing the OHLC data to a different statistic (conditioning the
+  path on the sign of its own total drift over the bar). This is a
+  single-paper result with materially lower independent citation and
+  replication than Parkinson/Garman-Klass/Rogers-Satchell/Yang-Zhang (all
+  already in `volatility.py`), and reconstructing its exact statistic
+  from the paper's own path-conditioning argument, without a second
+  independent source to cross-check the reconstruction against, would
+  cross into guessing a formula rather than verifying one. Declined
+  rather than duplicate `garman_klass_volatility` under a different name
+  on an unverified reconstruction.

@@ -35,6 +35,7 @@ __all__ = [
     "higuchi_fractal_dimension",
     "hurst_exponent",
     "markov_regime_switching",
+    "multifractal_dfa",
     "ou_half_life",
     "permutation_entropy",
     "pivot_points",
@@ -1191,13 +1192,16 @@ def ou_half_life(close: ArrayLike, window: int = 100) -> pd.Series:
     return wrap_series(result, common_index(close), f"OUHL_{window}")
 
 
-def _dfa_fluctuation(profile: np.ndarray, box_size: int) -> float:
-    """Pooled RMS residual of *profile* detrended box-by-box at *box_size*.
+def _dfa_box_fluctuations(profile: np.ndarray, box_size: int) -> np.ndarray:
+    """Per-box mean squared residual (``F^2(box_size, nu)``) of *profile*.
 
     Vectorised, batch-OLS equivalent of fitting a separate least-squares
-    line to every non-overlapping box of length ``box_size`` and pooling
-    every box's squared residuals into one RMS — checked against a
+    line to every non-overlapping box of length ``box_size`` and returning
+    each box's own mean squared residual — checked against a
     straightforward per-box ``np.polyfit`` loop while this was written.
+    Shared by :func:`dfa` (which pools these into one RMS, its ``F(n)``)
+    and :func:`multifractal_dfa` (which combines them with a ``q``-th-power
+    average instead, its ``F_q(n)``).
     """
     n_boxes = profile.shape[0] // box_size
     used = profile[: n_boxes * box_size].reshape(n_boxes, box_size)
@@ -1211,7 +1215,16 @@ def _dfa_fluctuation(profile: np.ndarray, box_size: int) -> float:
     intercept = (sum_y - slope * sum_x) / box_size
     trend = intercept[:, None] + slope[:, None] * x[None, :]
     residual = used - trend
-    return float(np.sqrt(np.mean(residual * residual)))
+    return np.mean(residual * residual, axis=1)  # one F^2 per box
+
+
+def _dfa_fluctuation(profile: np.ndarray, box_size: int) -> float:
+    """Pooled RMS residual of *profile* detrended box-by-box at *box_size*.
+
+    Equivalent to pooling every box's own residuals into one RMS, since
+    every box here has the same size — see :func:`_dfa_box_fluctuations`.
+    """
+    return float(np.sqrt(np.mean(_dfa_box_fluctuations(profile, box_size))))
 
 
 @indicator(
@@ -1307,6 +1320,169 @@ def dfa(close: ArrayLike, window: int = 100) -> pd.Series:
             result[i - 1] = slope
 
     return wrap_series(result, common_index(close), f"DFA_{window}")
+
+
+def _mfdfa_fq(f2_per_box: np.ndarray, q: float) -> float:
+    """``F_q(n)`` (Kantelhardt et al., 2002).
+
+    The ``q``-th-order fluctuation function, pooling one box size's own
+    per-box ``F^2(n, nu)`` values.
+
+    ``q = 0`` is the paper's own special case (the ``q``-th power average
+    degenerates at ``q=0``, replaced by a log-average instead, per l'Hopital
+    applied to the general formula); ``q = 2`` reduces exactly to
+    :func:`_dfa_fluctuation`'s plain-DFA fluctuation.
+    """
+    if q == 0.0:
+        return float(np.exp(0.5 * np.mean(np.log(f2_per_box))))
+    return float(np.mean(f2_per_box ** (q / 2.0)) ** (1.0 / q))
+
+
+def _mfdfa_h(profile: np.ndarray, box_sizes: list[int], q: float) -> float:
+    """Generalized Hurst exponent ``h(q)``.
+
+    The slope of ``log(F_q(n))`` against ``log(n)`` over *box_sizes*.
+    """
+    log_boxes = []
+    log_fq = []
+    for box_size in box_sizes:
+        f2_per_box = _dfa_box_fluctuations(profile, box_size)
+        if np.all(f2_per_box > 0.0):
+            fq = _mfdfa_fq(f2_per_box, q)
+            if fq > 0.0:
+                log_boxes.append(np.log(box_size))
+                log_fq.append(np.log(fq))
+    if len(log_boxes) < 2:
+        return np.nan
+    slope, _ = np.polyfit(log_boxes, log_fq, 1)
+    return float(slope)
+
+
+def _validate_q(value: Number, name: str) -> float:
+    """Validate a Multifractal DFA moment order: any finite, non-zero real number."""
+    if isinstance(value, bool) or not isinstance(value, (int, float, np.integer, np.floating)):
+        raise ValueError(f"{name!r} must be a number, got {type(value).__name__}")
+    if not np.isfinite(value):
+        raise ValueError(f"{name!r} must be finite, got {value}")
+    return float(value)
+
+
+@indicator(
+    category="advanced",
+    summary="Width of the generalized-Hurst spectrum across fluctuation sizes (multifractality).",
+    reference="https://doi.org/10.1016/S0378-4371(02)01383-3",
+    outputs=("MFDFA",),
+)
+def multifractal_dfa(
+    close: ArrayLike, window: int = 100, q_min: Number = -5.0, q_max: Number = 5.0
+) -> pd.Series:
+    """Multifractal Detrended Fluctuation Analysis (Kantelhardt et al., 2002).
+
+    :func:`dfa` fits one scaling exponent to a return series, implicitly
+    treating small and large fluctuations as scaling the same way — the
+    *monofractal* assumption. MF-DFA checks that assumption by generalizing
+    DFA's fluctuation function with a ``q``-th-power average over boxes
+    instead of a plain RMS::
+
+        F_q(n) = { (1/N_n) * sum_nu [F^2(n, nu)]^(q/2) } ^ (1/q),   q != 0
+        F_0(n) = exp{ (1/(2*N_n)) * sum_nu ln[F^2(n, nu)] }
+
+    using the same per-box detrended fluctuations ``F^2(n, nu)`` as
+    :func:`dfa` (this function reuses that machinery directly). Negative
+    ``q`` weights *small* fluctuations more heavily, positive ``q`` weights
+    *large* ones; the generalized Hurst exponent ``h(q)`` is then the slope
+    of ``log(F_q(n))`` against ``log(n)``, exactly as in :func:`dfa` (whose
+    single exponent is this method's ``h(2)``). A series whose small and
+    large fluctuations scale identically (*monofractal*, e.g. plain
+    fractional Brownian motion) has ``h(q)`` essentially constant across
+    ``q``; a genuinely *multifractal* series has small and large
+    fluctuations scaling differently, so ``h(q)`` varies with ``q``. This
+    function reports that variation as a single number, the width of the
+    generalized-Hurst spectrum between two chosen extremes::
+
+        MFDFA = h(q_min) - h(q_max)
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    window:
+        Rolling look-back, in log returns. Must be >= 32, the same
+        requirement as :func:`dfa` and for the same reason (room for at
+        least two box sizes).
+    q_min, q_max:
+        The two ``q`` values ``h(q)`` is compared at. Must satisfy
+        ``q_min < q_max``; the paper's own examples (and the tutorial
+        literature that has followed it, e.g. Ihlen, 2012,
+        "Introduction to Multifractal Detrended Fluctuation Analysis in
+        Matlab") most commonly scan ``q`` symmetrically over ``-5`` to
+        ``5``, which is this function's default.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``MFDFA_{window}_{q_min}_{q_max}``. Near ``0`` for a
+        monofractal series; larger (and, for the default ``q_min < 0 <
+        q_max`` ordering, positive) for a more strongly multifractal one.
+        ``NaN`` for warm-up bars and wherever either ``h(q_min)`` or
+        ``h(q_max)`` cannot be estimated (fewer than two usable box sizes,
+        the same condition :func:`dfa` itself uses).
+
+    Notes
+    -----
+    This implementation divides each rolling window into non-overlapping
+    boxes from the start only, the same convention :func:`dfa` already uses
+    in this library — the wider MF-DFA literature also pools boxes counted
+    from the *end* of the profile to use every point, a refinement this
+    function does not add, kept consistent with :func:`dfa`'s own existing
+    behaviour rather than introducing a second convention between the two.
+    Like :func:`dfa`/:func:`hurst_exponent`/:func:`higuchi_fractal_dimension`,
+    this is a per-bar loop over several box sizes (now doubled, for
+    ``q_min`` and ``q_max`` each) rather than a single vectorised pass.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import zeonta
+    >>> rng = np.random.default_rng(0)
+    >>> walk = 100.0 * np.cumprod(1.0 + rng.normal(scale=0.01, size=150))
+    >>> result = zeonta.multifractal_dfa(walk, window=100)
+    >>> bool(np.isfinite(result.iloc[-1]))
+    True
+
+    References
+    ----------
+    https://doi.org/10.1016/S0378-4371(02)01383-3
+    """
+    window = validate_length(window, "window", minimum=32)
+    q_min = _validate_q(q_min, "q_min")
+    q_max = _validate_q(q_max, "q_max")
+    if q_min >= q_max:
+        raise ValueError(f"'q_min' must be < 'q_max', got q_min={q_min}, q_max={q_max}")
+
+    values = as_array(close, "close")
+    size = values.shape[0]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        log_returns = np.diff(np.log(values), prepend=np.nan)
+
+    box_sizes: list[int] = []
+    box = 4
+    while box <= window // 4:
+        box_sizes.append(box)
+        box *= 2
+
+    result = np.full(size, np.nan, dtype="float64")
+    for i in range(window, size + 1):
+        segment = log_returns[i - window : i]
+        if not np.all(np.isfinite(segment)):
+            continue
+        profile = np.cumsum(segment - segment.mean())
+        h_min = _mfdfa_h(profile, box_sizes, q_min)
+        h_max = _mfdfa_h(profile, box_sizes, q_max)
+        if np.isfinite(h_min) and np.isfinite(h_max):
+            result[i - 1] = h_min - h_max
+
+    return wrap_series(result, common_index(close), f"MFDFA_{window}_{q_min}_{q_max}")
 
 
 def _sample_entropy_value(segment: np.ndarray, m: int, tolerance: float) -> float:

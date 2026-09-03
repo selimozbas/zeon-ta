@@ -93,3 +93,51 @@ by `tests/test_examples.py`" rule the existing ones do.
   `dimen`, but not the same formula as Sevcik/Matulich's. No source treats
   one of these as "the" canonical FDI over the other; declined for the
   same reason `STC`/`JMA`/`MAMA` are.
+- **Singular Spectrum Analysis (SSA).** Embedding a rolling window into a
+  trajectory matrix and reconstructing a trend from the leading singular
+  components needs two real design choices — the embedding (window) length
+  and how many leading components to keep — that the SSA literature treats
+  as genuinely open, with no single convention independent
+  implementations/tutorials converge on. The same test that declines
+  `STC`/`JMA`/`MAMA` applies here.
+- **MODWT (Maximal Overlap Discrete Wavelet Transform).** This project's
+  existing `pywt` dependency exposes `pywt.swt`, which is often described
+  as equivalent to MODWT — but `pywt`'s own documentation calls its
+  implementation only "closely related" to the published construction,
+  citing a stated difference, and additionally requires the input length
+  be a multiple of `2**level`, which does not fit this library's
+  arbitrary-length rolling-window contract. Declined rather than shipped
+  on an equivalence that couldn't be confirmed cleanly.
+- **One-sided (causal) Hodrick-Prescott filter.** A state-space/Kalman
+  reformulation that reduces to a causal HP filter is a real idea in the
+  econometrics literature, but no single, independently cross-checked
+  parameterization of that state-space model could be confirmed against a
+  primary source in this research pass — declined rather than guessed.
+- **Beveridge-Nelson decomposition.** Requires fitting an ARIMA(p,d,q)
+  model to the series first, and no single order convention is agreed on
+  for an arbitrary price series; doing the model-selection step properly
+  would need `statsmodels`, a new runtime dependency this project does not
+  add without a separate, deliberate decision (see
+  [CONTRIBUTING.md](CONTRIBUTING.md) on not adding dependencies for one
+  indicator).
+- **Lempel-Ziv Complexity (LZC).** Applying the (unambiguous) LZ76
+  algorithm to a continuous price series first requires binarizing it —
+  above/below the window's own mean, or its median — and then, for a
+  normalized 0-1 reading, a further normalization-factor convention;
+  independent sources do not agree on either choice.
+- **Recurrence Quantification Analysis (RQA).** Phase-space embedding
+  (dimension and delay) and the recurrence threshold used to build the
+  recurrence matrix are all real, non-uniquely-specified design choices —
+  more free parameters with more literature disagreement than any other
+  candidate considered alongside it, with no single defensible default
+  parameterization multiple independent sources converge on.
+- **Kyle's lambda, an OHLCV-only "proxy" variant.** Investigated
+  specifically as a possible carve-out from the order-flow/microstructure
+  entry above: every simplified construction found (regressing price
+  change against signed volume using a return-sign stand-in for the true
+  trade sign) relies on inventing a sign convention — contemporaneous
+  return sign, lagged return sign, or a tick-test-style approximation —
+  that independent sources do not agree on, the same class of problem that
+  declined VPIN's Bulk Volume Classification bucketing above. The
+  tick/order-book-data requirement for the *true* Kyle's lambda, in the
+  entry above, stands as originally written.

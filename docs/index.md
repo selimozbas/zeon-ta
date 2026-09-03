@@ -110,9 +110,11 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 
 | Indicator | Summary |
 | --- | --- |
+| [`abdi_ranaldo_spread`](indicators/abdi_ranaldo_spread.md) | Abdi-Ranaldo Spread Estimator |
 | [`accbands`](indicators/accbands.md) | Acceleration Bands |
 | [`atr`](indicators/atr.md) | Average True Range (ATR) |
 | [`bbands`](indicators/bbands.md) | Bollinger Bands |
+| [`bipower_variation`](indicators/bipower_variation.md) | Realized Bipower Variation |
 | [`chaikin_volatility`](indicators/chaikin_volatility.md) | Chaikin Volatility (CVI) |
 | [`corwin_schultz_spread`](indicators/corwin_schultz_spread.md) | Corwin-Schultz Spread Estimator |
 | [`garman_klass_volatility`](indicators/garman_klass_volatility.md) | Garman-Klass Volatility |
@@ -120,8 +122,10 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`mass_index`](indicators/mass_index.md) | Mass Index |
 | [`natr`](indicators/natr.md) | Normalized Average True Range (NATR) |
 | [`parkinson_volatility`](indicators/parkinson_volatility.md) | Parkinson Volatility |
+| [`realized_semivariance`](indicators/realized_semivariance.md) | Realized Semivariance |
 | [`relative_volatility_index`](indicators/relative_volatility_index.md) | Relative Volatility Index (RVI) |
 | [`rogers_satchell_volatility`](indicators/rogers_satchell_volatility.md) | Rogers-Satchell Volatility |
+| [`roll_spread`](indicators/roll_spread.md) | Roll Spread Estimator |
 | [`squeeze`](indicators/squeeze.md) | The Squeeze (TTM Squeeze) |
 | [`true_range`](indicators/true_range.md) | True Range |
 | [`ulcer_index`](indicators/ulcer_index.md) | Ulcer Index |
@@ -158,6 +162,7 @@ Every indicator in `zeon-ta`, grouped by module. A few indicators additionally l
 | [`higuchi_fractal_dimension`](indicators/higuchi_fractal_dimension.md) | Higuchi Fractal Dimension |
 | [`hurst_exponent`](indicators/hurst_exponent.md) | Hurst Exponent (Rescaled Range Analysis) |
 | [`markov_regime_switching`](indicators/markov_regime_switching.md) | Markov Regime-Switching Probability |
+| [`multifractal_dfa`](indicators/multifractal_dfa.md) | Multifractal Detrended Fluctuation Analysis |
 | [`ou_half_life`](indicators/ou_half_life.md) | Ornstein-Uhlenbeck Half-Life of Mean Reversion |
 | [`permutation_entropy`](indicators/permutation_entropy.md) | Permutation Entropy |
 | [`pivot_points`](indicators/pivot_points.md) | Pivot Points |

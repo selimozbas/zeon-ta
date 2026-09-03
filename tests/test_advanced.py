@@ -451,6 +451,113 @@ def test_dfa_rejects_a_window_too_small_for_two_box_sizes() -> None:
         zeonta.dfa(list(range(1, 50)), window=16)
 
 
+def test_multifractal_dfa_matches_an_independent_reimplementation() -> None:
+    """Recompute h(q_min), h(q_max) and their difference a different way
+    (per-box np.polyfit detrending, not the shared batch-OLS helper) to
+    catch a bug either implementation alone would miss."""
+
+    def reference_mfdfa(values: np.ndarray, window: int, q_min: float, q_max: float) -> float:
+        log_returns = np.diff(np.log(values), prepend=np.nan)
+        segment = log_returns[-window:]
+        profile = np.cumsum(segment - np.nanmean(segment))
+        box_sizes = []
+        box = 4
+        while box <= window // 4:
+            box_sizes.append(box)
+            box *= 2
+
+        def h_of(q: float) -> float:
+            log_boxes, log_fq = [], []
+            for box_size in box_sizes:
+                n_boxes = len(profile) // box_size
+                f2 = []
+                for b in range(n_boxes):
+                    chunk = profile[b * box_size : (b + 1) * box_size]
+                    coeffs = np.polyfit(np.arange(box_size), chunk, 1)
+                    trend = np.polyval(coeffs, np.arange(box_size))
+                    f2.append(np.mean((chunk - trend) ** 2))
+                f2 = np.array(f2)
+                if q == 0.0:
+                    fq = np.exp(0.5 * np.mean(np.log(f2)))
+                else:
+                    fq = np.mean(f2 ** (q / 2.0)) ** (1.0 / q)
+                log_boxes.append(np.log(box_size))
+                log_fq.append(np.log(fq))
+            slope, _ = np.polyfit(log_boxes, log_fq, 1)
+            return float(slope)
+
+        return h_of(q_min) - h_of(q_max)
+
+    rng = np.random.default_rng(11)
+    prices = 100.0 * np.cumprod(1.0 + rng.normal(scale=0.01, size=150))
+    result = zeonta.multifractal_dfa(prices, window=100, q_min=-5.0, q_max=5.0)
+
+    expected = reference_mfdfa(prices, 100, -5.0, 5.0)
+    np.testing.assert_allclose(result.iloc[-1], expected)
+
+
+def test_multifractal_dfa_spectrum_is_wider_for_volatility_clustering_than_iid_noise() -> None:
+    """A series with volatility clustering (alternating low/high-vol blocks
+    — small and large fluctuations genuinely scale differently) should
+    have a wider generalized-Hurst spectrum than a comparable series with
+    constant volatility (small and large fluctuations scale the same way),
+    the qualitative direction multifractal-finance literature attributes to
+    volatility clustering as a source of multifractality."""
+    n, window = 600, 300
+    rng_mono = np.random.default_rng(5)
+    mono_returns = rng_mono.normal(scale=0.01, size=n)
+    mono_price = 100.0 * np.cumprod(1.0 + mono_returns)
+
+    rng_multi = np.random.default_rng(5)
+    vol = np.where((np.arange(n) // 20) % 2 == 0, 0.003, 0.03)
+    multi_returns = rng_multi.normal(size=n) * vol
+    multi_price = 100.0 * np.cumprod(1.0 + multi_returns)
+
+    mono_width = (
+        zeonta.multifractal_dfa(mono_price, window=window, q_min=-3.0, q_max=3.0).dropna().iloc[-1]
+    )
+    multi_width = (
+        zeonta.multifractal_dfa(multi_price, window=window, q_min=-3.0, q_max=3.0).dropna().iloc[-1]
+    )
+    assert multi_width > mono_width
+
+
+def test_multifractal_dfa_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.multifractal_dfa([1.0, 2.0, 3.0], window=100)
+    assert len(result) == 3
+    assert result.isna().all()
+
+
+def test_multifractal_dfa_rejects_a_window_too_small_for_two_box_sizes() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        zeonta.multifractal_dfa(list(range(1, 50)), window=16)
+
+
+def test_multifractal_dfa_rejects_q_min_not_below_q_max() -> None:
+    with pytest.raises(ValueError, match="'q_min' must be < 'q_max'"):
+        zeonta.multifractal_dfa(list(range(1, 50)), window=32, q_min=5.0, q_max=-5.0)
+
+
+@pytest.mark.parametrize("bad_q", [float("nan"), float("inf")])
+def test_multifractal_dfa_rejects_non_finite_q(bad_q: float) -> None:
+    with pytest.raises(ValueError, match="must be finite"):
+        zeonta.multifractal_dfa(list(range(1, 50)), window=32, q_min=bad_q)
+
+
+def test_multifractal_dfa_rejects_a_non_numeric_q() -> None:
+    with pytest.raises(ValueError, match="must be a number"):
+        zeonta.multifractal_dfa(list(range(1, 50)), window=32, q_min="a")  # type: ignore[arg-type]
+
+
+def test_multifractal_dfa_handles_q_equal_to_zero() -> None:
+    """q=0 hits Kantelhardt et al.'s own log-average special case, not the
+    general q-th-power-average formula (which degenerates at q=0)."""
+    rng = np.random.default_rng(9)
+    prices = 100.0 * np.cumprod(1.0 + rng.normal(scale=0.01, size=150))
+    result = zeonta.multifractal_dfa(prices, window=100, q_min=0.0, q_max=5.0)
+    assert np.isfinite(result.dropna().iloc[-1])
+
+
 def test_sample_entropy_is_higher_for_noisy_than_periodic_returns() -> None:
     """A perfectly periodic return series repeats its own short patterns
     exactly, so it should score near-zero entropy; unstructured noise at a

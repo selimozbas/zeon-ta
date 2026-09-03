@@ -7,6 +7,7 @@ import warnings
 import numpy as np
 import pandas as pd
 import pywt
+from numpy.lib.stride_tricks import sliding_window_view
 
 from ._core import (
     ArrayLike,
@@ -31,9 +32,11 @@ from ._core import (
 )
 
 __all__ = [
+    "abdi_ranaldo_spread",
     "accbands",
     "atr",
     "bbands",
+    "bipower_variation",
     "chaikin_volatility",
     "corwin_schultz_spread",
     "garman_klass_volatility",
@@ -41,8 +44,10 @@ __all__ = [
     "mass_index",
     "natr",
     "parkinson_volatility",
+    "realized_semivariance",
     "relative_volatility_index",
     "rogers_satchell_volatility",
+    "roll_spread",
     "squeeze",
     "true_range",
     "ulcer_index",
@@ -1306,3 +1311,310 @@ def yang_zhang_volatility(
     result = np.where(np.isnan(total_variance), np.nan, result)
 
     return wrap_series(result, common_index(open, high, low, close), f"YZV_{length}")
+
+
+@indicator(
+    category="volatility",
+    summary="Bid-ask spread from close vs. the high-low midrange (Abdi & Ranaldo, 2017).",
+    reference="https://doi.org/10.1093/rfs/hhx084",
+    outputs=("AR",),
+)
+def abdi_ranaldo_spread(high: ArrayLike, low: ArrayLike, close: ArrayLike) -> pd.Series:
+    r"""Abdi-Ranaldo bid-ask spread estimator (Abdi & Ranaldo, 2017).
+
+    Combines :func:`corwin_schultz_spread`'s insight (a bar's high-low
+    *midrange* is a better estimate of the efficient price than the close,
+    because the bid-ask half-spreads on either side of the range cancel)
+    with :func:`roll_spread`'s autocovariance construction — but computed
+    from midrange-to-close-to-midrange, not close-to-close::
+
+        eta[t] = (ln(High[t]) + ln(Low[t])) / 2
+        S[t]   = sqrt(max((ln(Close[t-1]) - eta[t-1]) * (ln(Close[t-1]) - eta[t]), 0))
+
+    Each bar pairs the *previous* bar's own close against its own midrange
+    and the *current* bar's midrange, following the paper's own two-day
+    estimator exactly (its indices ``t`` and ``t+1``, aligned here to the
+    later bar).
+
+    Parameters
+    ----------
+    high, low, close:
+        Price series of equal length.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``AR``, as a fraction of price (``0.01`` reads as a 1% quoted
+        spread). ``NaN`` on the first bar (no previous bar to pair with).
+
+    Notes
+    -----
+    Like :func:`corwin_schultz_spread` and :func:`roll_spread`, the raw
+    product inside the square root can come out negative — the paper's own
+    remedy is to floor each single two-day estimate at zero before the
+    square root, which this function does, rather than leave it negative or
+    turn the whole bar into ``NaN``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> high = [100.0, 105.0, 108.0, 112.0]
+    >>> low = [95.0, 97.0, 99.0, 103.0]
+    >>> close = [96.0, 104.0, 100.0, 110.0]
+    >>> round(float(zeonta.abdi_ranaldo_spread(high, low, close).iloc[-1]), 6)
+    0.048889
+
+    References
+    ----------
+    https://doi.org/10.1093/rfs/hhx084
+    """
+    require_aligned_index(high=high, low=low, close=close)
+    high_values = as_array(high, "high")
+    low_values = as_array(low, "low")
+    close_values = as_array(close, "close")
+    size = require_same_length(high=high_values, low=low_values, close=close_values)
+
+    result = np.full(size, np.nan, dtype="float64")
+    if size > 1:
+        with np.errstate(divide="ignore", invalid="ignore"):
+            midrange = (np.log(high_values) + np.log(low_values)) / 2.0
+            log_close = np.log(close_values)
+            raw = (log_close[:-1] - midrange[:-1]) * (log_close[:-1] - midrange[1:])
+        result[1:] = np.sqrt(np.maximum(raw, 0.0))
+
+    return wrap_series(result, common_index(high, low, close), "AR")
+
+
+@indicator(
+    category="volatility",
+    summary="Roll's (1984) implicit bid-ask spread from the serial covariance of returns.",
+    reference="https://doi.org/10.1111/j.1540-6261.1984.tb03897.x",
+    outputs=("ROLL",),
+)
+def roll_spread(close: ArrayLike, length: int = 21) -> pd.Series:
+    """Roll implicit bid-ask spread estimator (Roll, 1984).
+
+    In an efficient market with no new information, trades bouncing between
+    the bid and ask induce *negative* first-order serial covariance in
+    successive returns, even though the underlying "true" price never
+    moved — a bar traded at the ask is more likely to be followed by one
+    back at the bid than by another at the ask. The size of that induced
+    negative covariance identifies the spread::
+
+        Scov[t]   = Cov(r, r_lag1)   over the trailing `length`-bar window
+        Spread[t] = 2 * sqrt(-Scov[t])   if Scov[t] < 0
+                    NaN                   otherwise
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Rolling window, in bars. Must be >= 4, so the window contains at
+        least 3 returns (2 lag-1 pairs) — the minimum needed for a sample
+        covariance at all.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``ROLL_{length}``, as a fraction of price. ``NaN`` for
+        warm-up bars, and for any window whose returns have non-negative
+        serial covariance — the estimator is simply undefined there (Roll,
+        1984; see also Harris, 1990, on this well-known limitation), not
+        zero or a negative "spread".
+
+    Notes
+    -----
+    Positive serial covariance is common in practice at daily frequency,
+    especially for heavily traded instruments — this estimator was
+    designed for, and works best on, higher-frequency (tick-level) data
+    where the bid-ask bounce dominates the return process; see
+    :func:`corwin_schultz_spread` and :func:`abdi_ranaldo_spread` for
+    range-based alternatives that stay defined far more often on daily bars.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> close = [100.0, 102.0, 101.0, 103.0, 100.0, 104.0]
+    >>> round(float(zeonta.roll_spread(close, length=6).iloc[-1]), 6)
+    0.053374
+
+    References
+    ----------
+    https://doi.org/10.1111/j.1540-6261.1984.tb03897.x
+    """
+    length = validate_length(length, minimum=4)
+    values = as_array(close, "close")
+    size = values.shape[0]
+
+    result = np.full(size, np.nan, dtype="float64")
+    returns_size = size - 1
+    window = length - 1  # number of returns per rolling covariance estimate
+    if returns_size >= window:
+        with np.errstate(divide="ignore", invalid="ignore"):
+            returns = np.diff(values) / values[:-1]
+        windows = sliding_window_view(returns, window)
+        x = windows[:, :-1]
+        y = windows[:, 1:]
+        pairs = window - 1
+        x_mean = x.mean(axis=1, keepdims=True)
+        y_mean = y.mean(axis=1, keepdims=True)
+        covariance = ((x - x_mean) * (y - y_mean)).sum(axis=1) / (pairs - 1)
+        with np.errstate(invalid="ignore"):
+            spread = np.where(covariance < 0.0, 2.0 * np.sqrt(-covariance), np.nan)
+        result[length - 1 :] = spread
+
+    return wrap_series(result, common_index(close), f"ROLL_{length}")
+
+
+#: mu_1^-2 = pi/2 in Barndorff-Nielsen & Shephard's bipower variation, where
+#: mu_1 = E|u| = sqrt(2/pi) for a standard normal u.
+_BIPOWER_SCALE = np.pi / 2.0
+
+
+@indicator(
+    category="volatility",
+    summary="Realized bipower variation: a jump-robust alternative to realized variance.",
+    reference="https://doi.org/10.1093/jjfinec/nbi022",
+    outputs=("BV",),
+)
+def bipower_variation(close: ArrayLike, window: int = 20) -> pd.Series:
+    """Realized Bipower Variation (Barndorff-Nielsen & Shephard, 2004, 2006).
+
+    Realized variance, ``RV = sum(r_i^2)`` over a window of log returns, is
+    a consistent estimator of total quadratic variation — the continuous
+    (diffusive) part *and* any jumps. Bipower variation instead sums
+    products of *adjacent* absolute returns::
+
+        BV = (pi/2) * sum(|r[i-1]| * |r[i]|, i = 2 .. n)
+
+    over the same window of ``n`` log returns. A single large jump return
+    inflates ``RV`` through its own squared value, but only enters ``BV``
+    through two bounded cross-products with its (ordinary-sized) neighbours
+    — so ``BV`` estimates the *continuous* part of quadratic variation alone,
+    largely unaffected by jumps, while ``RV`` picks up both. The gap between
+    the two, ``RV - BV``, is this pair's own basis for testing whether a
+    jump occurred at all (not implemented here — the paper's full
+    Z-statistic jump test additionally needs a realized quarticity
+    estimator this function does not compute).
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    window:
+        Number of log returns per estimate (one more bar than this is
+        needed). Must be >= 2, so at least one adjacent pair exists.
+
+    Returns
+    -------
+    pandas.Series
+        Named ``BV_{window}``. Always ``>= 0``. ``NaN`` for warm-up bars.
+
+    Notes
+    -----
+    This is the plain realized-BPV estimator from the paper's own equation
+    (``sum_{j=2}^{n} |y_{j-1}||y_j|``, scaled by ``mu_1^-2 = pi/2``) with no
+    finite-sample bias correction applied — the paper states this
+    estimator's consistency with no additional ``n/(n-1)`` adjustment.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> close = [100.0, 101.0, 99.0, 102.0, 98.0, 103.0]
+    >>> round(float(zeonta.bipower_variation(close, window=5).iloc[-1]), 6)
+    0.006253
+
+    References
+    ----------
+    https://doi.org/10.1093/jjfinec/nbi022
+    """
+    window = validate_length(window, "window", minimum=2)
+    values = as_array(close, "close")
+    size = values.shape[0]
+
+    result = np.full(size, np.nan, dtype="float64")
+    with np.errstate(divide="ignore", invalid="ignore"):
+        log_returns = np.diff(np.log(values))
+    abs_returns = np.abs(log_returns)
+    if abs_returns.shape[0] >= window:
+        windows = sliding_window_view(abs_returns, window)
+        products = windows[:, 1:] * windows[:, :-1]
+        bv = _BIPOWER_SCALE * products.sum(axis=1)
+        result[window:] = bv
+
+    return wrap_series(result, common_index(close), f"BV_{window}")
+
+
+@indicator(
+    category="volatility",
+    summary="Realized variance split into its positive- and negative-return halves.",
+    reference="https://doi.org/10.1093/acprof:oso/9780199549498.003.0007",
+    outputs=("RSPOS", "RSNEG"),
+)
+def realized_semivariance(close: ArrayLike, length: int = 20) -> pd.DataFrame:
+    """Realized Semivariance (Barndorff-Nielsen, Kinnebrock & Shephard, 2010).
+
+    Splits realized variance, ``RV = sum(r_i^2)`` over a window of log
+    returns, into the part driven by up-moves and the part driven by
+    down-moves::
+
+        RS+ = sum(r_i^2 : r_i > 0)
+        RS- = sum(r_i^2 : r_i <= 0)
+
+    so that ``RS+ + RS- = RV`` exactly. The paper's own motivation: ordinary
+    realized variance cannot distinguish a volatile rally from a volatile
+    selloff, but ``RS-`` (downside realized variance) on its own is shown to
+    carry real predictive power for future volatility that the symmetric
+    ``RV`` measure dilutes.
+
+    Parameters
+    ----------
+    close:
+        Closing prices.
+    length:
+        Number of log returns per estimate (one more bar than this is
+        needed). Must be >= 1.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns ``RSPOS_{length}`` and ``RSNEG_{length}``, both ``>= 0``.
+        ``NaN`` for warm-up bars. Roles ``"positive"`` and ``"negative"``.
+
+    Examples
+    --------
+    >>> import zeonta
+    >>> close = [100.0, 101.0, 99.0, 102.0, 98.0, 103.0]
+    >>> out = zeonta.realized_semivariance(close, length=5)
+    >>> round(float(out["RSPOS_5"].iloc[-1]), 6), round(float(out["RSNEG_5"].iloc[-1]), 6)
+    (0.003466, 0.002)
+
+    References
+    ----------
+    https://doi.org/10.1093/acprof:oso/9780199549498.003.0007
+    """
+    length = validate_length(length, minimum=1)
+    values = as_array(close, "close")
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        log_returns = np.diff(np.log(values))
+    positive_sq = np.where(log_returns > 0.0, log_returns**2, 0.0)
+    negative_sq = np.where(log_returns <= 0.0, log_returns**2, 0.0)
+    # A NaN log-return (e.g. a non-positive close) must poison the window
+    # sum, not silently drop out via the comparisons above.
+    positive_sq = np.where(np.isnan(log_returns), np.nan, positive_sq)
+    negative_sq = np.where(np.isnan(log_returns), np.nan, negative_sq)
+
+    positive_padded = np.concatenate(([np.nan], positive_sq))
+    negative_padded = np.concatenate(([np.nan], negative_sq))
+    rs_pos = rolling_sum(positive_padded, length)
+    rs_neg = rolling_sum(negative_padded, length)
+
+    order = [f"RSPOS_{length}", f"RSNEG_{length}"]
+    return wrap_frame(
+        dict(zip(order, (rs_pos, rs_neg), strict=True)),
+        common_index(close),
+        order=order,
+        roles={"positive": order[0], "negative": order[1]},
+    )

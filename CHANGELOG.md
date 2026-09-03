@@ -8,6 +8,78 @@ that covers and what counts as a patch, minor, or major change.
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-09-03
+
+### Added
+
+- **`abdi_ranaldo_spread(high, low, close)`**: Abdi & Ranaldo's (2017)
+  closed-form bid-ask spread estimator, combining `corwin_schultz_spread`'s
+  high-low-midrange insight with `roll_spread`'s autocovariance
+  construction — applied to midrange-to-close-to-midrange instead of
+  close-to-close.
+- **`roll_spread(close, length)`**: Roll's (1984) implicit bid-ask spread
+  estimator, from the negative first-order serial covariance the bid-ask
+  bounce induces in successive returns. `NaN` whenever a window's serial
+  covariance is non-negative — the paper's own estimator is genuinely
+  undefined there, not zero or a negative "spread" (confirmed against the
+  paper and Harris, 1990, on this well-known limitation).
+- **`bipower_variation(close, window)`**: Barndorff-Nielsen & Shephard's
+  (2004, 2006) realized bipower variation, a jump-robust alternative to
+  realized variance built from products of adjacent absolute log returns.
+  Implements the paper's plain BV estimator only, not its full Z-statistic
+  jump test (which needs a separate realized-quarticity estimator this
+  release does not add).
+- **`realized_semivariance(close, length)`**: Barndorff-Nielsen, Kinnebrock
+  & Shephard's (2010) split of realized variance into its up-move and
+  down-move halves (`RSPOS`/`RSNEG`, summing exactly to the window's
+  realized variance).
+- **`multifractal_dfa(close, window, q_min, q_max)`**: Kantelhardt et al.'s
+  (2002) Multifractal Detrended Fluctuation Analysis, generalizing `dfa`'s
+  fluctuation function with a `q`-th-power average over boxes instead of a
+  plain RMS, reusing `dfa`'s own per-box detrending machinery. Reports the
+  width of the generalized-Hurst spectrum between two chosen `q` extremes
+  (default `-5`/`5`, the range most commonly scanned in the tutorial
+  literature that has followed the original paper) as a single summary
+  statistic — near `0` for a monofractal series, larger for a genuinely
+  multifractal one.
+
+This research pass also investigated, and declined, six other candidates —
+added to `ROADMAP.md`'s declined-indicator list with the specific reason
+each failed this project's formula-verification bar:
+
+- **Kyle's lambda, OHLCV-only proxy.** No genuinely independent convention
+  exists for constructing the signed order flow the regression needs from
+  daily bars alone — every simplification found relies on inventing a
+  trade-sign proxy (contemporaneous return sign, lagged return sign, a
+  tick-test approximation) that sources do not agree on, so
+  `ROADMAP.md`'s existing Kyle's-lambda entry (needs tick/order-book data)
+  is left as-is rather than narrowed.
+- **Singular Spectrum Analysis (SSA).** The embedding (window) length and
+  the number of leading components to reconstruct from are both real,
+  actively-debated design choices in the SSA literature with no single
+  convention independent sources converge on.
+- **MODWT.** `pywt.swt` is described, even in its own documentation, as
+  only "closely related" to the published MODWT construction, with a
+  stated implementation difference and a signal-length-must-be-a-power-of-
+  two-multiple constraint that does not fit this library's arbitrary-length
+  rolling-window contract.
+- **One-sided (causal) Hodrick-Prescott filter.** No single, independently
+  cross-checked state-space parameterization of the causal HP filter could
+  be confirmed against a primary source in this pass.
+- **Beveridge-Nelson decomposition.** Requires fitting an ARIMA(p,d,q)
+  model first, with no single agreed-on order for an arbitrary price
+  series; doing this properly needs `statsmodels`, a new runtime dependency
+  this project does not add without a separate decision.
+- **Lempel-Ziv Complexity (LZC).** Applying LZ76 to a continuous price
+  series needs a binarization convention (above/below the window's own
+  mean vs. median) and a normalization convention that independent sources
+  do not agree on.
+- **Recurrence Quantification Analysis (RQA).** Phase-space embedding
+  (dimension and delay) and the recurrence threshold are all real,
+  non-uniquely-specified design choices with more free parameters than any
+  other candidate in this pass — no single defensible default
+  parameterization multiple independent sources converge on.
+
 ## [0.3.3] - 2026-09-03
 
 ### Added

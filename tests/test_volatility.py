@@ -446,6 +446,178 @@ def test_corwin_schultz_spread_short_input_is_all_nan_not_an_error() -> None:
     assert result.isna().all()
 
 
+def test_abdi_ranaldo_spread_matches_a_hand_traced_two_day_estimate() -> None:
+    high = [100.0, 105.0, 108.0, 112.0]
+    low = [95.0, 97.0, 99.0, 103.0]
+    close = [96.0, 104.0, 100.0, 110.0]
+    result = zeonta.abdi_ranaldo_spread(high, low, close)
+
+    log_high = [math.log(h) for h in high]
+    log_low = [math.log(lo) for lo in low]
+    log_close = [math.log(c) for c in close]
+    midrange = [(h + lo) / 2.0 for h, lo in zip(log_high, log_low, strict=True)]
+    raw = (log_close[2] - midrange[2]) * (log_close[2] - midrange[3])
+    expected = math.sqrt(max(raw, 0.0))
+
+    np.testing.assert_allclose(result.iloc[-1], expected)
+    assert np.isnan(result.iloc[0])
+
+
+def test_abdi_ranaldo_spread_floors_a_negative_raw_estimate_at_zero() -> None:
+    """A close sitting on the same side of both bars' midranges makes the
+    raw product negative; the paper's own remedy is to floor it at zero."""
+    high = [100.0, 101.0]
+    low = [99.0, 100.0]
+    close = [99.5, 99.6]  # close[0] is between midrange[0] and midrange[1]
+
+    log_close = math.log(close[0])
+    midrange = [(math.log(h) + math.log(lo)) / 2.0 for h, lo in zip(high, low, strict=True)]
+    raw = (log_close - midrange[0]) * (log_close - midrange[1])
+    assert raw < 0.0, "test fixture must produce a negative raw estimate to be meaningful"
+
+    result = zeonta.abdi_ranaldo_spread(high, low, close)
+    assert result.iloc[-1] == 0.0
+
+
+def test_abdi_ranaldo_spread_is_never_negative(ohlcv: pd.DataFrame) -> None:
+    result = zeonta.abdi_ranaldo_spread(ohlcv["high"], ohlcv["low"], ohlcv["close"])
+    assert (result.dropna() >= 0.0).all()
+
+
+def test_abdi_ranaldo_spread_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.abdi_ranaldo_spread([10.0], [9.0], [9.5])
+    assert len(result) == 1
+    assert result.isna().all()
+
+
+def test_abdi_ranaldo_spread_rejects_mismatched_length() -> None:
+    with pytest.raises(ValueError, match="same length"):
+        zeonta.abdi_ranaldo_spread([10.0, 11.0], [9.0, 9.5], [9.5])
+
+
+def test_roll_spread_matches_a_hand_computed_negative_covariance_case() -> None:
+    close = [100.0, 102.0, 101.0, 103.0, 100.0, 104.0]
+    result = zeonta.roll_spread(close, length=6)
+
+    returns = np.diff(close) / np.array(close[:-1])
+    x, y = returns[:-1], returns[1:]
+    cov = np.cov(x, y, ddof=1)[0, 1]
+    assert cov < 0.0, "test fixture must produce negative serial covariance to be meaningful"
+    expected = 2.0 * math.sqrt(-cov)
+
+    np.testing.assert_allclose(result.iloc[-1], expected)
+    assert result.iloc[:-1].isna().all()
+
+
+def test_roll_spread_is_nan_when_serial_covariance_is_non_negative() -> None:
+    """A steady, monotonic trend has near-constant returns, whose serial
+    covariance is positive — the estimator is genuinely undefined there."""
+    close = [100.0, 101.0, 102.0, 103.0, 104.0, 105.0]
+    returns = np.diff(close) / np.array(close[:-1])
+    cov = np.cov(returns[:-1], returns[1:], ddof=1)[0, 1]
+    assert cov >= 0.0, "test fixture must produce non-negative serial covariance to be meaningful"
+
+    result = zeonta.roll_spread(close, length=6)
+    assert np.isnan(result.iloc[-1])
+
+
+def test_roll_spread_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.roll_spread([1.0, 2.0, 3.0], length=21)
+    assert len(result) == 3
+    assert result.isna().all()
+
+
+def test_roll_spread_rejects_length_below_four() -> None:
+    with pytest.raises(ValueError, match="'length' must be >= 4"):
+        zeonta.roll_spread([1.0, 2.0, 3.0], length=3)
+
+
+def test_bipower_variation_matches_a_hand_computed_value() -> None:
+    close = [100.0, 101.0, 99.0, 102.0, 98.0, 103.0]
+    result = zeonta.bipower_variation(close, window=5)
+
+    log_returns = np.diff(np.log(close))
+    expected = (math.pi / 2.0) * float(np.sum(np.abs(log_returns[1:]) * np.abs(log_returns[:-1])))
+
+    np.testing.assert_allclose(result.iloc[-1], expected)
+    assert result.iloc[:-1].isna().all()
+
+
+def test_bipower_variation_is_always_non_negative(ohlcv: pd.DataFrame) -> None:
+    result = zeonta.bipower_variation(ohlcv["close"], window=20)
+    assert (result.dropna() >= 0.0).all()
+
+
+def test_bipower_variation_is_lower_than_realized_variance_with_an_injected_jump() -> None:
+    """BNS's own robustness result: a single large jump return inflates
+    realized variance through its own squared value, but only enters
+    bipower variation through two bounded cross-products with its
+    ordinary-sized neighbours — so BV should come in below RV."""
+    rng = np.random.default_rng(3)
+    returns = rng.normal(scale=0.005, size=50)
+    returns[25] = 0.15  # a single outsized jump return
+    close = 100.0 * np.cumprod(1.0 + returns)
+    close = np.concatenate(([100.0], close))
+
+    bv = zeonta.bipower_variation(close, window=50).iloc[-1]
+    log_returns = np.diff(np.log(close))
+    rv = float(np.sum(log_returns**2))
+
+    assert bv < rv
+
+
+def test_bipower_variation_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.bipower_variation([1.0, 2.0], window=20)
+    assert len(result) == 2
+    assert result.isna().all()
+
+
+def test_bipower_variation_rejects_window_below_two() -> None:
+    with pytest.raises(ValueError, match="'window' must be >= 2"):
+        zeonta.bipower_variation([1.0, 2.0, 3.0], window=1)
+
+
+def test_realized_semivariance_matches_a_hand_computed_split() -> None:
+    close = [100.0, 101.0, 99.0, 102.0, 98.0, 103.0]
+    result = zeonta.realized_semivariance(close, length=5)
+
+    log_returns = np.diff(np.log(close))
+    expected_pos = float(np.sum(log_returns[log_returns > 0.0] ** 2))
+    expected_neg = float(np.sum(log_returns[log_returns <= 0.0] ** 2))
+
+    np.testing.assert_allclose(result["RSPOS_5"].iloc[-1], expected_pos)
+    np.testing.assert_allclose(result["RSNEG_5"].iloc[-1], expected_neg)
+
+
+def test_realized_semivariance_components_sum_to_realized_variance(ohlcv: pd.DataFrame) -> None:
+    result = zeonta.realized_semivariance(ohlcv["close"], length=20)
+    total = result["RSPOS_20"] + result["RSNEG_20"]
+
+    log_returns = np.diff(np.log(ohlcv["close"].to_numpy()))
+    log_returns = np.concatenate(([np.nan], log_returns))
+    realized_variance = pd.Series(log_returns**2, index=ohlcv.index).rolling(20).sum()
+
+    np.testing.assert_allclose(total.dropna().to_numpy(), realized_variance.dropna().to_numpy())
+
+
+def test_realized_semivariance_both_columns_are_non_negative(ohlcv: pd.DataFrame) -> None:
+    result = zeonta.realized_semivariance(ohlcv["close"], length=20)
+    assert (result["RSPOS_20"].dropna() >= 0.0).all()
+    assert (result["RSNEG_20"].dropna() >= 0.0).all()
+
+
+def test_realized_semivariance_short_input_is_all_nan_not_an_error() -> None:
+    result = zeonta.realized_semivariance([1.0, 2.0], length=20)
+    assert len(result) == 2
+    assert result["RSPOS_20"].isna().all()
+    assert result["RSNEG_20"].isna().all()
+
+
+def test_realized_semivariance_rejects_non_positive_length() -> None:
+    with pytest.raises(ValueError, match="'length' must be >= 1"):
+        zeonta.realized_semivariance([1.0, 2.0, 3.0], length=0)
+
+
 def test_rogers_satchell_volatility_matches_an_independent_reimplementation() -> None:
     result = zeonta.rogers_satchell_volatility(_VOL_OPEN, _VOL_HIGH, _VOL_LOW, _VOL_CLOSE, length=3)
     np.testing.assert_allclose(result.iloc[-1], 10.187028334838402)

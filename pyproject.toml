@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "zeon-ta"
-version = "0.3.3"
+version = "0.3.4"
 description = "Technical analysis for Python — the classic indicator set alongside modern, academically-sourced tools like Ehlers' cycle filters and OHLC volatility estimators."
 readme = "README.md"
 license = { file = "LICENSE" }

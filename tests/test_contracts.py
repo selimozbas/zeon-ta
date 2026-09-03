@@ -171,6 +171,11 @@ def test_indicators_with_a_reference() -> None:
         "ffd",
         "amihud_illiquidity",
         "corwin_schultz_spread",
+        "abdi_ranaldo_spread",
+        "roll_spread",
+        "bipower_variation",
+        "realized_semivariance",
+        "multifractal_dfa",
     }
     with_reference = {spec.name for spec in iter_specs() if spec.reference is not None}
     assert with_reference == expected

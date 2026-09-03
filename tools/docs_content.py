@@ -3699,4 +3699,164 @@ CONTENT: dict[str, Doc] = {
             lambda df: zeonta.corwin_schultz_spread(df["high"], df["low"]).tail(3),
         ],
     },
+    "abdi_ranaldo_spread": {
+        "title": "Abdi-Ranaldo Spread Estimator",
+        "formula": (
+            "eta[t] = (ln(High[t]) + ln(Low[t])) / 2; "
+            "S[t] = sqrt(max((ln(Close[t-1]) - eta[t-1]) x (ln(Close[t-1]) - eta[t]), 0))"
+        ),
+        "about": (
+            "Abdi & Ranaldo (2017) combine corwin_schultz_spread's insight (a bar's high-low "
+            "midrange is a better estimate of the efficient price than its close, because the "
+            "bid-ask half-spreads on either side of the range cancel) with roll_spread's "
+            "autocovariance construction, but applied to midrange-to-close-to-midrange instead "
+            "of close-to-close. The result is a two-day, close/high/low-only spread estimator "
+            "that behaves better than either building block alone on daily data."
+        ),
+        "reading": (
+            "Read AR as a fraction of price — 0.01 is a 1% quoted spread, the same convention as "
+            "corwin_schultz_spread. It is a liquidity-cost estimate, not a volatility measure: a "
+            "wider AR means more of the price is spent just crossing the spread on a round trip."
+        ),
+        "pitfalls": (
+            "The raw product inside the square root can come out negative, the same known "
+            "limitation corwin_schultz_spread and roll_spread both have; the paper's own remedy, "
+            "applied here, is to floor each single two-day estimate at zero rather than leave it "
+            "negative or turn the whole bar into NaN. Only the first bar (no earlier bar to pair "
+            "against) is genuinely undefined, and is NaN."
+        ),
+        "example": [
+            lambda df: zeonta.abdi_ranaldo_spread(df["high"], df["low"], df["close"]).tail(3),
+        ],
+    },
+    "roll_spread": {
+        "title": "Roll Spread Estimator",
+        "formula": (
+            "Scov[t] = Cov(r, r_lag1) over the trailing window; "
+            "Spread[t] = 2 x sqrt(-Scov[t]) if Scov[t] < 0, else undefined"
+        ),
+        "about": (
+            "Roll (1984) shows that in an efficient market, the bid-ask bounce alone — trades "
+            "alternating between the bid and the ask with no new information moving the 'true' "
+            "price at all — induces negative first-order serial covariance in successive "
+            "returns. The size of that induced negative covariance identifies the spread "
+            "directly, with no trade-direction data needed at all, only a return series."
+        ),
+        "reading": (
+            "Read ROLL as a fraction of price. Unlike corwin_schultz_spread and "
+            "abdi_ranaldo_spread, which use the high-low range and stay defined on almost every "
+            "bar, Roll's estimator needs the return series' own serial covariance to be "
+            "negative — something that is common at tick/trade frequency but frequently fails "
+            "at daily frequency, especially for heavily traded instruments."
+        ),
+        "pitfalls": (
+            "Whenever a window's serial covariance is non-negative, the estimator is genuinely "
+            "undefined (NaN here) — not zero, and not a valid spread computed from a negative "
+            "number under the square root. This is a well-documented limitation of the "
+            "estimator itself (see Harris, 1990), not a bug: expect long stretches of NaN on "
+            "daily bars for liquid instruments, where corwin_schultz_spread/abdi_ranaldo_spread "
+            "stay defined far more often."
+        ),
+        "example": [
+            lambda df: zeonta.roll_spread(df["close"]).tail(3),
+        ],
+    },
+    "bipower_variation": {
+        "title": "Realized Bipower Variation",
+        "formula": "BV = (pi/2) x sum(|r[i-1]| x |r[i]|, i = 2..n) over a window of log returns",
+        "about": (
+            "Realized variance (the sum of squared log returns over a window) is a consistent "
+            "estimator of total quadratic variation — both the continuous, diffusive part of "
+            "price movement and any jumps. Barndorff-Nielsen & Shephard (2004, 2006) show that "
+            "summing products of adjacent absolute returns instead, scaled by pi/2, estimates "
+            "only the continuous part: a single large jump return inflates realized variance "
+            "through its own squared value, but only enters bipower variation through two "
+            "bounded cross-products with its ordinary-sized neighbours."
+        ),
+        "reading": (
+            "BV reads on the same scale as a realized-variance-style estimate (log-return "
+            "variance units, not annualized or square-rooted into a volatility). Comparing it "
+            "to a same-window realized variance is this pair's own basis for detecting jumps: a "
+            "realized variance well above bipower variation suggests a jump occurred, though the "
+            "paper's full statistical test for that (its Z-statistic) needs a separate "
+            "quarticity estimator this function does not compute."
+        ),
+        "pitfalls": (
+            "This is the plain realized-BPV estimator from the paper's own equation, with no "
+            "finite-sample bias correction (no n/(n-1) adjustment) — the paper itself states "
+            "this estimator's consistency without one. window counts log returns, not close "
+            "bars, so one extra close bar is needed beyond window to produce a value."
+        ),
+        "example": [
+            lambda df: zeonta.bipower_variation(df["close"]).tail(3),
+        ],
+    },
+    "realized_semivariance": {
+        "title": "Realized Semivariance",
+        "formula": (
+            "RS+ = sum(r^2 : r > 0) over the window; RS- = sum(r^2 : r <= 0) over the window; "
+            "RS+ + RS- = realized variance"
+        ),
+        "about": (
+            "Barndorff-Nielsen, Kinnebrock & Shephard (2010) split realized variance — the sum "
+            "of squared log returns over a window — into the part driven by up-moves and the "
+            "part driven by down-moves. Ordinary realized variance cannot tell a volatile rally "
+            "apart from a volatile selloff; the paper shows the downside half on its own carries "
+            "real predictive power for future volatility that the symmetric total dilutes."
+        ),
+        "reading": (
+            "RSPOS and RSNEG always sum to the same window's realized variance (sum of squared "
+            "log returns) exactly — a useful sanity check on the two columns together. A window "
+            "with RSNEG well above RSPOS reflects a period whose volatility was concentrated in "
+            "down-moves, and vice versa."
+        ),
+        "pitfalls": (
+            "length counts log returns, not close bars, so one extra close bar is needed beyond "
+            "length to produce a value — the same convention bipower_variation uses. A bar with "
+            "a non-positive close (making its log return NaN) poisons only the windows still "
+            "containing it, the same self-recovering behaviour every rolling-window indicator "
+            "in this library has."
+        ),
+        "example": [
+            lambda df: zeonta.realized_semivariance(df["close"]).tail(3),
+        ],
+    },
+    "multifractal_dfa": {
+        "title": "Multifractal Detrended Fluctuation Analysis",
+        "formula": (
+            "F_q(n) = {mean over boxes of [F^2(n,box)]^(q/2)}^(1/q) for q != 0, or "
+            "exp(mean(ln[F^2(n,box)])/2) for q = 0; "
+            "h(q) = slope of log(F_q(n)) vs log(n); MFDFA = h(q_min) - h(q_max)"
+        ),
+        "about": (
+            "dfa fits one scaling exponent to a return series, implicitly treating small and "
+            "large fluctuations as scaling the same way. Kantelhardt et al. (2002) generalize "
+            "DFA's fluctuation function with a q-th-power average over boxes instead of a plain "
+            "RMS, reusing the exact same per-box detrended fluctuations dfa computes: negative q "
+            "weights small fluctuations more heavily, positive q weights large ones. A "
+            "monofractal series (small and large fluctuations scale identically, e.g. plain "
+            "fractional Brownian motion) has h(q) essentially constant across q; a genuinely "
+            "multifractal series has h(q) vary with q, and this function reports that variation "
+            "as a single number, the width of the generalized-Hurst spectrum between two chosen "
+            "q extremes."
+        ),
+        "reading": (
+            "Near 0 describes a monofractal series (dfa's own single exponent already tells the "
+            "whole story); larger describes a more strongly multifractal one, where small and "
+            "large price swings genuinely follow different scaling laws. h(2) — the special case "
+            "at q=2 this function does not expose on its own — reduces exactly to dfa's own "
+            "exponent, so dfa and this function are checking related but different things."
+        ),
+        "pitfalls": (
+            "q_min and q_max default to -5 and 5, the range most commonly scanned in the "
+            "tutorial literature that has followed the original 2002 paper (e.g. Ihlen, 2012) — "
+            "not something the paper itself mandates as the one correct choice. Like dfa, this "
+            "divides each window into non-overlapping boxes counted from the start only, not "
+            "also from the end as some MF-DFA implementations do, kept consistent with dfa's own "
+            "existing convention in this library."
+        ),
+        "example": [
+            lambda df: zeonta.multifractal_dfa(df["close"]).tail(3),
+        ],
+    },
 }

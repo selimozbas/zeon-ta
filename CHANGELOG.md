@@ -8,6 +8,31 @@ that covers and what counts as a patch, minor, or major change.
 
 ## [Unreleased]
 
+## [0.3.6] - 2026-09-17
+
+### Changed
+
+- **`CONTRIBUTING.md#versioning`**'s ad-hoc-patch exception now also
+  covers a new backward-compatible optional parameter added to an
+  *existing* indicator, provided its default reproduces the exact prior
+  behavior and output names — not only brand-new indicators, which is
+  all it covered before.
+
+### Added
+
+- **`supertrend()` gained a `source` parameter**: `"hl2"` (the default,
+  `(High+Low)/2`, unchanged), `"hlc3"` (typical price, `(High+Low+Close)/3`),
+  `"hlcc4"` (weighted close, `(High+Low+2*Close)/4`), or `"ohlc4"`
+  (`(Open+High+Low+Close)/4`, which additionally requires passing the new
+  optional `open` parameter). The bands were previously hard-coded to
+  `hl2`; every other supported source is a standard price-average
+  convention already used elsewhere in this library (`vwap`'s typical
+  price, `heikin_ashi`'s `ohlc4` close). Purely additive and
+  backward-compatible: `source="hl2"` keeps the exact original,
+  unsuffixed column names (`SUPERT_10_3.0`); any other `source` appends
+  itself to every column name (`SUPERT_10_3.0_hlc3`) so the two never
+  collide if both are computed into the same DataFrame.
+
 ## [0.3.5] - 2026-09-03
 
 ### Added

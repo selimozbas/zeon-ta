@@ -55,6 +55,36 @@ __all__ = [
 ]
 
 
+#: Price sources `supertrend()` can center its bands on, beyond the default
+#: ``hl2``. Kept private/local since only `supertrend()` uses this today —
+#: promote to `_core` if a second indicator needs the same choice later.
+_SUPERTREND_SOURCES = ("hl2", "hlc3", "hlcc4", "ohlc4")
+
+
+def _supertrend_price_source(
+    source: str,
+    high: np.ndarray,
+    low: np.ndarray,
+    close: np.ndarray,
+    open_: np.ndarray | None,
+) -> np.ndarray:
+    """The midpoint `supertrend()`'s bands are built around, per *source*."""
+    result: np.ndarray
+    if source == "hl2":
+        result = (high + low) / 2.0
+    elif source == "hlc3":
+        result = (high + low + close) / 3.0
+    elif source == "hlcc4":
+        result = (high + low + 2.0 * close) / 4.0
+    elif source == "ohlc4":
+        if open_ is None:
+            raise ValueError("'open' is required when source='ohlc4'")
+        result = (open_ + high + low + close) / 4.0
+    else:  # pragma: no cover - defensive; supertrend() already validates source
+        raise ValueError(f"'source' must be one of {_SUPERTREND_SOURCES}, got {source!r}")
+    return result
+
+
 @indicator(
     category="trend",
     summary="ATR-based trailing line that flips between support and resistance.",
@@ -67,13 +97,15 @@ def supertrend(
     close: ArrayLike,
     length: int = 10,
     multiplier: Number = 3.0,
+    source: str = "hl2",
+    open: ArrayLike | None = None,
 ) -> pd.DataFrame:
     """SuperTrend.
 
-    Starting from ``hl2 = (High + Low) / 2``:
+    Starting from a midpoint price (``hl2 = (High + Low) / 2`` by default):
 
-    * ``Basic Upper = hl2 + multiplier * ATR(length)``
-    * ``Basic Lower = hl2 - multiplier * ATR(length)``
+    * ``Basic Upper = source + multiplier * ATR(length)``
+    * ``Basic Lower = source - multiplier * ATR(length)``
 
     The final upper band may only move **down** while price stays below it, and
     the final lower band may only move **up** while price stays above it. This
@@ -89,6 +121,13 @@ def supertrend(
     multiplier:
         ATR multiplier. Lower hugs price and flips frequently; higher gives the
         trend more room.
+    source:
+        Which midpoint price the bands are centered on:
+        ``"hl2"`` (``(H+L)/2``, the default), ``"hlc3"`` (typical price,
+        ``(H+L+C)/3``), ``"hlcc4"`` (weighted close, ``(H+L+2C)/4`` — close
+        counted twice), or ``"ohlc4"`` (``(O+H+L+C)/4``, needs *open*).
+    open:
+        Opening prices. Only required when ``source="ohlc4"``.
 
     Returns
     -------
@@ -96,7 +135,10 @@ def supertrend(
         ``SUPERT_{length}_{multiplier}`` — the plotted line;
         ``SUPERTd_...`` — direction, ``1.0`` uptrend / ``-1.0`` downtrend;
         ``SUPERTl_...`` / ``SUPERTs_...`` — the line masked to long-only and
-        short-only bars, which is what you plot in two colours.
+        short-only bars, which is what you plot in two colours. A non-default
+        ``source`` is appended to every column name (``SUPERT_10_3.0_hlc3``);
+        the default ``hl2`` keeps the original, unsuffixed names so every
+        existing call site's output is unaffected by this parameter's addition.
 
     Notes
     -----
@@ -110,18 +152,32 @@ def supertrend(
     >>> out = zeonta.supertrend([2] * 30, [1] * 30, [1.5] * 30)
     >>> float(out['SUPERTd_10_3.0'].iloc[-1])
     1.0
+    >>> out2 = zeonta.supertrend([2] * 30, [1] * 30, [1.5] * 30, source="hlc3")
+    >>> float(out2['SUPERTd_10_3.0_hlc3'].iloc[-1])
+    1.0
     """
     length = validate_length(length)
     factor = validate_multiplier(multiplier)
+    if source not in _SUPERTREND_SOURCES:
+        raise ValueError(f"'source' must be one of {_SUPERTREND_SOURCES}, got {source!r}")
 
-    require_aligned_index(high=high, low=low, close=close)
+    if open is not None:
+        require_aligned_index(high=high, low=low, close=close, open=open)
+    else:
+        require_aligned_index(high=high, low=low, close=close)
     high_values = as_array(high, "high")
     low_values = as_array(low, "low")
     close_values = as_array(close, "close")
-    size = require_same_length(high=high_values, low=low_values, close=close_values)
+    open_values = as_array(open, "open") if open is not None else None
+    if open_values is not None:
+        size = require_same_length(
+            high=high_values, low=low_values, close=close_values, open=open_values
+        )
+    else:
+        size = require_same_length(high=high_values, low=low_values, close=close_values)
 
     ranges = wilder_values(_true_range_values(high_values, low_values, close_values), length)
-    midpoint = (high_values + low_values) / 2.0
+    midpoint = _supertrend_price_source(source, high_values, low_values, close_values, open_values)
     basic_upper = midpoint + factor * ranges
     basic_lower = midpoint - factor * ranges
 
@@ -167,11 +223,11 @@ def supertrend(
         short_line = np.where(direction < 0, line, np.nan)
         columns = (line, direction, long_line, short_line)
 
-    suffix = f"{length}_{factor}"
+    suffix = f"{length}_{factor}" if source == "hl2" else f"{length}_{factor}_{source}"
     order = [f"SUPERT_{suffix}", f"SUPERTd_{suffix}", f"SUPERTl_{suffix}", f"SUPERTs_{suffix}"]
     return wrap_frame(
         dict(zip(order, columns, strict=True)),
-        common_index(high, low, close),
+        common_index(open, high, low, close),
         order=order,
         roles={
             "trend": order[0],

@@ -77,6 +77,80 @@ def test_supertrend_never_flips_in_a_steady_uptrend() -> None:
     assert (direction == 1.0).all()
 
 
+def test_supertrend_default_source_keeps_the_original_unsuffixed_names(
+    ohlcv: pd.DataFrame,
+) -> None:
+    """source="hl2" (the default) must not change any existing column name —
+    this parameter's addition is backward-compatible by construction."""
+    out = _supertrend(ohlcv)
+    assert list(out.columns) == [
+        "SUPERT_10_3.0",
+        "SUPERTd_10_3.0",
+        "SUPERTl_10_3.0",
+        "SUPERTs_10_3.0",
+    ]
+
+
+def test_supertrend_hlc3_matches_a_hand_computed_midpoint(ohlcv: pd.DataFrame) -> None:
+    """source="hlc3" must use the typical price, not hl2, as its band center —
+    verified by checking the final line always stays within the basic
+    (unratcheted) upper/lower bands built from the typical-price formula."""
+    out = _supertrend(ohlcv, source="hlc3")
+    assert "SUPERT_10_3.0_hlc3" in out.columns
+
+    high, low, close = ohlcv["high"], ohlcv["low"], ohlcv["close"]
+    typical = (high + low + close) / 3.0
+    atr = zeonta.atr(high, low, close, length=10)
+    basic_upper = typical + 3.0 * atr
+    basic_lower = typical - 3.0 * atr
+    line = out["SUPERT_10_3.0_hlc3"]
+
+    valid = line.notna() & basic_upper.notna()
+    assert (line[valid] <= basic_upper[valid] + 1e-9).all()
+    assert (line[valid] >= basic_lower[valid] - 1e-9).all()
+
+
+def test_supertrend_hlcc4_matches_a_hand_computed_midpoint(ohlcv: pd.DataFrame) -> None:
+    """source="hlcc4" counts close twice: (H+L+2C)/4, not the plain hl2/hlc3
+    midpoint — verified the same envelope way as the hlc3 test above."""
+    out = _supertrend(ohlcv, source="hlcc4")
+    assert "SUPERT_10_3.0_hlcc4" in out.columns
+
+    high, low, close = ohlcv["high"], ohlcv["low"], ohlcv["close"]
+    weighted_close = (high + low + 2.0 * close) / 4.0
+    atr = zeonta.atr(high, low, close, length=10)
+    basic_upper = weighted_close + 3.0 * atr
+    basic_lower = weighted_close - 3.0 * atr
+    line = out["SUPERT_10_3.0_hlcc4"]
+
+    valid = line.notna() & basic_upper.notna()
+    assert (line[valid] <= basic_upper[valid] + 1e-9).all()
+    assert (line[valid] >= basic_lower[valid] - 1e-9).all()
+
+
+def test_supertrend_ohlc4_requires_open(ohlcv: pd.DataFrame) -> None:
+    with pytest.raises(ValueError, match="'open' is required when source='ohlc4'"):
+        zeonta.supertrend(ohlcv["high"], ohlcv["low"], ohlcv["close"], source="ohlc4")
+
+
+def test_supertrend_ohlc4_uses_open_in_the_band_center(ohlcv: pd.DataFrame) -> None:
+    """Swapping in a very different `open` series (far from hlc3) must move the
+    ohlc4 bands relative to the hl2 default, proving `open` is actually used."""
+    high, low, close = ohlcv["high"], ohlcv["low"], ohlcv["close"]
+    shifted_open = close + 1000.0
+    out_default = _supertrend(ohlcv)
+    out_ohlc4 = zeonta.supertrend(high, low, close, source="ohlc4", open=shifted_open)
+    assert not np.allclose(
+        out_default["SUPERT_10_3.0"].dropna(),
+        out_ohlc4["SUPERT_10_3.0_ohlc4"].dropna(),
+    )
+
+
+def test_supertrend_rejects_an_unknown_source(ohlcv: pd.DataFrame) -> None:
+    with pytest.raises(ValueError, match="'source' must be one of"):
+        _supertrend(ohlcv, source="bogus")
+
+
 def test_adx_is_high_in_a_clean_trend() -> None:
     prices = np.arange(1.0, 80.0)
     out = zeonta.adx(prices, prices - 1, prices)

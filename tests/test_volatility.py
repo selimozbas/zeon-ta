@@ -295,6 +295,17 @@ def test_chaikin_volatility_is_zero_on_a_constant_range() -> None:
     np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
 
 
+def test_chaikin_volatility_is_nan_not_inf_on_a_breakout_from_zero_range() -> None:
+    """A reference smoothed-range of exactly 0 makes the percentage change
+    undefined, the same convention roc()/trix()/ppo() use for a zero
+    reference — not an inf leaking out of a 0-in-the-denominator division."""
+    high = [10.0] * 10 + [12.0, 14.0, 16.0, 18.0, 20.0]
+    low = [10.0] * 10 + [10.0] * 5
+    result = zeonta.chaikin_volatility(high, low, length=3)
+    assert not np.isinf(result.to_numpy()).any()
+    assert np.isnan(result.iloc[10])
+
+
 def test_chaikin_volatility_rejects_non_positive_length() -> None:
     with pytest.raises(ValueError, match="must be >="):
         zeonta.chaikin_volatility([2.0, 3.0], [1.0, 1.5], length=0)

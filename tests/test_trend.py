@@ -77,6 +77,35 @@ def test_supertrend_never_flips_in_a_steady_uptrend() -> None:
     assert (direction == 1.0).all()
 
 
+def test_supertrend_skips_forward_when_the_natural_seed_bar_is_a_gap() -> None:
+    """If the very first bar with a computable ATR is itself a gap bar (its
+    own close is NaN), the seed search must keep looking forward rather than
+    seeding on invalid data — bar 9 (the natural ATR seed at length=10) is
+    NaN here, and bar 10 becomes the real seed instead."""
+    n = 20
+    high = list(np.linspace(10.0, 30.0, n))
+    low = [h - 1.0 for h in high]
+    close = [h - 0.5 for h in high]
+    close[9] = float("nan")
+
+    out = zeonta.supertrend(high, low, close, length=10, multiplier=3)
+    assert out.iloc[9].isna().all()
+    assert out["SUPERTd_10_3.0"].iloc[10] == 1.0
+    assert np.isfinite(out["SUPERT_10_3.0"].iloc[10])
+
+
+def test_supertrend_is_all_nan_when_no_bar_ever_has_a_valid_close() -> None:
+    """The seed search must give up cleanly (all-NaN output, no crash) when
+    every candidate bar is invalid, not just the first one."""
+    n = 20
+    high = list(np.linspace(10.0, 30.0, n))
+    low = [h - 1.0 for h in high]
+    close = [float("nan")] * n
+
+    out = zeonta.supertrend(high, low, close, length=5, multiplier=3)
+    assert out.isna().all().all()
+
+
 def test_supertrend_default_source_keeps_the_original_unsuffixed_names(
     ohlcv: pd.DataFrame,
 ) -> None:

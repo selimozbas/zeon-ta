@@ -146,6 +146,11 @@ def supertrend(
     strength — it flips identically on a powerful move and a feeble one. In a
     range it will flip repeatedly. Pairing it with :func:`adx` is the usual fix.
 
+    A bar with a missing ``high``, ``low`` or ``close`` (``NaN``) produces a
+    ``NaN`` line/direction and leaves every band/state untouched, so the next
+    valid bar continues exactly as if the gap bar had never appeared — the
+    same convention :func:`parabolic_sar` uses.
+
     Examples
     --------
     >>> import zeonta
@@ -186,7 +191,19 @@ def supertrend(
     final_upper = np.full(size, np.nan, dtype="float64")
     final_lower = np.full(size, np.nan, dtype="float64")
 
+    def valid(i: int) -> bool:
+        return bool(
+            np.isfinite(basic_upper[i])
+            and np.isfinite(basic_lower[i])
+            and np.isfinite(close_values[i])
+        )
+
     start = first_full_window(ranges, 1)
+    while start >= 0 and not valid(start):
+        start += 1
+        if start >= size:
+            start = -1
+
     if start < 0:
         columns = (line, direction, line.copy(), line.copy())
     else:
@@ -195,29 +212,48 @@ def supertrend(
         direction[start] = 1.0
         line[start] = final_lower[start]
 
+        # Tracked separately from final_upper[i-1]/final_lower[i-1]/... rather
+        # than indexed directly, so a gap bar (whose midpoint/close is NaN)
+        # never poisons the state the next valid bar resumes from — the same
+        # pattern parabolic_sar() uses for the same reason.
+        state_upper = final_upper[start]
+        state_lower = final_lower[start]
+        state_direction = direction[start]
+        state_close = close_values[start]
+
         for i in range(start + 1, size):
-            previous_upper = final_upper[i - 1]
-            previous_lower = final_lower[i - 1]
+            if not valid(i):
+                # A missing high/low/close means nothing about today is
+                # knowable; leave this bar NaN and freeze every piece of
+                # state so the next valid bar continues exactly as if the
+                # gap bar had never appeared, rather than ratcheting against
+                # (or flipping on) a NaN comparison that silently reads False.
+                continue
 
             # The upper band ratchets down; it may only widen once price closes above it.
             final_upper[i] = (
                 basic_upper[i]
-                if (basic_upper[i] < previous_upper or close_values[i - 1] > previous_upper)
-                else previous_upper
+                if (basic_upper[i] < state_upper or state_close > state_upper)
+                else state_upper
             )
             # The lower band ratchets up; it may only widen once price closes below it.
             final_lower[i] = (
                 basic_lower[i]
-                if (basic_lower[i] > previous_lower or close_values[i - 1] < previous_lower)
-                else previous_lower
+                if (basic_lower[i] > state_lower or state_close < state_lower)
+                else state_lower
             )
 
-            if direction[i - 1] > 0:
+            if state_direction > 0:
                 direction[i] = -1.0 if close_values[i] < final_lower[i] else 1.0
             else:
                 direction[i] = 1.0 if close_values[i] > final_upper[i] else -1.0
 
             line[i] = final_lower[i] if direction[i] > 0 else final_upper[i]
+
+            state_upper = final_upper[i]
+            state_lower = final_lower[i]
+            state_direction = direction[i]
+            state_close = close_values[i]
 
         long_line = np.where(direction > 0, line, np.nan)
         short_line = np.where(direction < 0, line, np.nan)
@@ -297,6 +333,15 @@ def adx(
 
     plus_dm = np.where((up_move > down_move) & (up_move > 0.0), up_move, 0.0)
     minus_dm = np.where((down_move > up_move) & (down_move > 0.0), down_move, 0.0)
+    # A NaN high/low makes up_move/down_move NaN too (np.diff propagates it to
+    # both the bar it's on and the bar after), which a bare comparison quietly
+    # reads as False — silently recording "definitely zero directional
+    # movement" for a bar that's actually just unknown. Restoring the NaN
+    # here, before Wilder-smoothing, lets wilder_values' own gap-hold
+    # behaviour freeze state for that bar instead of corrupting it.
+    gap = ~(np.isfinite(up_move) & np.isfinite(down_move))
+    plus_dm = np.where(gap, np.nan, plus_dm)
+    minus_dm = np.where(gap, np.nan, minus_dm)
     plus_dm[0] = np.nan
     minus_dm[0] = np.nan
 
@@ -307,12 +352,20 @@ def adx(
     with np.errstate(divide="ignore", invalid="ignore"):
         plus_di = 100.0 * smoothed_plus / ranges
         minus_di = 100.0 * smoothed_minus / ranges
+    # A flat market (zero true range) has no directional movement to
+    # normalise; defined as exactly 0, not an undefined 0/0 ratio. Applied
+    # before computing `total`/`dx` below so a flat market's DX-zero fix
+    # (which depends on `total` actually being 0.0, not NaN) can fire.
+    flat = np.isfinite(ranges) & (ranges == 0.0)
+    plus_di = np.where(flat, 0.0, plus_di)
+    minus_di = np.where(flat, 0.0, minus_di)
+
+    with np.errstate(divide="ignore", invalid="ignore"):
         total = plus_di + minus_di
         dx = 100.0 * np.abs(plus_di - minus_di) / total
-    # A flat market gives no directional movement at all; DX is zero, not NaN.
+    # Both DI lines at exactly zero gives no directional movement at all;
+    # DX is zero, not NaN.
     dx = np.where(np.isfinite(total) & (total == 0.0), 0.0, dx)
-    plus_di = np.where(np.isfinite(ranges) & (ranges == 0.0), 0.0, plus_di)
-    minus_di = np.where(np.isfinite(ranges) & (ranges == 0.0), 0.0, minus_di)
 
     adx_values = np.full(size, np.nan, dtype="float64")
     adx_values[1:] = wilder_values(dx[1:], length)
@@ -404,11 +457,21 @@ def ichimoku(
     span_b = midpoint(senkou)
 
     def shift_forward(values: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        """Split a forward-shifted series into its on-chart and beyond-chart parts."""
-        visible = np.full(size, np.nan, dtype="float64")
-        keep = max(size - displacement, 0)
-        visible[displacement:] = values[:keep]
-        return visible, values[keep:]
+        """Split a forward-shifted series into its on-chart and beyond-chart parts.
+
+        Places every value at its actual target position (``j + displacement``
+        for the value computed at bar ``j``) on an extended timeline first,
+        then slices that into the on-chart part (positions ``0 .. size - 1``)
+        and the beyond-chart part (positions ``size .. size + displacement - 1``,
+        always exactly ``displacement`` rows). This keeps the beyond-chart part
+        the documented, fixed length and correctly leaves it all-NaN — rather
+        than mislabelling the *first* ``size`` values as if they belonged there
+        — when ``displacement`` exceeds ``size`` and no computed value has
+        reached position ``size`` yet at all.
+        """
+        extended = np.full(size + displacement, np.nan, dtype="float64")
+        extended[displacement : displacement + size] = values
+        return extended[:size], extended[size:]
 
     span_a_visible, span_a_forward = shift_forward(span_a)
     span_b_visible, span_b_forward = shift_forward(span_b)

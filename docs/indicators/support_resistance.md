@@ -62,10 +62,10 @@ zeonta.sr_levels(df['high'], df['low'], left=5, right=5, max_levels=3)
 ```
 
 ```text
-       level  touches     kind
-0  93.029363       16     both
-1  95.336044        9     both
-2  90.813267        3  support
+       level  touches  kind
+0  93.192538        8  both
+1  93.762775        4  both
+2  94.824475        4  both
 ```
 
 **Accessor form:** `df.zta.support_resistance(...)`

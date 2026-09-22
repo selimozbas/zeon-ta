@@ -49,6 +49,13 @@ def test_hammer_and_shooting_star_have_opposite_signs() -> None:
     assert star["CDLHAM"].iloc[0] == -1.0
 
 
+def test_candles_rejects_hammer_ratio_at_or_below_one() -> None:
+    """At ratio<=1 the hammer and shooting-star conditions can overlap on
+    the same candle (see test below); rejecting it here is the actual fix."""
+    with pytest.raises(ValueError, match="'hammer_ratio' must be > 1"):
+        zeonta.candles([10.0], [11.8], [9.1], [11.0], hammer_ratio=1.0)
+
+
 def test_pivot_high_needs_bars_on_both_sides() -> None:
     highs = [1, 2, 5, 2, 1, 2, 1]
     out = zeonta.support_resistance(highs, [h - 1 for h in highs], left=2, right=2)
@@ -78,6 +85,27 @@ def test_sr_levels_merges_nearby_pivots_and_ranks_by_touches() -> None:
     levels = zeonta.sr_levels(highs, [h - 1 for h in highs], left=2, right=2, tolerance=0.01)
     assert levels.iloc[0]["touches"] == 2
     assert levels.iloc[0]["level"] == pytest.approx(5.005)
+
+
+def test_sr_levels_does_not_chain_a_cluster_beyond_tolerance() -> None:
+    """Each pivot is compared to its cluster's own first member (anchor),
+    not the last point merged in — otherwise a gradual staircase of pivots,
+    each within `tolerance` of its immediate neighbour, could merge into one
+    cluster whose overall spread is arbitrarily larger than `tolerance`."""
+    staircase = [101.0, 102.01, 103.03, 104.06, 105.1, 106.15, 107.21, 108.28, 109.37, 110.46]
+    highs = []
+    for price in staircase:
+        highs += [90.0, price]
+    highs.append(90.0)
+    lows = [h - 1 for h in highs]
+    levels = zeonta.sr_levels(highs, lows, left=1, right=1, tolerance=0.01, max_levels=20)
+    resistance = levels[levels["kind"] == "resistance"]
+    # With ~1%-apart pivots and tolerance=0.01, an anchor-based cluster can
+    # only ever pick up one more pivot before the next one exceeds 1% of the
+    # anchor — never all 10 chained into one level the way the pre-fix
+    # last-point comparison would.
+    assert (resistance["touches"] <= 2).all()
+    assert resistance["touches"].sum() == 10
 
 
 def test_sr_levels_respects_max_levels(ohlcv: pd.DataFrame) -> None:

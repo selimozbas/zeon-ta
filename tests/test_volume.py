@@ -410,6 +410,28 @@ def test_klinger_volume_oscillator_is_zero_on_a_perfectly_flat_market() -> None:
     np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
 
 
+def test_klinger_volume_oscillator_holds_cm_through_a_gap_bar() -> None:
+    """A missing high/low must only make `cm` unknowable for that one bar
+    (held, like every other single-bar gap in this library), not poison
+    every bar after it until the next trend flip happens to reset cm fresh.
+    Before this fix, bar 6 here incorrectly repeated bar 5's held value
+    (632.33) instead of reflecting its own, different real inputs."""
+    high = [12.0, 13.0, 11.0, 14.0, 15.0, 13.5, 16.0, 14.5, 15.5, 17.0]
+    low = [10.0, 11.0, 9.0, 12.0, 13.0, 11.5, 14.0, 12.5, 13.5, 15.0]
+    close = [11.0, 12.5, 10.0, 13.5, 14.5, 12.5, 15.5, 13.5, 15.0, 16.5]
+    volume = [100.0, 150.0, 200.0, 120.0, 180.0, 90.0, 210.0, 130.0, 160.0, 140.0]
+    gapped_high = list(high)
+    gapped_low = list(low)
+    gapped_high[5] = float("nan")
+    gapped_low[5] = float("nan")
+
+    result = zeonta.klinger_volume_oscillator(
+        gapped_high, gapped_low, close, volume, fast=3, slow=5
+    ).iloc[:, 0]
+    assert result.iloc[6:].notna().all()
+    assert not np.isclose(result.iloc[6], result.iloc[5])
+
+
 def test_klinger_volume_oscillator_is_zero_with_zero_volume() -> None:
     high = [12.0, 13.0, 11.0, 14.0, 15.0]
     low = [10.0, 11.0, 9.0, 12.0, 13.0]

@@ -56,7 +56,7 @@ def as_array(values: ArrayLike, name: str) -> np.ndarray:
     else:
         try:
             array = np.asarray(values, dtype="float64")
-        except (TypeError, ValueError) as exc:  # pragma: no cover - message passthrough
+        except (TypeError, ValueError) as exc:
             raise TypeError(f"{name!r} must contain numeric values ({exc})") from exc
 
     if array.ndim != 1:

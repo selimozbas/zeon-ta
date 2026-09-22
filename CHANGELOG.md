@@ -8,6 +8,58 @@ that covers and what counts as a patch, minor, or major change.
 
 ## [Unreleased]
 
+## [0.3.7] - 2026-09-23
+
+### Fixed
+
+A full-codebase correctness + quality review (10 indicators/helpers, checked
+independently by re-running the actual code before and after each fix, not
+just re-reading it) turned up the following. All are internal-logic bugs
+against each function's own documented convention, not formula-source
+disagreements — every one is a **patch** per
+[CONTRIBUTING.md#versioning](CONTRIBUTING.md#versioning)'s correctness-fix
+category.
+
+- **`supertrend()`**: a bar with a missing `high`/`low`/`close` used to
+  silently produce a plausible-looking fabricated line/direction instead of
+  `NaN`. Now frozen and held across the gap, the same convention
+  `parabolic_sar()` already uses.
+- **`adx()`** (two separate bugs): a single missing `high`/`low` bar used to
+  permanently skew `+DI`/`-DI`/`ADX` from that point on, instead of being
+  isolated to one bar like every other gap-tolerant indicator in this
+  library; and a perfectly flat/zero-range market left `DX`/`ADX` stuck at
+  `NaN` forever despite the code's own comment saying it should read `0`.
+- **`kst()`**: its private Rate-of-Change reimplementation was missing the
+  zero-reference-price guard the public `roc()` has, letting `inf` leak into
+  the smoothed KST/signal line.
+- **`ichimoku()`**: the forward-projected cloud had the wrong row count and
+  a misaligned index whenever the input was shorter than `displacement`.
+- **`candles()`**: `hammer_ratio <= 1` let the hammer and shooting-star
+  conditions overlap on the same candle, silently discarding the hammer
+  read. Now validated `> 1`, which makes the overlap impossible.
+- **`sr_levels()`**: single-linkage (chained) clustering let one merged
+  level's price range drift arbitrarily far beyond `tolerance` on a gradual
+  staircase of pivots. Now anchored to each cluster's first member instead
+  of its last-added point.
+- **`rvgi()`/`smi()`**: no zero-denominator guard on a perfectly flat window,
+  unlike every comparable ratio indicator in this library. Now reads a
+  defined `0.0`, the same flat-range convention those siblings use.
+- **`klinger_volume_oscillator()`**: one missing `high`/`low` bar poisoned
+  the cumulative `cm` term until the next trend flip, rather than being
+  isolated to the single gap bar.
+- **`chaikin_volatility()`**: no zero-denominator guard, unlike its
+  siblings; a breakout from a zero-range reference could leak `inf`. Now
+  reads `NaN`, the same zero-reference convention `roc()`/`trix()`/`ppo()`
+  use.
+
+Also, smaller quality fixes found in the same pass: `higuchi_fractal_dimension()`/
+`hurst_exponent()` now name `window` correctly in their validation errors
+(previously said `'length'`); `cci()`'s `constant` parameter now goes through
+the shared `validate_multiplier()` like every sibling parameter instead of a
+raw inline check; `correlation()`'s docstring now correctly says it returns a
+`Series`, not a `DataFrame`; and a stale `# pragma: no cover` on `as_array()`'s
+error path was removed (an existing test already covers it).
+
 ## [0.3.6] - 2026-09-17
 
 ### Changed

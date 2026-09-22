@@ -749,12 +749,13 @@ def chaikin_volatility(high: ArrayLike, low: ArrayLike, length: int = 10) -> pd.
     smoothed_range = ema_values(high_values - low_values, length)
     result = np.full(size, np.nan, dtype="float64")
     if size > length:
+        reference = smoothed_range[:-length]
         with np.errstate(divide="ignore", invalid="ignore"):
-            result[length:] = (
-                (smoothed_range[length:] - smoothed_range[:-length])
-                / smoothed_range[:-length]
-                * 100.0
-            )
+            result[length:] = (smoothed_range[length:] - reference) / reference * 100.0
+        # A reference range of exactly 0 makes the percentage change
+        # undefined — the same convention roc()/trix()/ppo() use for a zero
+        # reference — rather than leaking inf into the series.
+        result[length:] = np.where(reference == 0.0, np.nan, result[length:])
 
     return wrap_series(result, common_index(high, low), f"CVI_{length}")
 

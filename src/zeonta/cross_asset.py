@@ -81,7 +81,7 @@ def correlation(close_a: ArrayLike, close_b: ArrayLike, length: int = 20) -> pd.
 
     Returns
     -------
-    pandas.DataFrame
+    pandas.Series
         Named ``CORR_{length}``. ``NaN`` wherever either window has zero
         variance (a perfectly flat window can't correlate with anything).
 

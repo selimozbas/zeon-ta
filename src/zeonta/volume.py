@@ -1043,7 +1043,19 @@ def klinger_volume_oscillator(
             trend[i] = -1.0
         else:
             trend[i] = trend[i - 1]
-        cm[i] = (dm[i - 1] + dm[i]) if trend[i] != trend[i - 1] else (cm[i - 1] + dm[i])
+
+        if not np.isfinite(dm[i]):
+            # A missing high/low today means dm[i] is unknowable; hold cm at
+            # its last value for this one bar rather than adding NaN into it
+            # and staying poisoned until the next trend flip happens to
+            # reset cm fresh — the same single-bar gap isolation obv/adl/pvt
+            # already give a missing tick.
+            cm[i] = cm[i - 1]
+        elif trend[i] != trend[i - 1]:
+            previous_dm = dm[i - 1] if np.isfinite(dm[i - 1]) else 0.0
+            cm[i] = previous_dm + dm[i]
+        else:
+            cm[i] = cm[i - 1] + dm[i]
 
     with np.errstate(divide="ignore", invalid="ignore"):
         ratio = np.where(cm != 0.0, dm / cm, 0.0)

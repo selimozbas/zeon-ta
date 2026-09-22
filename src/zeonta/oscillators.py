@@ -525,8 +525,7 @@ def cci(
     0.0
     """
     length = validate_length(length)
-    if constant <= 0:
-        raise ValueError(f"'constant' must be > 0, got {constant}")
+    constant = validate_multiplier(constant, "constant")
 
     require_aligned_index(high=high, low=low, close=close)
     high_values = as_array(high, "high")
@@ -1550,8 +1549,14 @@ def kst(
     def _smoothed_roc(period: int, smoothing: int) -> np.ndarray:
         change = np.full(size, np.nan, dtype="float64")
         if size > period:
+            previous = values[:-period]
             with np.errstate(divide="ignore", invalid="ignore"):
-                change[period:] = (values[period:] - values[:-period]) / values[:-period] * 100.0
+                change[period:] = (values[period:] - previous) / previous * 100.0
+            # A reference close of exactly 0 makes the percentage change
+            # undefined — the same guard roc() itself applies — rather than
+            # letting an inf leak into the rolling mean below and every KST
+            # bar the smoothing window still touches after this one.
+            change[period:] = np.where(previous == 0.0, np.nan, change[period:])
         return rolling_mean(change, smoothing)
 
     components = [
@@ -1646,8 +1651,15 @@ def rvgi(
 
     body = _weighted4(close_values - open_values)
     span = _weighted4(high_values - low_values)
+    smoothed_body = rolling_mean(body, length)
+    smoothed_span = rolling_mean(span, length)
     with np.errstate(divide="ignore", invalid="ignore"):
-        result = rolling_mean(body, length) / rolling_mean(span, length)
+        result = smoothed_body / smoothed_span
+    # A window with zero high-low range throughout is a genuinely flat
+    # market (no vigor either way), not an undefined ratio — the same
+    # "flat range reads as a defined value" convention true_range-normalised
+    # indicators elsewhere in this file already use.
+    result = np.where(np.isfinite(smoothed_span) & (smoothed_span == 0.0), 0.0, result)
     signal_line = _weighted4(result)
 
     order = [f"RVGI_{length}", f"RVGIs_{length}"]
@@ -1743,6 +1755,10 @@ def smi(
     smoothed_span = ema_values(ema_values(span, fast), slow)
     with np.errstate(divide="ignore", invalid="ignore"):
         result = 200.0 * smoothed_distance / smoothed_span
+    # A window with zero high-low range throughout means close sat exactly
+    # at that same flat price too (a genuinely flat market), not an
+    # undefined ratio.
+    result = np.where(np.isfinite(smoothed_span) & (smoothed_span == 0.0), 0.0, result)
     signal_line = ema_values(result, signal_length)
 
     suffix = f"{length}_{fast}_{slow}"

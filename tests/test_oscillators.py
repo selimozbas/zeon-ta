@@ -539,11 +539,14 @@ def test_kst_is_zero_on_a_flat_series() -> None:
     np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
 
 
-def test_rvgi_is_all_nan_on_a_perfectly_flat_series() -> None:
-    """Zero body and zero range together is an undefined 0/0 ratio."""
+def test_rvgi_is_zero_on_a_perfectly_flat_series() -> None:
+    """A window with zero range throughout is a genuinely flat market (no
+    vigor either way), defined as exactly 0 rather than an undefined 0/0 —
+    the same convention true_range-normalised indicators elsewhere use."""
     flat = [10.0] * 30
     result = zeonta.rvgi(flat, flat, flat, flat, length=5)
-    assert result.isna().all().all()
+    np.testing.assert_allclose(result["RVGI_5"].iloc[7:].to_numpy(), 0.0)
+    np.testing.assert_allclose(result["RVGIs_5"].iloc[10:].to_numpy(), 0.0)
 
 
 def test_rvgi_rejects_non_positive_length() -> None:
@@ -556,6 +559,15 @@ def test_smi_is_zero_when_close_sits_exactly_on_the_midpoint() -> None:
     low = [10.0] * 30
     close = [11.0] * 30
     result = zeonta.smi(high, low, close, length=5, fast=3, slow=3, signal_length=3)
+    np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
+
+
+def test_smi_is_zero_on_a_perfectly_flat_series() -> None:
+    """A window with zero high-low range throughout forces close to sit at
+    that same flat price too (a genuinely flat market), defined as exactly 0
+    rather than an undefined 0/0."""
+    flat = [10.0] * 30
+    result = zeonta.smi(flat, flat, flat, length=5, fast=3, slow=3, signal_length=3)
     np.testing.assert_allclose(result.dropna().to_numpy(), 0.0)
 
 

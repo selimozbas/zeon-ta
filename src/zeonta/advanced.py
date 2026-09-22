@@ -682,7 +682,7 @@ def higuchi_fractal_dimension(close: ArrayLike, window: int = 100, k_max: int = 
     if isinstance(k_max, bool) or not isinstance(k_max, (int, np.integer)) or k_max < 2:
         raise ValueError(f"'k_max' must be an integer >= 2, got {k_max!r}")
     k_max = int(k_max)
-    window = validate_length(window, minimum=2 * k_max)
+    window = validate_length(window, "window", minimum=2 * k_max)
     values = as_array(close, "close")
     size = values.shape[0]
 
@@ -779,7 +779,7 @@ def hurst_exponent(close: ArrayLike, window: int = 100) -> pd.Series:
     ----------
     https://en.wikipedia.org/wiki/Hurst_exponent
     """
-    window = validate_length(window, minimum=32)
+    window = validate_length(window, "window", minimum=32)
     values = as_array(close, "close")
     size = values.shape[0]
 

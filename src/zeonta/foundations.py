@@ -98,7 +98,9 @@ def candles(
     doji_threshold:
         A candle is a doji when its body is at most this fraction of its full range.
     hammer_ratio:
-        Minimum wick-to-body ratio for a hammer or shooting star.
+        Minimum wick-to-body ratio for a hammer or shooting star. Must be
+        > 1 — at 1 or below, the hammer and shooting-star conditions can
+        overlap on the same candle.
 
     Returns
     -------
@@ -123,7 +125,15 @@ def candles(
     1.0
     """
     threshold = validate_multiplier(doji_threshold, "doji_threshold")
-    ratio = validate_multiplier(hammer_ratio, "hammer_ratio")
+    # A ratio of 1 or less lets the hammer and shooting-star conditions
+    # overlap (both only require *a* wick at least `ratio * body`, with the
+    # *other* wick no larger than the body) — at ratio<=1 a candle with two
+    # merely-larger-than-body wicks satisfies both, and the code below picks
+    # shooting-star, silently discarding the equally-valid hammer read.
+    # ratio > 1 makes that impossible: the two conditions would jointly
+    # require upper_wick <= body <= upper_wick / ratio, which has no solution
+    # for a positive body once ratio exceeds 1.
+    ratio = validate_multiplier(hammer_ratio, "hammer_ratio", minimum=1.0)
 
     require_aligned_index(open=open, high=high, low=low, close=close)
     open_values = as_array(open, "open")
@@ -343,7 +353,14 @@ def sr_levels(
 
     clusters: list[list[tuple[float, str]]] = []
     for price, kind in points:
-        if clusters and abs(price - clusters[-1][-1][0]) <= tolerance * abs(clusters[-1][-1][0]):
+        # Compared against the cluster's own *first* member (its anchor),
+        # not the last point added — chaining against the last point lets a
+        # gradual staircase of pivots (each within `tolerance` of its
+        # immediate neighbour) merge into one cluster whose overall spread
+        # is arbitrarily larger than `tolerance`, which is exactly the drift
+        # `tolerance` is documented to bound.
+        anchor = clusters[-1][0][0] if clusters else None
+        if anchor is not None and abs(price - anchor) <= tolerance * abs(anchor):
             clusters[-1].append((price, kind))
         else:
             clusters.append([(price, kind)])
